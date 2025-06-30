@@ -28,21 +28,22 @@ const menuItems = [
 ];
 
 export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
-  const { collapsed } = useSidebar();
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible>
+    <Sidebar className={isCollapsed ? "w-14" : "w-64"} collapsible="icon">
       <SidebarTrigger className="m-2 self-end" />
       
       <SidebarContent className="bg-white border-r">
         <div className="p-4">
-          <h2 className={`font-bold text-xl text-blue-600 ${collapsed ? "hidden" : "block"}`}>
+          <h2 className={`font-bold text-xl text-blue-600 ${isCollapsed ? "hidden" : "block"}`}>
             LeadGen Pro
           </h2>
         </div>
         
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "hidden" : "block"}>
+          <SidebarGroupLabel className={isCollapsed ? "hidden" : "block"}>
             Main Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -58,7 +59,7 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
                     }`}
                   >
                     <item.icon className="h-4 w-4" />
-                    {!collapsed && <span className="ml-3">{item.title}</span>}
+                    {!isCollapsed && <span className="ml-3">{item.title}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

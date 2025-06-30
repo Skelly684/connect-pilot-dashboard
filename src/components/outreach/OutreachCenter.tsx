@@ -191,14 +191,14 @@ export const OutreachCenter = () => {
                 <Label htmlFor="message">Message Template</Label>
                 <Textarea
                   id="message"
-                  placeholder="Hi {{firstName}}, I noticed that {{company}} is..."
+                  placeholder="Hi there, I noticed that your company is..."
                   rows={6}
                   value={newCampaign.message}
                   onChange={(e) => setNewCampaign({...newCampaign, message: e.target.value})}
                   required
                 />
                 <p className="text-xs text-gray-500">
-                  Use variables like {{firstName}}, {{company}}, {{jobTitle}} for personalization
+                  Use placeholders for personalization in your actual implementation
                 </p>
               </div>
 
