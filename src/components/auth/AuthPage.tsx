@@ -7,23 +7,61 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [signInEmail, setSignInEmail] = useState("");
+  const [signInPassword, setSignInPassword] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  
   const { toast } = useToast();
+  const { signIn, signUp } = useAuth();
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate auth - replace with actual Supabase auth
-    setTimeout(() => {
-      setIsLoading(false);
+    const { error } = await signIn(signInEmail, signInPassword);
+    
+    if (error) {
       toast({
-        title: "Authentication Required",
-        description: "Please connect to Supabase to enable authentication functionality.",
+        title: "Error signing in",
+        description: error.message,
+        variant: "destructive",
       });
-    }, 1000);
+    } else {
+      toast({
+        title: "Success!",
+        description: "You have been signed in successfully.",
+      });
+    }
+    
+    setIsLoading(false);
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    const { error } = await signUp(signUpEmail, signUpPassword);
+    
+    if (error) {
+      toast({
+        title: "Error creating account",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Account created!",
+        description: "Please check your email to verify your account.",
+      });
+    }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -49,7 +87,7 @@ export const AuthPage = () => {
               </TabsList>
               
               <TabsContent value="signin" className="space-y-4">
-                <form onSubmit={handleAuth} className="space-y-4">
+                <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
@@ -59,6 +97,8 @@ export const AuthPage = () => {
                         type="email"
                         placeholder="Enter your email"
                         className="pl-10"
+                        value={signInEmail}
+                        onChange={(e) => setSignInEmail(e.target.value)}
                         required
                       />
                     </div>
@@ -72,6 +112,8 @@ export const AuthPage = () => {
                         type="password"
                         placeholder="Enter your password"
                         className="pl-10"
+                        value={signInPassword}
+                        onChange={(e) => setSignInPassword(e.target.value)}
                         required
                       />
                     </div>
@@ -84,7 +126,7 @@ export const AuthPage = () => {
               </TabsContent>
               
               <TabsContent value="signup" className="space-y-4">
-                <form onSubmit={handleAuth} className="space-y-4">
+                <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
                     <div className="relative">
@@ -94,6 +136,8 @@ export const AuthPage = () => {
                         type="text"
                         placeholder="Enter your full name"
                         className="pl-10"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
                         required
                       />
                     </div>
@@ -107,6 +151,8 @@ export const AuthPage = () => {
                         type="email"
                         placeholder="Enter your email"
                         className="pl-10"
+                        value={signUpEmail}
+                        onChange={(e) => setSignUpEmail(e.target.value)}
                         required
                       />
                     </div>
@@ -120,6 +166,8 @@ export const AuthPage = () => {
                         type="password"
                         placeholder="Create a password"
                         className="pl-10"
+                        value={signUpPassword}
+                        onChange={(e) => setSignUpPassword(e.target.value)}
                         required
                       />
                     </div>
