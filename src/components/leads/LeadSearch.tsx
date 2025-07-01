@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ export const LeadSearch = () => {
     companySize: "",
     currentCompanyOnly: false,
     yearsOfExperience: [0],
+    numberOfLeads: [100],
   });
   const [isSearching, setIsSearching] = useState(false);
   const { toast } = useToast();
@@ -230,6 +230,22 @@ export const LeadSearch = () => {
                 <span>30+ years</span>
               </div>
             </div>
+            
+            <div className="space-y-2 col-span-1 md:col-span-2">
+              <Label>Number of Leads: {filters.numberOfLeads[0]} leads</Label>
+              <Slider
+                value={filters.numberOfLeads}
+                onValueChange={(value) => setFilters({...filters, numberOfLeads: value})}
+                max={5000}
+                min={100}
+                step={50}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>100 leads</span>
+                <span>5000 leads</span>
+              </div>
+            </div>
           </div>
           
           <div className="flex justify-center pt-4">
@@ -245,6 +261,7 @@ export const LeadSearch = () => {
               <span className="text-sm text-gray-600">
                 Active filters: {Object.entries(filters).filter(([key, value]) => {
                   if (key === 'yearsOfExperience') return value[0] > 0;
+                  if (key === 'numberOfLeads') return value[0] > 100;
                   if (key === 'currentCompanyOnly') return value;
                   return value && value !== '';
                 }).length}
