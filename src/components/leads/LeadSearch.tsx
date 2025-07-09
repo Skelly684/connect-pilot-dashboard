@@ -64,18 +64,48 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete }: LeadS
       });
 
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        const errorText = await response.text();
+        console.error("API request failed:", response.status, errorText);
+        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
       console.log("API response:", data);
 
-      if (data && Array.isArray(data)) {
-        onResults(data);
+      // Handle different response formats
+      let leads = [];
+      if (Array.isArray(data)) {
+        leads = data;
+      } else if (data && Array.isArray(data.leads)) {
+        leads = data.leads;
+      } else if (data && Array.isArray(data.results)) {
+        leads = data.results;
+      } else if (data && typeof data === 'object') {
+        // If it's an object, try to find an array property
+        const arrayValues = Object.values(data).filter(value => Array.isArray(value));
+        if (arrayValues.length > 0) {
+          leads = arrayValues[0] as any[];
+        }
+      }
+
+      console.log("Processed leads:", leads);
+
+      if (leads && leads.length > 0) {
+        // Limit to first 100 leads to prevent UI issues
+        const limitedLeads = leads.slice(0, 100);
+        onResults(limitedLeads);
         toast({
           title: "Search Complete",
-          description: `Found ${data.length} matching leads.`,
+          description: `Found ${leads.length} leads. Showing first ${limitedLeads.length}.`,
         });
+        
+        if (leads.length > 100) {
+          toast({
+            title: "Results Limited",
+            description: `Found ${leads.length} leads but showing only the first 100 for performance.`,
+            variant: "default",
+          });
+        }
       } else {
         onResults([]);
         toast({
@@ -87,9 +117,15 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete }: LeadS
     } catch (error) {
       console.error("Search error:", error);
       onResults([]);
+      
+      let errorMessage = "Unable to connect to the lead search API.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Search Failed",
-        description: "Unable to connect to the lead search API. Please check your connection and try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
