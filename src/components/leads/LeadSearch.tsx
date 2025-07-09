@@ -6,16 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { Search, Filter, Download } from "lucide-react";
+import { Search, Filter, Download, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface LeadSearchProps {
   onResults: (leads: any[]) => void;
   onSearchStart: () => void;
   onSearchComplete: () => void;
+  onSaveLeads: (leads: any[]) => Promise<boolean>;
 }
 
-export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete }: LeadSearchProps) => {
+export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveLeads }: LeadSearchProps) => {
   const [filters, setFilters] = useState({
     jobTitle: "",
     industry: "",
@@ -29,6 +30,8 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete }: LeadS
     numberOfLeads: [100],
   });
   const [isSearching, setIsSearching] = useState(false);
+  const [lastSearchResults, setLastSearchResults] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -89,6 +92,7 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete }: LeadS
       }
 
       console.log("Processed leads:", leads);
+      setLastSearchResults(leads);
 
       if (leads && leads.length > 0) {
         // Limit to first 100 leads to prevent UI issues
@@ -96,7 +100,7 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete }: LeadS
         onResults(limitedLeads);
         toast({
           title: "Search Complete",
-          description: `Found ${leads.length} leads. Showing first ${limitedLeads.length}.`,
+          description: `Found ${leads.length} leads. Showing first ${limitedLeads.length}. Click "Save to Database" to persist results.`,
         });
         
         if (leads.length > 100) {
@@ -108,6 +112,7 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete }: LeadS
         }
       } else {
         onResults([]);
+        setLastSearchResults([]);
         toast({
           title: "No Results",
           description: "No leads found matching your criteria.",
@@ -117,6 +122,7 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete }: LeadS
     } catch (error) {
       console.error("Search error:", error);
       onResults([]);
+      setLastSearchResults([]);
       
       let errorMessage = "Unable to connect to the lead search API.";
       if (error instanceof Error) {
@@ -132,6 +138,24 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete }: LeadS
       setIsSearching(false);
       onSearchComplete();
     }
+  };
+
+  const handleSaveResults = async () => {
+    if (lastSearchResults.length === 0) {
+      toast({
+        title: "No Results",
+        description: "No search results to save. Please perform a search first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    const success = await onSaveLeads(lastSearchResults);
+    if (success) {
+      setLastSearchResults([]); // Clear results after saving
+    }
+    setIsSaving(false);
   };
 
   const industries = [
@@ -341,11 +365,23 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete }: LeadS
             </div>
           </div>
           
-          <div className="flex justify-center pt-4">
+          <div className="flex justify-center space-x-4 pt-4">
             <Button type="submit" disabled={isSearching} className="px-8 py-2 bg-blue-600 hover:bg-blue-700">
               {isSearching ? "Searching..." : "Search Leads"}
               <Search className="ml-2 h-4 w-4" />
             </Button>
+            
+            {lastSearchResults.length > 0 && (
+              <Button 
+                type="button" 
+                onClick={handleSaveResults} 
+                disabled={isSaving}
+                className="px-8 py-2 bg-green-600 hover:bg-green-700"
+              >
+                {isSaving ? "Saving..." : "Save to Database"}
+                <Save className="ml-2 h-4 w-4" />
+              </Button>
+            )}
           </div>
           
           <div className="flex items-center justify-between pt-4 border-t">
@@ -360,10 +396,13 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete }: LeadS
                 }).length}
               </span>
             </div>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export Results
-            </Button>
+            <div className="text-sm text-gray-500">
+              {lastSearchResults.length > 0 && (
+                <span className="text-green-600">
+                  {lastSearchResults.length} leads ready to save
+                </span>
+              )}
+            </div>
           </div>
         </form>
       </CardContent>

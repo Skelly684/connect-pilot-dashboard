@@ -14,7 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leads: {
+        Row: {
+          city_name: string | null
+          company: string | null
+          company_name: string | null
+          contact_phone_numbers: Json | null
+          country_name: string | null
+          created_at: string
+          email: string | null
+          email_address: string | null
+          first_name: string | null
+          headline: string | null
+          id: string
+          job_title: string | null
+          last_name: string | null
+          location: string | null
+          name: string | null
+          phone: string | null
+          raw_address: string | null
+          scraped_at: string
+          state_name: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city_name?: string | null
+          company?: string | null
+          company_name?: string | null
+          contact_phone_numbers?: Json | null
+          country_name?: string | null
+          created_at?: string
+          email?: string | null
+          email_address?: string | null
+          first_name?: string | null
+          headline?: string | null
+          id?: string
+          job_title?: string | null
+          last_name?: string | null
+          location?: string | null
+          name?: string | null
+          phone?: string | null
+          raw_address?: string | null
+          scraped_at?: string
+          state_name?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city_name?: string | null
+          company?: string | null
+          company_name?: string | null
+          contact_phone_numbers?: Json | null
+          country_name?: string | null
+          created_at?: string
+          email?: string | null
+          email_address?: string | null
+          first_name?: string | null
+          headline?: string | null
+          id?: string
+          job_title?: string | null
+          last_name?: string | null
+          location?: string | null
+          name?: string | null
+          phone?: string | null
+          raw_address?: string | null
+          scraped_at?: string
+          state_name?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

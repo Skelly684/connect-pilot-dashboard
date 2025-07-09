@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Mail, Phone, Eye, MoreHorizontal, Search, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Mail, Phone, Eye, MoreHorizontal, Search, Loader2, Trash2, Download, FileSpreadsheet } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -28,34 +29,58 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import * as XLSX from 'xlsx';
 
 interface Lead {
   id?: number | string;
   name?: string;
   firstName?: string;
+  first_name?: string;
   lastName?: string;
+  last_name?: string;
   jobTitle?: string;
   job_title?: string;
   headline?: string;
   company?: string;
   companyName?: string;
+  company_name?: string;
   email?: string;
   emailAddress?: string;
+  email_address?: string;
   phone?: string;
   location?: string;
   rawAddress?: string;
+  raw_address?: string;
   stateName?: string;
+  state_name?: string;
   cityName?: string;
+  city_name?: string;
   countryName?: string;
+  country_name?: string;
   status?: string;
   lastContact?: string;
   last_contact?: string;
   contactPhoneNumbers?: Array<{ sanitizedNumber?: string; rawNumber?: string }>;
+  contact_phone_numbers?: string;
 }
 
 interface LeadTableProps {
   leads: Lead[];
   isLoading: boolean;
+  onDeleteLeads: (leadIds: string[]) => Promise<boolean>;
+  onDeleteAllLeads: () => Promise<boolean>;
 }
 
 const ITEMS_PER_PAGE = 50;
@@ -84,8 +109,8 @@ const safeToString = (value: any): string => {
 
 const extractFullName = (lead: Lead): string => {
   if (lead.name) return safeToString(lead.name);
-  const firstName = safeToString(lead.firstName);
-  const lastName = safeToString(lead.lastName);
+  const firstName = safeToString(lead.firstName || lead.first_name);
+  const lastName = safeToString(lead.lastName || lead.last_name);
   if (firstName || lastName) {
     return `${firstName} ${lastName}`.trim();
   }
@@ -97,15 +122,32 @@ const extractJobTitle = (lead: Lead): string => {
 };
 
 const extractCompany = (lead: Lead): string => {
-  return safeToString(lead.company || lead.companyName);
+  return safeToString(lead.company || lead.companyName || lead.company_name);
 };
 
 const extractEmail = (lead: Lead): string => {
-  return safeToString(lead.email || lead.emailAddress);
+  return safeToString(lead.email || lead.emailAddress || lead.email_address);
 };
 
 const extractPhone = (lead: Lead): string => {
   if (lead.phone) return safeToString(lead.phone);
+  
+  // Handle contact_phone_numbers from database (stored as JSON string)
+  if (lead.contact_phone_numbers) {
+    try {
+      const phoneNumbers = typeof lead.contact_phone_numbers === 'string' 
+        ? JSON.parse(lead.contact_phone_numbers) 
+        : lead.contact_phone_numbers;
+      if (Array.isArray(phoneNumbers) && phoneNumbers.length > 0) {
+        const phoneObj = phoneNumbers[0];
+        return safeToString(phoneObj.sanitizedNumber || phoneObj.rawNumber);
+      }
+    } catch (e) {
+      console.warn('Error parsing contact_phone_numbers:', e);
+    }
+  }
+  
+  // Handle contactPhoneNumbers from API response
   if (lead.contactPhoneNumbers && lead.contactPhoneNumbers.length > 0) {
     const phoneObj = lead.contactPhoneNumbers[0];
     return safeToString(phoneObj.sanitizedNumber || phoneObj.rawNumber);
@@ -115,22 +157,23 @@ const extractPhone = (lead: Lead): string => {
 
 const extractLocation = (lead: Lead): string => {
   if (lead.location) return safeToString(lead.location);
-  if (lead.rawAddress) return safeToString(lead.rawAddress);
+  if (lead.rawAddress || lead.raw_address) return safeToString(lead.rawAddress || lead.raw_address);
   
   const parts = [
-    safeToString(lead.cityName),
-    safeToString(lead.stateName),
-    safeToString(lead.countryName)
+    safeToString(lead.cityName || lead.city_name),
+    safeToString(lead.stateName || lead.state_name),
+    safeToString(lead.countryName || lead.country_name)
   ].filter(part => part && part !== '');
   
   return parts.join(', ') || '';
 };
 
-export const LeadTable = ({ leads = [], isLoading }: LeadTableProps) => {
+export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLeads }: LeadTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-
-  console.log("LeadTable received leads:", leads);
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   const filteredLeads = leads.filter(lead => {
     if (!searchTerm) return true;
@@ -151,17 +194,145 @@ export const LeadTable = ({ leads = [], isLoading }: LeadTableProps) => {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedLeads = filteredLeads.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set(paginatedLeads.map(lead => String(lead.id || `lead-${leads.indexOf(lead)}`)));
+      setSelectedLeads(allIds);
+    } else {
+      setSelectedLeads(new Set());
+    }
+  };
+
+  const handleSelectLead = (leadId: string, checked: boolean) => {
+    const newSelected = new Set(selectedLeads);
+    if (checked) {
+      newSelected.add(leadId);
+    } else {
+      newSelected.delete(leadId);
+    }
+    setSelectedLeads(newSelected);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedLeads.size === 0) return;
+    
+    setIsDeleting(true);
+    const success = await onDeleteLeads(Array.from(selectedLeads));
+    if (success) {
+      setSelectedLeads(new Set());
+    }
+    setIsDeleting(false);
+  };
+
+  const handleDeleteAll = async () => {
+    setIsDeleting(true);
+    const success = await onDeleteAllLeads();
+    if (success) {
+      setSelectedLeads(new Set());
+    }
+    setIsDeleting(false);
+  };
+
+  const exportToExcel = (selectedOnly = false) => {
+    const dataToExport = selectedOnly 
+      ? filteredLeads.filter(lead => selectedLeads.has(String(lead.id || `lead-${leads.indexOf(lead)}`)))
+      : filteredLeads;
+
+    if (dataToExport.length === 0) {
+      toast({
+        title: "No Data",
+        description: selectedOnly ? "No leads selected for export" : "No leads to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const exportData = dataToExport.map(lead => ({
+      Name: extractFullName(lead),
+      'Job Title': extractJobTitle(lead),
+      Company: extractCompany(lead),
+      Email: extractEmail(lead),
+      Phone: extractPhone(lead),
+      Location: extractLocation(lead),
+      Status: safeToString(lead.status || 'new'),
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Leads");
+    
+    const fileName = selectedOnly 
+      ? `selected-leads-${new Date().toISOString().split('T')[0]}.xlsx`
+      : `all-leads-${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    XLSX.writeFile(wb, fileName);
+    
+    toast({
+      title: "Export Complete",
+      description: `Exported ${dataToExport.length} leads to ${fileName}`,
+    });
+  };
+
+  const exportToCSV = (selectedOnly = false) => {
+    const dataToExport = selectedOnly 
+      ? filteredLeads.filter(lead => selectedLeads.has(String(lead.id || `lead-${leads.indexOf(lead)}`)))
+      : filteredLeads;
+
+    if (dataToExport.length === 0) {
+      toast({
+        title: "No Data",
+        description: selectedOnly ? "No leads selected for export" : "No leads to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const headers = ['Name', 'Job Title', 'Company', 'Email', 'Phone', 'Location', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...dataToExport.map(lead => [
+        `"${extractFullName(lead).replace(/"/g, '""')}"`,
+        `"${extractJobTitle(lead).replace(/"/g, '""')}"`,
+        `"${extractCompany(lead).replace(/"/g, '""')}"`,
+        `"${extractEmail(lead).replace(/"/g, '""')}"`,
+        `"${extractPhone(lead).replace(/"/g, '""')}"`,
+        `"${extractLocation(lead).replace(/"/g, '""')}"`,
+        `"${safeToString(lead.status || 'new').replace(/"/g, '""')}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    
+    const fileName = selectedOnly 
+      ? `selected-leads-${new Date().toISOString().split('T')[0]}.csv`
+      : `all-leads-${new Date().toISOString().split('T')[0]}.csv`;
+    
+    link.setAttribute('download', fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Export Complete",
+      description: `Exported ${dataToExport.length} leads to ${fileName}`,
+    });
+  };
+
   if (isLoading) {
     return (
       <Card className="border-0 shadow-sm">
         <CardHeader>
           <CardTitle>Lead Database</CardTitle>
-          <CardDescription>Searching for leads...</CardDescription>
+          <CardDescription>Loading leads...</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            <span className="ml-2 text-lg">Searching for leads...</span>
+            <span className="ml-2 text-lg">Loading leads...</span>
           </div>
         </CardContent>
       </Card>
@@ -175,20 +346,110 @@ export const LeadTable = ({ leads = [], isLoading }: LeadTableProps) => {
           <div>
             <CardTitle>Lead Database</CardTitle>
             <CardDescription>
-              {filteredLeads.length} leads found • Showing {paginatedLeads.length} per page
+              {filteredLeads.length} leads found • {selectedLeads.size} selected • Showing {paginatedLeads.length} per page
             </CardDescription>
           </div>
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search leads..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset to first page when searching
-              }}
-              className="pl-10"
-            />
+          <div className="flex items-center space-x-2">
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search leads..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Action Buttons */}
+        <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex items-center space-x-2">
+            {selectedLeads.size > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={isDeleting}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Selected ({selectedLeads.size})
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Selected Leads</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete {selectedLeads.size} selected lead(s)? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteSelected} className="bg-red-600 hover:bg-red-700">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            
+            {leads.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={isDeleting}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete All
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete All Leads</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete ALL leads? This action cannot be undone and will remove all {leads.length} leads from your database.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteAll} className="bg-red-600 hover:bg-red-700">
+                      Delete All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-white">
+                <DropdownMenuItem onClick={() => exportToCSV(false)}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export All as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportToExcel(false)}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export All as Excel
+                </DropdownMenuItem>
+                {selectedLeads.size > 0 && (
+                  <>
+                    <DropdownMenuItem onClick={() => exportToCSV(true)}>
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Export Selected as CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => exportToExcel(true)}>
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Export Selected as Excel
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </CardHeader>
@@ -197,7 +458,7 @@ export const LeadTable = ({ leads = [], isLoading }: LeadTableProps) => {
           <div className="text-center py-8">
             <p className="text-gray-500 text-lg">No leads found</p>
             <p className="text-gray-400 text-sm mt-2">
-              Try adjusting your search criteria or filters
+              Try adjusting your search criteria or search for new leads
             </p>
           </div>
         ) : (
@@ -206,6 +467,12 @@ export const LeadTable = ({ leads = [], isLoading }: LeadTableProps) => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedLeads.size === paginatedLeads.length && paginatedLeads.length > 0}
+                        onCheckedChange={handleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Job Title</TableHead>
                     <TableHead>Company</TableHead>
@@ -217,7 +484,7 @@ export const LeadTable = ({ leads = [], isLoading }: LeadTableProps) => {
                 </TableHeader>
                 <TableBody>
                   {paginatedLeads.map((lead, index) => {
-                    const leadId = lead.id || `lead-${startIndex + index}`;
+                    const leadId = String(lead.id || `lead-${startIndex + index}`);
                     const fullName = extractFullName(lead);
                     const jobTitle = extractJobTitle(lead);
                     const company = extractCompany(lead);
@@ -228,6 +495,12 @@ export const LeadTable = ({ leads = [], isLoading }: LeadTableProps) => {
 
                     return (
                       <TableRow key={leadId} className="hover:bg-gray-50">
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedLeads.has(leadId)}
+                            onCheckedChange={(checked) => handleSelectLead(leadId, checked as boolean)}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-3">
                             <Avatar className="h-8 w-8">

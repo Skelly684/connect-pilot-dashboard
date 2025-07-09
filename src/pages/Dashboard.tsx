@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Sidebar, SidebarContent, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { LeadSearch } from "@/components/leads/LeadSearch";
@@ -8,24 +8,33 @@ import { LeadTable } from "@/components/leads/LeadTable";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { CRMIntegration } from "@/components/integrations/CRMIntegration";
 import { OutreachCenter } from "@/components/outreach/OutreachCenter";
+import { useLeads } from "@/hooks/useLeads";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const [leads, setLeads] = useState([]);
-  const [isLoadingLeads, setIsLoadingLeads] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  const { 
+    leads, 
+    isLoading: isLoadingLeads, 
+    saveLeads, 
+    deleteLeads, 
+    deleteAllLeads 
+  } = useLeads();
 
   const handleSearchResults = (results: any[]) => {
     console.log("Received search results:", results);
-    setLeads(results);
+    setSearchResults(results);
   };
 
   const handleSearchStart = () => {
-    setIsLoadingLeads(true);
-    setLeads([]); // Clear previous results
+    setIsSearching(true);
+    setSearchResults([]); // Clear previous search results
   };
 
   const handleSearchComplete = () => {
-    setIsLoadingLeads(false);
+    setIsSearching(false);
   };
 
   const renderContent = () => {
@@ -39,8 +48,14 @@ const Dashboard = () => {
               onResults={handleSearchResults}
               onSearchStart={handleSearchStart}
               onSearchComplete={handleSearchComplete}
+              onSaveLeads={saveLeads}
             />
-            <LeadTable leads={leads} isLoading={isLoadingLeads} />
+            <LeadTable 
+              leads={activeTab === "leads" ? (isSearching ? searchResults : leads) : []} 
+              isLoading={isSearching || isLoadingLeads}
+              onDeleteLeads={deleteLeads}
+              onDeleteAllLeads={deleteAllLeads}
+            />
           </div>
         );
       case "outreach":
