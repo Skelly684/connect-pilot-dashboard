@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, Phone, Eye, MoreHorizontal, Search, Loader2, Trash2, Download, FileSpreadsheet } from "lucide-react";
+import { Mail, Phone, Eye, MoreHorizontal, Search, Loader2, Trash2, Download, FileSpreadsheet, ExternalLink } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -121,8 +121,43 @@ const extractJobTitle = (lead: Lead): string => {
   return safeToString(lead.jobTitle || lead.job_title || lead.headline);
 };
 
-const extractCompany = (lead: Lead): string => {
-  return safeToString(lead.company || lead.companyName || lead.company_name);
+const extractCompanyInfo = (lead: Lead) => {
+  // Handle both string and object company data
+  let companyData = lead.company || lead.companyName || lead.company_name;
+  
+  if (typeof companyData === 'string') {
+    try {
+      // Try to parse if it's a JSON string
+      companyData = JSON.parse(companyData);
+    } catch (e) {
+      // If parsing fails, treat as simple string
+      return {
+        name: companyData,
+        website: '',
+        industry: '',
+        location: '',
+        phone: ''
+      };
+    }
+  }
+  
+  if (typeof companyData === 'object' && companyData !== null) {
+    return {
+      name: safeToString(companyData.name || companyData.companyName || companyData.company_name || ''),
+      website: safeToString(companyData.website || companyData.websiteUrl || companyData.url || ''),
+      industry: safeToString(companyData.industry || companyData.industryName || ''),
+      location: safeToString(companyData.location || companyData.address || companyData.city || ''),
+      phone: safeToString(companyData.phone || companyData.phoneNumber || '')
+    };
+  }
+  
+  return {
+    name: safeToString(companyData || ''),
+    website: '',
+    industry: '',
+    location: '',
+    phone: ''
+  };
 };
 
 const extractEmail = (lead: Lead): string => {
@@ -168,6 +203,40 @@ const extractLocation = (lead: Lead): string => {
   return parts.join(', ') || '';
 };
 
+const CompanyCell = ({ company }: { company: any }) => {
+  const companyInfo = extractCompanyInfo({ company });
+  
+  return (
+    <div className="space-y-1">
+      <div className="font-medium text-gray-900">
+        {companyInfo.name || '—'}
+      </div>
+      {companyInfo.website && (
+        <div className="flex items-center space-x-1">
+          <a 
+            href={companyInfo.website.startsWith('http') ? companyInfo.website : `https://${companyInfo.website}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
+          >
+            <span>{companyInfo.website}</span>
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      )}
+      {companyInfo.industry && (
+        <div className="text-sm text-gray-600">{companyInfo.industry}</div>
+      )}
+      {companyInfo.location && (
+        <div className="text-sm text-gray-500">{companyInfo.location}</div>
+      )}
+      {companyInfo.phone && (
+        <div className="text-sm text-gray-500">{companyInfo.phone}</div>
+      )}
+    </div>
+  );
+};
+
 export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLeads }: LeadTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -181,7 +250,8 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
     const searchLower = searchTerm.toLowerCase();
     const fullName = extractFullName(lead).toLowerCase();
     const jobTitle = extractJobTitle(lead).toLowerCase();
-    const company = extractCompany(lead).toLowerCase();
+    const companyInfo = extractCompanyInfo(lead);
+    const company = companyInfo.name.toLowerCase();
     const email = extractEmail(lead).toLowerCase();
     
     return fullName.includes(searchLower) ||
@@ -247,15 +317,22 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
       return;
     }
 
-    const exportData = dataToExport.map(lead => ({
-      Name: extractFullName(lead),
-      'Job Title': extractJobTitle(lead),
-      Company: extractCompany(lead),
-      Email: extractEmail(lead),
-      Phone: extractPhone(lead),
-      Location: extractLocation(lead),
-      Status: safeToString(lead.status || 'new'),
-    }));
+    const exportData = dataToExport.map(lead => {
+      const companyInfo = extractCompanyInfo(lead);
+      return {
+        Name: extractFullName(lead),
+        'Job Title': extractJobTitle(lead),
+        'Company Name': companyInfo.name,
+        'Company Website': companyInfo.website,
+        'Company Industry': companyInfo.industry,
+        'Company Location': companyInfo.location,
+        'Company Phone': companyInfo.phone,
+        Email: extractEmail(lead),
+        Phone: extractPhone(lead),
+        Location: extractLocation(lead),
+        Status: safeToString(lead.status || 'new'),
+      };
+    });
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -287,18 +364,25 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
       return;
     }
 
-    const headers = ['Name', 'Job Title', 'Company', 'Email', 'Phone', 'Location', 'Status'];
+    const headers = ['Name', 'Job Title', 'Company Name', 'Company Website', 'Company Industry', 'Company Location', 'Company Phone', 'Email', 'Phone', 'Location', 'Status'];
     const csvContent = [
       headers.join(','),
-      ...dataToExport.map(lead => [
-        `"${extractFullName(lead).replace(/"/g, '""')}"`,
-        `"${extractJobTitle(lead).replace(/"/g, '""')}"`,
-        `"${extractCompany(lead).replace(/"/g, '""')}"`,
-        `"${extractEmail(lead).replace(/"/g, '""')}"`,
-        `"${extractPhone(lead).replace(/"/g, '""')}"`,
-        `"${extractLocation(lead).replace(/"/g, '""')}"`,
-        `"${safeToString(lead.status || 'new').replace(/"/g, '""')}"`
-      ].join(','))
+      ...dataToExport.map(lead => {
+        const companyInfo = extractCompanyInfo(lead);
+        return [
+          `"${extractFullName(lead).replace(/"/g, '""')}"`,
+          `"${extractJobTitle(lead).replace(/"/g, '""')}"`,
+          `"${companyInfo.name.replace(/"/g, '""')}"`,
+          `"${companyInfo.website.replace(/"/g, '""')}"`,
+          `"${companyInfo.industry.replace(/"/g, '""')}"`,
+          `"${companyInfo.location.replace(/"/g, '""')}"`,
+          `"${companyInfo.phone.replace(/"/g, '""')}"`,
+          `"${extractEmail(lead).replace(/"/g, '""')}"`,
+          `"${extractPhone(lead).replace(/"/g, '""')}"`,
+          `"${extractLocation(lead).replace(/"/g, '""')}"`,
+          `"${safeToString(lead.status || 'new').replace(/"/g, '""')}"`
+        ].join(',');
+      })
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -475,7 +559,7 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                     </TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Job Title</TableHead>
-                    <TableHead>Company</TableHead>
+                    <TableHead className="w-64">Company</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Phone</TableHead>
@@ -487,7 +571,6 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                     const leadId = String(lead.id || `lead-${startIndex + index}`);
                     const fullName = extractFullName(lead);
                     const jobTitle = extractJobTitle(lead);
-                    const company = extractCompany(lead);
                     const email = extractEmail(lead);
                     const phone = extractPhone(lead);
                     const location = extractLocation(lead);
@@ -518,7 +601,9 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                         <TableCell className="font-medium">
                           {jobTitle || 'N/A'}
                         </TableCell>
-                        <TableCell>{company || 'N/A'}</TableCell>
+                        <TableCell>
+                          <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
+                        </TableCell>
                         <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(status)}>
