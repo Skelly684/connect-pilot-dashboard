@@ -11,6 +11,22 @@ import { OutreachCenter } from "@/components/outreach/OutreachCenter";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [leads, setLeads] = useState([]);
+  const [isLoadingLeads, setIsLoadingLeads] = useState(false);
+
+  const handleSearchResults = (results: any[]) => {
+    console.log("Received search results:", results);
+    setLeads(results);
+  };
+
+  const handleSearchStart = () => {
+    setIsLoadingLeads(true);
+    setLeads([]); // Clear previous results
+  };
+
+  const handleSearchComplete = () => {
+    setIsLoadingLeads(false);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -19,8 +35,12 @@ const Dashboard = () => {
       case "leads":
         return (
           <div className="space-y-6">
-            <LeadSearch />
-            <LeadTable />
+            <LeadSearch 
+              onResults={handleSearchResults}
+              onSearchStart={handleSearchStart}
+              onSearchComplete={handleSearchComplete}
+            />
+            <LeadTable leads={leads} isLoading={isLoadingLeads} />
           </div>
         );
       case "outreach":

@@ -9,7 +9,13 @@ import { Slider } from "@/components/ui/slider";
 import { Search, Filter, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-export const LeadSearch = () => {
+interface LeadSearchProps {
+  onResults: (leads: any[]) => void;
+  onSearchStart: () => void;
+  onSearchComplete: () => void;
+}
+
+export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete }: LeadSearchProps) => {
   const [filters, setFilters] = useState({
     jobTitle: "",
     industry: "",
@@ -28,17 +34,68 @@ export const LeadSearch = () => {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
+    onSearchStart();
     
     console.log("Search filters:", filters);
     
-    // Simulate search - replace with actual Apify integration
-    setTimeout(() => {
-      setIsSearching(false);
-      toast({
-        title: "Search Complete",
-        description: "Found 147 matching leads. Results displayed below.",
+    try {
+      const requestBody = {
+        job_title: filters.jobTitle,
+        industry: filters.industry,
+        location: filters.location,
+        company: filters.company,
+        seniority_level: filters.seniorityLevel,
+        department: filters.department,
+        company_size: filters.companySize,
+        current_company_only: filters.currentCompanyOnly,
+        years_of_experience: filters.yearsOfExperience[0],
+        number_of_leads: filters.numberOfLeads[0],
+      };
+
+      console.log("Sending API request to:", "http://localhost:8000/api/scrape-leads");
+      console.log("Request body:", requestBody);
+
+      const response = await fetch("http://localhost:8000/api/scrape-leads", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
       });
-    }, 2000);
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("API response:", data);
+
+      if (data && Array.isArray(data)) {
+        onResults(data);
+        toast({
+          title: "Search Complete",
+          description: `Found ${data.length} matching leads.`,
+        });
+      } else {
+        onResults([]);
+        toast({
+          title: "No Results",
+          description: "No leads found matching your criteria.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      onResults([]);
+      toast({
+        title: "Search Failed",
+        description: "Unable to connect to the lead search API. Please check your connection and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+      onSearchComplete();
+    }
   };
 
   const industries = [
