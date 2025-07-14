@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -141,7 +140,7 @@ const extractCompanyInfo = (lead: Lead) => {
     }
   }
   
-  if (typeof companyData === 'object' && companyData !== null) {
+  if (companyData && typeof companyData === 'object') {
     return {
       name: safeToString(companyData.name || companyData.companyName || companyData.company_name || ''),
       website: safeToString(companyData.website || companyData.websiteUrl || companyData.url || ''),
@@ -243,6 +242,9 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+
+  console.log("LeadTable received leads:", leads);
+  console.log("LeadTable isLoading:", isLoading);
 
   const filteredLeads = leads.filter(lead => {
     if (!searchTerm) return true;
