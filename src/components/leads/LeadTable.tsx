@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -142,11 +143,11 @@ const extractCompanyInfo = (lead: Lead) => {
   
   if (companyData && typeof companyData === 'object') {
     return {
-      name: safeToString(companyData.name || companyData.companyName || companyData.company_name || ''),
-      website: safeToString(companyData.website || companyData.websiteUrl || companyData.url || ''),
-      industry: safeToString(companyData.industry || companyData.industryName || ''),
-      location: safeToString(companyData.location || companyData.address || companyData.city || ''),
-      phone: safeToString(companyData.phone || companyData.phoneNumber || '')
+      name: safeToString((companyData as any)?.name || (companyData as any)?.companyName || (companyData as any)?.company_name || ''),
+      website: safeToString((companyData as any)?.website || (companyData as any)?.websiteUrl || (companyData as any)?.url || ''),
+      industry: safeToString((companyData as any)?.industry || (companyData as any)?.industryName || ''),
+      location: safeToString((companyData as any)?.location || (companyData as any)?.address || (companyData as any)?.city || ''),
+      phone: safeToString((companyData as any)?.phone || (companyData as any)?.phoneNumber || '')
     };
   }
   
