@@ -42,7 +42,7 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
             <img 
               src="/lovable-uploads/7c5cb75c-bf84-4a68-9e78-2fd787db361e.png" 
               alt="PSN Logo" 
-              className="w-12 h-12 rounded-full"
+              className="w-20 h-20 rounded-full"
             />
           </div>
         </div>
