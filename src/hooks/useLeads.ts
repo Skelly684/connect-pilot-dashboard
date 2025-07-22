@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface Lead {
   id?: string;
@@ -29,6 +30,7 @@ export const useLeads = () => {
   const [leads, setLeads] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
 
   const fetchLeads = async () => {
     setIsLoading(true);
@@ -54,6 +56,12 @@ export const useLeads = () => {
 
   const updateLeadStatus = async (leadIds: string[], newStatus: string) => {
     try {
+      // Get current lead data to track status changes
+      const { data: currentLeads } = await supabase
+        .from('leads')
+        .select('id, first_name, last_name, name, status')
+        .in('id', leadIds);
+
       const updates: any = { status: newStatus };
       
       if (newStatus === 'accepted') {
@@ -71,6 +79,14 @@ export const useLeads = () => {
         .in('id', leadIds);
 
       if (error) throw error;
+
+      // Create notifications for status changes (except "new" or "contacted")
+      if (currentLeads && newStatus !== 'new' && newStatus !== 'contacted') {
+        currentLeads.forEach(lead => {
+          const leadName = lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown Lead';
+          addNotification(leadName, lead.id, lead.status || 'unknown', newStatus);
+        });
+      }
 
       toast({
         title: "Success",
