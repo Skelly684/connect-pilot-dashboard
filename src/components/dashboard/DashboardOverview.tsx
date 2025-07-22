@@ -1,48 +1,61 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Send, CheckCircle, TrendingUp } from "lucide-react";
-
-const stats = [
-  {
-    title: "Total Leads",
-    value: "2,847",
-    description: "+12% from last month",
-    icon: Users,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-  },
-  {
-    title: "Outreach Sent",
-    value: "1,234",
-    description: "+8% from last month",
-    icon: Send,
-    color: "text-green-600",
-    bg: "bg-green-50",
-  },
-  {
-    title: "Responses",
-    value: "156",
-    description: "12.6% response rate",
-    icon: CheckCircle,
-    color: "text-purple-600",
-    bg: "bg-purple-50",
-  },
-  {
-    title: "Conversion Rate",
-    value: "4.2%",
-    description: "+2.1% from last month",
-    icon: TrendingUp,
-    color: "text-orange-600",
-    bg: "bg-orange-50",
-  },
-];
+import { useLeads } from "@/hooks/useLeads";
+import { useMemo } from "react";
 
 export const DashboardOverview = () => {
+  const { leads, isLoading } = useLeads();
+  
+  const stats = useMemo(() => {
+    const totalLeads = leads.length;
+    const acceptedLeads = leads.filter(lead => lead.status === 'accepted').length;
+    const contactedLeads = leads.filter(lead => lead.status === 'contacted' || lead.sent_for_contact_at).length;
+    const newLeads = leads.filter(lead => lead.status === 'new').length;
+    
+    const responseRate = contactedLeads > 0 ? ((acceptedLeads / contactedLeads) * 100).toFixed(1) : '0';
+    
+    return [
+      {
+        title: "Total Leads",
+        value: totalLeads.toLocaleString(),
+        description: `${newLeads} new leads`,
+        icon: Users,
+        color: "text-blue-600",
+        bg: "bg-blue-50",
+      },
+      {
+        title: "Accepted Leads",
+        value: acceptedLeads.toLocaleString(),
+        description: `${Math.round((acceptedLeads / Math.max(totalLeads, 1)) * 100)}% acceptance rate`,
+        icon: CheckCircle,
+        color: "text-green-600",
+        bg: "bg-green-50",
+      },
+      {
+        title: "Contacted",
+        value: contactedLeads.toLocaleString(),
+        description: `${Math.round((contactedLeads / Math.max(totalLeads, 1)) * 100)}% contacted`,
+        icon: Send,
+        color: "text-purple-600",
+        bg: "bg-purple-50",
+      },
+      {
+        title: "Response Rate",
+        value: `${responseRate}%`,
+        description: `${contactedLeads} leads contacted`,
+        icon: TrendingUp,
+        color: "text-orange-600",
+        bg: "bg-orange-50",
+      },
+    ];
+  }, [leads]);
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
         <p className="text-gray-600">Monitor your lead generation and outreach performance</p>
+        {isLoading && <p className="text-sm text-gray-500">Loading data...</p>}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -72,18 +85,15 @@ export const DashboardOverview = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { action: "New leads generated", count: "23 leads", time: "2 hours ago" },
-                { action: "Email campaign sent", count: "156 emails", time: "4 hours ago" },
-                { action: "CRM sync completed", count: "89 contacts", time: "6 hours ago" },
-                { action: "Response received", count: "3 responses", time: "1 day ago" },
-              ].map((activity, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              {leads.slice(0, 4).map((lead, index) => (
+                <div key={lead.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div>
-                    <p className="font-medium text-gray-900">{activity.action}</p>
-                    <p className="text-sm text-gray-600">{activity.count}</p>
+                    <p className="font-medium text-gray-900">{lead.first_name} {lead.last_name}</p>
+                    <p className="text-sm text-gray-600">{lead.company_name} - {lead.status}</p>
                   </div>
-                  <span className="text-xs text-gray-500">{activity.time}</span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(lead.created_at).toLocaleDateString()}
+                  </span>
                 </div>
               ))}
             </div>

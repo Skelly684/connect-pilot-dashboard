@@ -24,7 +24,6 @@ const menuItems = [
   { id: "review-leads", title: "Review New Leads", icon: CheckSquare },
   { id: "all-leads", title: "All Leads", icon: Database },
   { id: "outreach", title: "Outreach Center", icon: Send },
-  { id: "analytics", title: "Analytics", icon: BarChart3 },
   { id: "integrations", title: "Integrations", icon: Zap },
   { id: "settings", title: "Settings", icon: Settings },
 ];
@@ -39,9 +38,16 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
       
       <SidebarContent className="bg-white border-r">
         <div className="p-4">
-          <h2 className={`font-bold text-xl text-blue-600 ${isCollapsed ? "hidden" : "block"}`}>
-            LeadGen Pro
-          </h2>
+          <div className="flex items-center gap-3">
+            <img 
+              src="/lovable-uploads/7c5cb75c-bf84-4a68-9e78-2fd787db361e.png" 
+              alt="PSN Logo" 
+              className="w-8 h-8 rounded-full"
+            />
+            <h2 className={`font-bold text-xl text-blue-600 ${isCollapsed ? "hidden" : "block"}`}>
+              PSN
+            </h2>
+          </div>
         </div>
         
         <SidebarGroup>
