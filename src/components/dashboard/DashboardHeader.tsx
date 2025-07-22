@@ -32,14 +32,11 @@ export const DashboardHeader = () => {
   return (
     <header className="h-16 bg-white border-b flex items-center justify-between px-6">
       <div className="flex items-center space-x-4">
-        <div className="flex items-center gap-3">
-          <img 
-            src="/lovable-uploads/7c5cb75c-bf84-4a68-9e78-2fd787db361e.png" 
-            alt="PSN Logo" 
-            className="w-6 h-6 rounded-full"
-          />
-          <h1 className="text-xl font-semibold text-gray-800">PSN Dashboard</h1>
-        </div>
+        <img 
+          src="/lovable-uploads/7c5cb75c-bf84-4a68-9e78-2fd787db361e.png" 
+          alt="PSN Logo" 
+          className="w-9 h-9 rounded-full"
+        />
       </div>
       
       <div className="flex items-center space-x-4">
