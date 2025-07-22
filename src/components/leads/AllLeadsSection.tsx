@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Phone, Search, Filter, Download, Trash2, Archive } from "lucide-react";
+import { Mail, Phone, Eye, MoreHorizontal, Search, Filter, Download, Trash2, Archive, FileSpreadsheet, ExternalLink, Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -14,6 +15,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,19 +44,37 @@ import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 
 interface Lead {
-  id: string;
+  id?: number | string;
   name?: string;
+  firstName?: string;
   first_name?: string;
+  lastName?: string;
   last_name?: string;
+  jobTitle?: string;
   job_title?: string;
+  headline?: string;
   company?: string;
+  companyName?: string;
   company_name?: string;
   email?: string;
+  emailAddress?: string;
   email_address?: string;
   phone?: string;
   location?: string;
-  status: string;
-  created_at: string;
+  rawAddress?: string;
+  raw_address?: string;
+  stateName?: string;
+  state_name?: string;
+  cityName?: string;
+  city_name?: string;
+  countryName?: string;
+  country_name?: string;
+  status?: string;
+  lastContact?: string;
+  last_contact?: string;
+  contactPhoneNumbers?: Array<{ sanitizedNumber?: string; rawNumber?: string }>;
+  contact_phone_numbers?: string;
+  created_at?: string;
   reviewed_at?: string;
   accepted_at?: string;
   sent_for_contact_at?: string;
@@ -56,7 +89,7 @@ interface AllLeadsSectionProps {
   onRefresh: () => void;
 }
 
-const ITEMS_PER_PAGE = 25;
+const ITEMS_PER_PAGE = 50;
 
 const getStatusColor = (status: string) => {
   switch (status?.toLowerCase()) {
@@ -83,11 +116,139 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const formatName = (lead: Lead): string => {
-  if (lead.name) return lead.name;
-  const firstName = lead.first_name || '';
-  const lastName = lead.last_name || '';
-  return `${firstName} ${lastName}`.trim() || 'N/A';
+const safeToString = (value: any): string => {
+  if (value === null || value === undefined) return '';
+  return String(value);
+};
+
+const extractFullName = (lead: Lead): string => {
+  if (lead.name) return safeToString(lead.name);
+  const firstName = safeToString(lead.firstName || lead.first_name);
+  const lastName = safeToString(lead.lastName || lead.last_name);
+  if (firstName || lastName) {
+    return `${firstName} ${lastName}`.trim();
+  }
+  return 'N/A';
+};
+
+const extractJobTitle = (lead: Lead): string => {
+  return safeToString(lead.jobTitle || lead.job_title || lead.headline);
+};
+
+const extractCompanyInfo = (lead: Lead) => {
+  // Handle both string and object company data
+  let companyData = lead.company || lead.companyName || lead.company_name;
+  
+  if (typeof companyData === 'string') {
+    try {
+      // Try to parse if it's a JSON string
+      companyData = JSON.parse(companyData);
+    } catch (e) {
+      // If parsing fails, treat as simple string
+      return {
+        name: companyData,
+        website: '',
+        industry: '',
+        location: '',
+        phone: ''
+      };
+    }
+  }
+  
+  if (companyData && typeof companyData === 'object') {
+    return {
+      name: safeToString((companyData as any)?.name || (companyData as any)?.companyName || (companyData as any)?.company_name || ''),
+      website: safeToString((companyData as any)?.website || (companyData as any)?.websiteUrl || (companyData as any)?.url || ''),
+      industry: safeToString((companyData as any)?.industry || (companyData as any)?.industryName || ''),
+      location: safeToString((companyData as any)?.location || (companyData as any)?.address || (companyData as any)?.city || ''),
+      phone: safeToString((companyData as any)?.phone || (companyData as any)?.phoneNumber || '')
+    };
+  }
+  
+  return {
+    name: safeToString(companyData || ''),
+    website: '',
+    industry: '',
+    location: '',
+    phone: ''
+  };
+};
+
+const extractEmail = (lead: Lead): string => {
+  return safeToString(lead.email || lead.emailAddress || lead.email_address);
+};
+
+const extractPhone = (lead: Lead): string => {
+  if (lead.phone) return safeToString(lead.phone);
+  
+  // Handle contact_phone_numbers from database (stored as JSON string)
+  if (lead.contact_phone_numbers) {
+    try {
+      const phoneNumbers = typeof lead.contact_phone_numbers === 'string' 
+        ? JSON.parse(lead.contact_phone_numbers) 
+        : lead.contact_phone_numbers;
+      if (Array.isArray(phoneNumbers) && phoneNumbers.length > 0) {
+        const phoneObj = phoneNumbers[0];
+        return safeToString(phoneObj.sanitizedNumber || phoneObj.rawNumber);
+      }
+    } catch (e) {
+      console.warn('Error parsing contact_phone_numbers:', e);
+    }
+  }
+  
+  // Handle contactPhoneNumbers from API response
+  if (lead.contactPhoneNumbers && lead.contactPhoneNumbers.length > 0) {
+    const phoneObj = lead.contactPhoneNumbers[0];
+    return safeToString(phoneObj.sanitizedNumber || phoneObj.rawNumber);
+  }
+  return '';
+};
+
+const extractLocation = (lead: Lead): string => {
+  if (lead.location) return safeToString(lead.location);
+  if (lead.rawAddress || lead.raw_address) return safeToString(lead.rawAddress || lead.raw_address);
+  
+  const parts = [
+    safeToString(lead.cityName || lead.city_name),
+    safeToString(lead.stateName || lead.state_name),
+    safeToString(lead.countryName || lead.country_name)
+  ].filter(part => part && part !== '');
+  
+  return parts.join(', ') || '';
+};
+
+const CompanyCell = ({ company }: { company: any }) => {
+  const companyInfo = extractCompanyInfo({ company });
+  
+  return (
+    <div className="space-y-1">
+      <div className="font-medium text-gray-900">
+        {companyInfo.name || '—'}
+      </div>
+      {companyInfo.website && (
+        <div className="flex items-center space-x-1">
+          <a 
+            href={companyInfo.website.startsWith('http') ? companyInfo.website : `https://${companyInfo.website}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
+          >
+            <span>{companyInfo.website}</span>
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      )}
+      {companyInfo.industry && (
+        <div className="text-sm text-gray-600">{companyInfo.industry}</div>
+      )}
+      {companyInfo.location && (
+        <div className="text-sm text-gray-500">{companyInfo.location}</div>
+      )}
+      {companyInfo.phone && (
+        <div className="text-sm text-gray-500">{companyInfo.phone}</div>
+      )}
+    </div>
+  );
 };
 
 export const AllLeadsSection = ({ 
@@ -106,11 +267,20 @@ export const AllLeadsSection = ({
 
   // Filter leads based on search and status
   const filteredLeads = leads.filter(lead => {
+    if (!searchTerm && statusFilter === "all") return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    const fullName = extractFullName(lead).toLowerCase();
+    const jobTitle = extractJobTitle(lead).toLowerCase();
+    const companyInfo = extractCompanyInfo(lead);
+    const company = companyInfo.name.toLowerCase();
+    const email = extractEmail(lead).toLowerCase();
+    
     const matchesSearch = !searchTerm || 
-      formatName(lead).toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (lead.job_title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (lead.company || lead.company_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (lead.email || lead.email_address || '').toLowerCase().includes(searchTerm.toLowerCase());
+      fullName.includes(searchLower) ||
+      jobTitle.includes(searchLower) ||
+      company.includes(searchLower) ||
+      email.includes(searchLower);
     
     const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
     
@@ -123,7 +293,8 @@ export const AllLeadsSection = ({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedLeads(new Set(paginatedLeads.map(lead => lead.id)));
+      const allIds = new Set(paginatedLeads.map(lead => String(lead.id || `lead-${filteredLeads.indexOf(lead)}`)));
+      setSelectedLeads(allIds);
     } else {
       setSelectedLeads(new Set());
     }
@@ -163,38 +334,106 @@ export const AllLeadsSection = ({
     setIsUpdating(false);
   };
 
-  const exportToExcel = () => {
-    const dataToExport = selectedLeads.size > 0 
-      ? filteredLeads.filter(lead => selectedLeads.has(lead.id))
+  const exportToExcel = (selectedOnly = false) => {
+    const dataToExport = selectedOnly 
+      ? filteredLeads.filter(lead => selectedLeads.has(String(lead.id || `lead-${filteredLeads.indexOf(lead)}`)))
       : filteredLeads;
 
     if (dataToExport.length === 0) {
       toast({
         title: "No Data",
-        description: "No leads to export",
+        description: selectedOnly ? "No leads selected for export" : "No leads to export",
         variant: "destructive",
       });
       return;
     }
 
-    const exportData = dataToExport.map(lead => ({
-      Name: formatName(lead),
-      'Job Title': lead.job_title || '',
-      Company: lead.company || lead.company_name || '',
-      Email: lead.email || lead.email_address || '',
-      Phone: lead.phone || '',
-      Location: lead.location || '',
-      Status: lead.status || '',
-      'Created At': new Date(lead.created_at).toLocaleDateString(),
-      Notes: lead.notes || ''
-    }));
+    const exportData = dataToExport.map(lead => {
+      const companyInfo = extractCompanyInfo(lead);
+      return {
+        Name: extractFullName(lead),
+        'Job Title': extractJobTitle(lead),
+        'Company Name': companyInfo.name,
+        'Company Website': companyInfo.website,
+        'Company Industry': companyInfo.industry,
+        'Company Location': companyInfo.location,
+        'Company Phone': companyInfo.phone,
+        Email: extractEmail(lead),
+        Phone: extractPhone(lead),
+        Location: extractLocation(lead),
+        Status: safeToString(lead.status || 'new'),
+        'Created At': lead.created_at ? new Date(lead.created_at).toLocaleDateString() : '',
+        Notes: lead.notes || ''
+      };
+    });
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "All Leads");
     
-    const fileName = `all-leads-${new Date().toISOString().split('T')[0]}.xlsx`;
+    const fileName = selectedOnly 
+      ? `selected-leads-${new Date().toISOString().split('T')[0]}.xlsx`
+      : `all-leads-${new Date().toISOString().split('T')[0]}.xlsx`;
+    
     XLSX.writeFile(wb, fileName);
+    
+    toast({
+      title: "Export Complete",
+      description: `Exported ${dataToExport.length} leads to ${fileName}`,
+    });
+  };
+
+  const exportToCSV = (selectedOnly = false) => {
+    const dataToExport = selectedOnly 
+      ? filteredLeads.filter(lead => selectedLeads.has(String(lead.id || `lead-${filteredLeads.indexOf(lead)}`)))
+      : filteredLeads;
+
+    if (dataToExport.length === 0) {
+      toast({
+        title: "No Data",
+        description: selectedOnly ? "No leads selected for export" : "No leads to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const headers = ['Name', 'Job Title', 'Company Name', 'Company Website', 'Company Industry', 'Company Location', 'Company Phone', 'Email', 'Phone', 'Location', 'Status', 'Created At', 'Notes'];
+    const csvContent = [
+      headers.join(','),
+      ...dataToExport.map(lead => {
+        const companyInfo = extractCompanyInfo(lead);
+        return [
+          `"${extractFullName(lead).replace(/"/g, '""')}"`,
+          `"${extractJobTitle(lead).replace(/"/g, '""')}"`,
+          `"${companyInfo.name.replace(/"/g, '""')}"`,
+          `"${companyInfo.website.replace(/"/g, '""')}"`,
+          `"${companyInfo.industry.replace(/"/g, '""')}"`,
+          `"${companyInfo.location.replace(/"/g, '""')}"`,
+          `"${companyInfo.phone.replace(/"/g, '""')}"`,
+          `"${extractEmail(lead).replace(/"/g, '""')}"`,
+          `"${extractPhone(lead).replace(/"/g, '""')}"`,
+          `"${extractLocation(lead).replace(/"/g, '""')}"`,
+          `"${safeToString(lead.status || 'new').replace(/"/g, '""')}"`,
+          `"${lead.created_at ? new Date(lead.created_at).toLocaleDateString() : ''}"`,
+          `"${(lead.notes || '').replace(/"/g, '""')}"`
+        ].join(',');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    
+    const fileName = selectedOnly 
+      ? `selected-leads-${new Date().toISOString().split('T')[0]}.csv`
+      : `all-leads-${new Date().toISOString().split('T')[0]}.csv`;
+    
+    link.setAttribute('download', fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
     toast({
       title: "Export Complete",
@@ -249,173 +488,250 @@ export const AllLeadsSection = ({
         </div>
         
         {/* Action Buttons */}
-        {selectedLeads.size > 0 && (
-          <div className="flex items-center space-x-2 pt-4 border-t">
-            <Button 
-              onClick={() => handleStatusUpdate('contacted')} 
-              disabled={isUpdating}
-              size="sm"
-            >
-              Mark as Contacted
-            </Button>
-            <Button 
-              onClick={() => handleStatusUpdate('qualified')} 
-              disabled={isUpdating}
-              size="sm"
-              variant="outline"
-            >
-              Mark as Qualified
-            </Button>
-            <Button 
-              onClick={() => handleStatusUpdate('not_interested')} 
-              disabled={isUpdating}
-              size="sm"
-              variant="outline"
-            >
-              Mark as Not Interested
-            </Button>
-            <Button 
-              onClick={exportToExcel} 
-              size="sm"
-              variant="outline"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export Selected
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" disabled={isUpdating}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete ({selectedLeads.size})
+        <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex items-center space-x-2">
+            {selectedLeads.size > 0 && (
+              <>
+                <Button 
+                  onClick={() => handleStatusUpdate('contacted')} 
+                  disabled={isUpdating}
+                  size="sm"
+                >
+                  Mark as Contacted ({selectedLeads.size})
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Selected Leads</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete {selectedLeads.size} selected lead(s)? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                <Button 
+                  onClick={() => handleStatusUpdate('qualified')} 
+                  disabled={isUpdating}
+                  size="sm"
+                  variant="outline"
+                >
+                  Mark as Qualified
+                </Button>
+                <Button 
+                  onClick={() => handleStatusUpdate('not_interested')} 
+                  disabled={isUpdating}
+                  size="sm"
+                  variant="outline"
+                >
+                  Mark as Not Interested
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" disabled={isUpdating}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Selected ({selectedLeads.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Selected Leads</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete {selectedLeads.size} selected lead(s)? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
           </div>
-        )}
+          
+          <div className="flex items-center space-x-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-white">
+                <DropdownMenuItem onClick={() => exportToCSV(false)}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export All as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportToExcel(false)}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export All as Excel
+                </DropdownMenuItem>
+                {selectedLeads.size > 0 && (
+                  <>
+                    <DropdownMenuItem onClick={() => exportToCSV(true)}>
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Export Selected as CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => exportToExcel(true)}>
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Export Selected as Excel
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
       </CardHeader>
       
       <CardContent>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p>Loading leads...</p>
-            </div>
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-2 text-lg">Loading leads...</span>
           </div>
-        ) : paginatedLeads.length === 0 ? (
+        ) : filteredLeads.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">No leads found matching your criteria.</p>
+            <p className="text-gray-500 text-lg">No leads found</p>
+            <p className="text-gray-400 text-sm mt-2">
+              Try adjusting your search criteria or search for new leads
+            </p>
           </div>
         ) : (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={selectedLeads.size === paginatedLeads.length && paginatedLeads.length > 0}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Job Title</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date Added</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedLeads.map((lead) => (
-                  <TableRow key={lead.id}>
-                    <TableCell>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">
                       <Checkbox
-                        checked={selectedLeads.has(lead.id)}
-                        onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
+                        checked={selectedLeads.size === paginatedLeads.length && paginatedLeads.length > 0}
+                        onCheckedChange={handleSelectAll}
                       />
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {formatName(lead)}
-                    </TableCell>
-                    <TableCell>{lead.job_title || '—'}</TableCell>
-                    <TableCell>{lead.company || lead.company_name || '—'}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {(lead.email || lead.email_address) && (
-                          <div className="flex items-center space-x-1 text-sm">
-                            <Mail className="h-3 w-3" />
-                            <span>{lead.email || lead.email_address}</span>
-                          </div>
-                        )}
-                        {lead.phone && (
-                          <div className="flex items-center space-x-1 text-sm">
-                            <Phone className="h-3 w-3" />
-                            <span>{lead.phone}</span>
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(lead.status)}>
-                        {lead.status.replace('_', ' ').toUpperCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-500">
-                      {new Date(lead.created_at).toLocaleDateString()}
-                    </TableCell>
+                    </TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Job Title</TableHead>
+                    <TableHead className="w-64">Company</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedLeads.map((lead, index) => {
+                    const leadId = String(lead.id || `lead-${startIndex + index}`);
+                    const fullName = extractFullName(lead);
+                    const jobTitle = extractJobTitle(lead);
+                    const email = extractEmail(lead);
+                    const phone = extractPhone(lead);
+                    const location = extractLocation(lead);
+                    const status = safeToString(lead.status || 'new');
+
+                    return (
+                      <TableRow key={leadId} className="hover:bg-gray-50">
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedLeads.has(leadId)}
+                            onCheckedChange={(checked) => handleSelectLead(leadId, checked as boolean)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={`/avatars/${leadId}.png`} />
+                              <AvatarFallback>
+                                {fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'N'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium text-gray-900">{fullName}</div>
+                              <div className="text-sm text-gray-500">{email || 'No email'}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {jobTitle || 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(status)}>
+                            {status.replace('_', ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">
+                          {phone || 'N/A'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <Button variant="ghost" size="sm" disabled={!email}>
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" disabled={!phone}>
+                              <Phone className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-white">
+                                <DropdownMenuItem>Add to Campaign</DropdownMenuItem>
+                                <DropdownMenuItem>Update Status</DropdownMenuItem>
+                                <DropdownMenuItem>Add Note</DropdownMenuItem>
+                                <DropdownMenuItem>Export Contact</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
             
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center space-x-2 mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-gray-500">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </Button>
+              <div className="mt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                      if (pageNum <= totalPages) {
+                        return (
+                          <PaginationItem key={pageNum}>
+                            <PaginationLink
+                              onClick={() => setCurrentPage(pageNum)}
+                              isActive={currentPage === pageNum}
+                              className="cursor-pointer"
+                            >
+                              {pageNum}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      }
+                      return null;
+                    })}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               </div>
             )}
           </>
         )}
-        
-        {/* Export All Button */}
-        <div className="flex justify-end mt-4 pt-4 border-t">
-          <Button onClick={exportToExcel} variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export All Leads
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );
