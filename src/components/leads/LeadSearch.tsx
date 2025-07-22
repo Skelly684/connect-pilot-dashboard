@@ -27,7 +27,7 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
     companySize: "",
     currentCompanyOnly: false,
     yearsOfExperience: [0],
-    numberOfLeads: [100],
+    numberOfLeads: [10],
   });
   const [isSearching, setIsSearching] = useState(false);
   const [lastSearchResults, setLastSearchResults] = useState<any[]>([]);
@@ -353,14 +353,14 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
               <Slider
                 value={filters.numberOfLeads}
                 onValueChange={(value) => setFilters({...filters, numberOfLeads: value})}
-                max={5000}
-                min={100}
+                max={10000}
+                min={10}
                 step={50}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-gray-500">
-                <span>100 leads</span>
-                <span>5000 leads</span>
+                <span>10 leads</span>
+                <span>10000 leads</span>
               </div>
             </div>
           </div>
@@ -390,7 +390,7 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
               <span className="text-sm text-gray-600">
                 Active filters: {Object.entries(filters).filter(([key, value]) => {
                   if (key === 'yearsOfExperience') return value[0] > 0;
-                  if (key === 'numberOfLeads') return value[0] > 100;
+                  if (key === 'numberOfLeads') return value[0] > 10;
                   if (key === 'currentCompanyOnly') return value;
                   return value && value !== '';
                 }).length}
