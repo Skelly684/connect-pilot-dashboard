@@ -5,6 +5,8 @@ import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { LeadSearch } from "@/components/leads/LeadSearch";
 import { LeadTable } from "@/components/leads/LeadTable";
+import { AllLeadsSection } from "@/components/leads/AllLeadsSection";
+import { ReviewNewLeadsSection } from "@/components/leads/ReviewNewLeadsSection";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { CRMIntegration } from "@/components/integrations/CRMIntegration";
 import { OutreachCenter } from "@/components/outreach/OutreachCenter";
@@ -20,7 +22,10 @@ const Dashboard = () => {
     isLoading: isLoadingLeads, 
     saveLeads, 
     deleteLeads, 
-    deleteAllLeads 
+    deleteAllLeads,
+    updateLeadStatus,
+    sendAcceptedLeadsToBackend,
+    fetchLeads
   } = useLeads();
 
   const handleSearchResults = (results: any[]) => {
@@ -35,6 +40,18 @@ const Dashboard = () => {
 
   const handleSearchComplete = () => {
     setIsSearching(false);
+  };
+
+  const handleAcceptLeads = async (leadIds: string[]) => {
+    return await updateLeadStatus(leadIds, 'accepted');
+  };
+
+  const handleRejectLeads = async (leadIds: string[]) => {
+    return await updateLeadStatus(leadIds, 'rejected');
+  };
+
+  const handleSendAcceptedLeads = async (acceptedLeads: any[]) => {
+    return await sendAcceptedLeadsToBackend(acceptedLeads);
   };
 
   const renderContent = () => {
@@ -57,6 +74,27 @@ const Dashboard = () => {
               onDeleteAllLeads={deleteAllLeads}
             />
           </div>
+        );
+      case "all-leads":
+        return (
+          <AllLeadsSection 
+            leads={leads}
+            isLoading={isLoadingLeads}
+            onUpdateLeadStatus={updateLeadStatus}
+            onDeleteLeads={deleteLeads}
+            onRefresh={fetchLeads}
+          />
+        );
+      case "review-leads":
+        return (
+          <ReviewNewLeadsSection 
+            leads={leads}
+            isLoading={isLoadingLeads}
+            onAcceptLeads={handleAcceptLeads}
+            onRejectLeads={handleRejectLeads}
+            onSendAcceptedLeads={handleSendAcceptedLeads}
+            onRefresh={fetchLeads}
+          />
         );
       case "outreach":
         return <OutreachCenter />;

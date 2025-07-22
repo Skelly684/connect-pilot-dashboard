@@ -52,6 +52,100 @@ export const useLeads = () => {
     }
   };
 
+  const updateLeadStatus = async (leadIds: string[], newStatus: string) => {
+    try {
+      const updates: any = { status: newStatus };
+      
+      if (newStatus === 'accepted') {
+        updates.accepted_at = new Date().toISOString();
+        updates.reviewed_at = new Date().toISOString();
+      } else if (newStatus === 'rejected') {
+        updates.reviewed_at = new Date().toISOString();
+      } else if (newStatus === 'sent_for_contact') {
+        updates.sent_for_contact_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('leads')
+        .update(updates)
+        .in('id', leadIds);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Updated ${leadIds.length} lead(s) status to ${newStatus.replace('_', ' ')}`,
+      });
+
+      await fetchLeads(); // Refresh the list
+      return true;
+    } catch (error) {
+      console.error('Error updating lead status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update lead status",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const sendAcceptedLeadsToBackend = async (acceptedLeads: any[]) => {
+    try {
+      // Prepare the leads data for the backend
+      const leadsData = acceptedLeads.map(lead => ({
+        id: lead.id,
+        name: lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim(),
+        firstName: lead.first_name,
+        lastName: lead.last_name,
+        jobTitle: lead.job_title,
+        company: lead.company || lead.company_name,
+        email: lead.email || lead.email_address,
+        phone: lead.phone,
+        location: lead.location,
+        headline: lead.headline,
+        status: lead.status
+      }));
+
+      console.log("Sending accepted leads to backend:", leadsData);
+
+      const response = await fetch("http://localhost:8000/api/accepted-leads", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(leadsData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log("Backend response:", result);
+
+      // Update the leads status to 'sent_for_contact'
+      const leadIds = acceptedLeads.map(lead => lead.id);
+      await updateLeadStatus(leadIds, 'sent_for_contact');
+
+      toast({
+        title: "Success",
+        description: `Sent ${acceptedLeads.length} leads to backend for outreach`,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error sending leads to backend:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send leads to backend",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   const saveLeads = async (newLeads: Lead[]) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -81,7 +175,7 @@ export const useLeads = () => {
         state_name: lead.stateName,
         city_name: lead.cityName,
         country_name: lead.countryName,
-        status: lead.status || 'new',
+        status: 'pending_review', // Set new leads to pending_review instead of new
         contact_phone_numbers: lead.contactPhoneNumbers ? JSON.stringify(lead.contactPhoneNumbers) : null,
       }));
 
@@ -93,7 +187,7 @@ export const useLeads = () => {
 
       toast({
         title: "Success",
-        description: `Saved ${newLeads.length} leads to database`,
+        description: `Saved ${newLeads.length} leads to database for review`,
       });
 
       await fetchLeads(); // Refresh the list
@@ -177,5 +271,7 @@ export const useLeads = () => {
     saveLeads,
     deleteLeads,
     deleteAllLeads,
+    updateLeadStatus,
+    sendAcceptedLeadsToBackend,
   };
 };

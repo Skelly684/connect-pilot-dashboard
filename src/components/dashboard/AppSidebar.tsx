@@ -1,5 +1,5 @@
 
-import { Home, Users, Send, Settings, BarChart3, Zap } from "lucide-react";
+import { Home, Users, Send, Settings, BarChart3, Zap, CheckSquare, Eye, Database } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +21,8 @@ interface AppSidebarProps {
 const menuItems = [
   { id: "overview", title: "Overview", icon: Home },
   { id: "leads", title: "Lead Generation", icon: Users },
+  { id: "review-leads", title: "Review New Leads", icon: CheckSquare },
+  { id: "all-leads", title: "All Leads", icon: Database },
   { id: "outreach", title: "Outreach Center", icon: Send },
   { id: "analytics", title: "Analytics", icon: BarChart3 },
   { id: "integrations", title: "Integrations", icon: Zap },

@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       leads: {
         Row: {
+          accepted_at: string | null
           city_name: string | null
           company: string | null
           company_name: string | null
@@ -31,15 +32,19 @@ export type Database = {
           last_name: string | null
           location: string | null
           name: string | null
+          notes: string | null
           phone: string | null
           raw_address: string | null
+          reviewed_at: string | null
           scraped_at: string
+          sent_for_contact_at: string | null
           state_name: string | null
           status: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          accepted_at?: string | null
           city_name?: string | null
           company?: string | null
           company_name?: string | null
@@ -55,15 +60,19 @@ export type Database = {
           last_name?: string | null
           location?: string | null
           name?: string | null
+          notes?: string | null
           phone?: string | null
           raw_address?: string | null
+          reviewed_at?: string | null
           scraped_at?: string
+          sent_for_contact_at?: string | null
           state_name?: string | null
           status?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          accepted_at?: string | null
           city_name?: string | null
           company?: string | null
           company_name?: string | null
@@ -79,9 +88,12 @@ export type Database = {
           last_name?: string | null
           location?: string | null
           name?: string | null
+          notes?: string | null
           phone?: string | null
           raw_address?: string | null
+          reviewed_at?: string | null
           scraped_at?: string
+          sent_for_contact_at?: string | null
           state_name?: string | null
           status?: string | null
           updated_at?: string
