@@ -56,10 +56,10 @@ export const useLeads = () => {
 
   const updateLeadStatus = async (leadIds: string[], newStatus: string) => {
     try {
-      // Get current lead data to track status changes
+      // Get current lead data to track status changes and for backend API
       const { data: currentLeads } = await supabase
         .from('leads')
-        .select('id, first_name, last_name, name, status')
+        .select('*')
         .in('id', leadIds);
 
       const updates: any = { status: newStatus };
@@ -86,6 +86,32 @@ export const useLeads = () => {
           const leadName = lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown Lead';
           addNotification(leadName, lead.id, lead.status || 'unknown', newStatus);
         });
+      }
+
+      // Automatically send accepted leads to backend
+      if (newStatus === 'accepted' && currentLeads) {
+        try {
+          const response = await fetch("http://localhost:8000/api/accepted-leads", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(currentLeads),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Backend API request failed with status ${response.status}`);
+          }
+
+          console.log("Successfully sent accepted leads to backend");
+        } catch (backendError) {
+          console.error('Error sending leads to backend:', backendError);
+          toast({
+            title: "Warning",
+            description: "Leads accepted but failed to send to backend for processing",
+            variant: "destructive",
+          });
+        }
       }
 
       toast({
