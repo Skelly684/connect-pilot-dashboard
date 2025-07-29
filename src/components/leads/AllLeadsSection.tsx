@@ -86,6 +86,7 @@ interface AllLeadsSectionProps {
   isLoading: boolean;
   onUpdateLeadStatus: (leadIds: string[], newStatus: string) => Promise<boolean>;
   onDeleteLeads: (leadIds: string[]) => Promise<boolean>;
+  onDeleteAllLeads: () => Promise<boolean>;
   onRefresh: () => void;
 }
 
@@ -256,6 +257,7 @@ export const AllLeadsSection = ({
   isLoading, 
   onUpdateLeadStatus, 
   onDeleteLeads, 
+  onDeleteAllLeads,
   onRefresh 
 }: AllLeadsSectionProps) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -327,6 +329,16 @@ export const AllLeadsSection = ({
     
     setIsUpdating(true);
     const success = await onDeleteLeads(Array.from(selectedLeads));
+    if (success) {
+      setSelectedLeads(new Set());
+      onRefresh();
+    }
+    setIsUpdating(false);
+  };
+
+  const handleDeleteAll = async () => {
+    setIsUpdating(true);
+    const success = await onDeleteAllLeads();
     if (success) {
       setSelectedLeads(new Set());
       onRefresh();
@@ -572,6 +584,31 @@ export const AllLeadsSection = ({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+            
+            {leads.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={isUpdating}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete All Leads
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete All Leads</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete all {leads.length} leads? This will permanently erase all leads from your database and cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteAll} className="bg-red-600 hover:bg-red-700">
+                      Delete All Leads
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
       </CardHeader>

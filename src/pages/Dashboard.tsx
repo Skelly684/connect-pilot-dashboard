@@ -82,6 +82,7 @@ const Dashboard = () => {
             isLoading={isLoadingLeads}
             onUpdateLeadStatus={updateLeadStatus}
             onDeleteLeads={deleteLeads}
+            onDeleteAllLeads={deleteAllLeads}
             onRefresh={fetchLeads}
           />
         );
