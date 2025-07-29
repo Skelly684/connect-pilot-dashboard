@@ -10,10 +10,45 @@ export type Database = {
   // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
   }
   public: {
     Tables: {
+      call_logs: {
+        Row: {
+          call_duration: number | null
+          call_status: string
+          created_at: string
+          id: string
+          lead_id: string
+          notes: string | null
+        }
+        Insert: {
+          call_duration?: number | null
+          call_status: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          notes?: string | null
+        }
+        Update: {
+          call_duration?: number | null
+          call_status?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           accepted_at: string | null
