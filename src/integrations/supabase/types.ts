@@ -52,6 +52,7 @@ export type Database = {
       leads: {
         Row: {
           accepted_at: string | null
+          call_attempts: number | null
           city_name: string | null
           company: string | null
           company_name: string | null
@@ -64,9 +65,11 @@ export type Database = {
           headline: string | null
           id: string
           job_title: string | null
+          last_call_status: string | null
           last_name: string | null
           location: string | null
           name: string | null
+          next_call_at: string | null
           notes: string | null
           phone: string | null
           raw_address: string | null
@@ -80,6 +83,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          call_attempts?: number | null
           city_name?: string | null
           company?: string | null
           company_name?: string | null
@@ -92,9 +96,11 @@ export type Database = {
           headline?: string | null
           id?: string
           job_title?: string | null
+          last_call_status?: string | null
           last_name?: string | null
           location?: string | null
           name?: string | null
+          next_call_at?: string | null
           notes?: string | null
           phone?: string | null
           raw_address?: string | null
@@ -108,6 +114,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          call_attempts?: number | null
           city_name?: string | null
           company?: string | null
           company_name?: string | null
@@ -120,9 +127,11 @@ export type Database = {
           headline?: string | null
           id?: string
           job_title?: string | null
+          last_call_status?: string | null
           last_name?: string | null
           location?: string | null
           name?: string | null
+          next_call_at?: string | null
           notes?: string | null
           phone?: string | null
           raw_address?: string | null

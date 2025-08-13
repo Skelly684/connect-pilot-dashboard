@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mail, Phone, Eye, MoreHorizontal, Search, Filter, Download, Trash2, Archive, FileSpreadsheet, ExternalLink, Loader2 } from "lucide-react";
-import { CallStatusBadge } from "./CallStatusBadge";
-import { CallActivity } from "./CallActivity";
+import { EnhancedCallStatusBadge } from "./EnhancedCallStatusBadge";
+import { EnhancedCallActivity } from "./EnhancedCallActivity";
 import {
   Table,
   TableBody,
@@ -81,6 +81,9 @@ interface Lead {
   accepted_at?: string;
   sent_for_contact_at?: string;
   notes?: string;
+  last_call_status?: string;
+  next_call_at?: string | null;
+  call_attempts?: number;
 }
 
 interface AllLeadsSectionProps {
@@ -92,7 +95,7 @@ interface AllLeadsSectionProps {
   onRefresh: () => void;
 }
 
-const ITEMS_PER_PAGE = 50;
+const ITEMS_PER_PAGE = 25;
 
 const getStatusColor = (status: string) => {
   switch (status?.toLowerCase()) {
@@ -689,14 +692,19 @@ export const AllLeadsSection = ({
                              <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
                            </TableCell>
                            <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
-                            <TableCell>
-                              <div className="flex flex-col gap-1">
-                                <Badge className={getStatusColor(status)}>
-                                  {status.replace('_', ' ')}
-                                </Badge>
-                                <CallStatusBadge leadId={leadId} />
-                              </div>
-                            </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              <Badge className={getStatusColor(status)}>
+                                {status.replace('_', ' ')}
+                              </Badge>
+                              <EnhancedCallStatusBadge 
+                                leadId={leadId} 
+                                lastCallStatus={lead.last_call_status}
+                                nextCallAt={lead.next_call_at}
+                                callAttempts={lead.call_attempts}
+                              />
+                            </div>
+                          </TableCell>
                            <TableCell className="text-sm text-gray-500">
                              {phone || 'N/A'}
                            </TableCell>
@@ -727,13 +735,13 @@ export const AllLeadsSection = ({
                              </div>
                            </TableCell>
                           </TableRow>
-                          <TableRow>
-                            <TableCell colSpan={8} className="p-0 border-t-0">
-                              <div className="px-4 pb-4">
-                                <CallActivity leadId={leadId} leadName={fullName} />
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                        <TableRow>
+                          <TableCell colSpan={8} className="p-0 border-t-0">
+                            <div className="px-4 pb-4">
+                              <EnhancedCallActivity leadId={leadId} leadName={fullName} />
+                            </div>
+                          </TableCell>
+                        </TableRow>
                         </>
                       );
                    })}

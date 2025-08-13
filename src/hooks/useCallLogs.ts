@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface CallLog {
   id: string;
   lead_id: string;
-  call_status: 'queued' | 'answered' | 'no-answer' | 'busy' | 'failed';
+  call_status: 'queued' | 'scheduled' | 'answered' | 'no-answer' | 'busy' | 'failed' | 'max-retries';
   call_duration?: number;
   notes?: string;
   created_at: string;

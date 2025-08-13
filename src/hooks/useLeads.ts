@@ -24,6 +24,9 @@ interface Lead {
   countryName?: string;
   status?: string;
   contactPhoneNumbers?: Array<{ sanitizedNumber?: string; rawNumber?: string }>;
+  last_call_status?: string;
+  next_call_at?: string | null;
+  call_attempts?: number;
 }
 
 export const useLeads = () => {
