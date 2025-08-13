@@ -37,8 +37,8 @@ export const useNotifications = () => {
   }, [notifications]);
 
   const addNotification = (leadName: string, leadId: string, oldStatus: string, newStatus: string) => {
-    // Don't notify for "new" or "contacted" status changes
-    if (newStatus === 'new' || newStatus === 'contacted') {
+    // Only notify when status changes FROM "accepted" to something else
+    if (oldStatus !== 'accepted') {
       return;
     }
 
