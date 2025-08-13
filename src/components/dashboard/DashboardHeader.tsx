@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, LogOut, User, X } from "lucide-react";
+import { Bell, LogOut, User, X, Moon, Sun } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,11 +14,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
 import { formatDistance } from "date-fns";
+import { useTheme } from "next-themes";
 
 export const DashboardHeader = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotifications();
+  const { theme, setTheme } = useTheme();
 
   const handleSignOut = async () => {
     await signOut();
@@ -33,7 +35,7 @@ export const DashboardHeader = () => {
     'UN';
 
   return (
-    <header className="h-16 bg-white border-b flex items-center justify-between px-6">
+    <header className="h-16 bg-background border-b flex items-center justify-between px-6">
       <div className="flex items-center space-x-4">
         <img 
           src="/lovable-uploads/7c5cb75c-bf84-4a68-9e78-2fd787db361e.png" 
@@ -42,7 +44,18 @@ export const DashboardHeader = () => {
         />
       </div>
       
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+          className="h-9 w-9"
+        >
+          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">Toggle theme</span>
+        </Button>
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
@@ -54,7 +67,7 @@ export const DashboardHeader = () => {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-80 bg-white" align="end">
+          <DropdownMenuContent className="w-80 bg-background" align="end">
             <DropdownMenuLabel className="flex items-center justify-between">
               <span>Notifications</span>
               {notifications.length > 0 && (
@@ -78,8 +91,8 @@ export const DashboardHeader = () => {
                 notifications.slice(0, 10).map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-3 border-b last:border-b-0 hover:bg-gray-50 ${
-                      !notification.read ? 'bg-blue-50' : ''
+                    className={`p-3 border-b last:border-b-0 hover:bg-muted/50 ${
+                      !notification.read ? 'bg-accent/50' : ''
                     }`}
                   >
                     <div className="flex items-start justify-between">
@@ -129,7 +142,7 @@ export const DashboardHeader = () => {
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 bg-white" align="end" forceMount>
+          <DropdownMenuContent className="w-56 bg-background" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">
