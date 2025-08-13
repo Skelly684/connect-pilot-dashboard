@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mail, Phone, Eye, MoreHorizontal, Search, Filter, Download, Trash2, Archive, FileSpreadsheet, ExternalLink, Loader2 } from "lucide-react";
+import { CallStatusBadge } from "./CallStatusBadge";
+import { CallActivity } from "./CallActivity";
 import {
   Table,
   TableBody,
@@ -657,75 +659,87 @@ export const AllLeadsSection = ({
                     const location = extractLocation(lead);
                     const status = safeToString(lead.status || 'new');
 
-                    return (
-                      <TableRow key={leadId} className="hover:bg-gray-50">
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedLeads.has(leadId)}
-                            onCheckedChange={(checked) => handleSelectLead(leadId, checked as boolean)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={`/avatars/${leadId}.png`} />
-                              <AvatarFallback>
-                                {fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'N'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium text-gray-900">{fullName}</div>
-                              <div className="text-sm text-gray-500">{email || 'No email'}</div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {jobTitle || 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(status)}>
-                            {status.replace('_', ' ')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-500">
-                          {phone || 'N/A'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <Button variant="ghost" size="sm" disabled={!email}>
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" disabled={!phone}>
-                              <Phone className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-white">
-                                <DropdownMenuItem>Add to Campaign</DropdownMenuItem>
-                                <DropdownMenuItem>Update Status</DropdownMenuItem>
-                                <DropdownMenuItem>Add Note</DropdownMenuItem>
-                                <DropdownMenuItem>Export Contact</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                     return (
+                       <>
+                         <TableRow key={leadId} className="hover:bg-gray-50">
+                           <TableCell>
+                             <Checkbox
+                               checked={selectedLeads.has(leadId)}
+                               onCheckedChange={(checked) => handleSelectLead(leadId, checked as boolean)}
+                             />
+                           </TableCell>
+                           <TableCell>
+                             <div className="flex items-center space-x-3">
+                               <Avatar className="h-8 w-8">
+                                 <AvatarImage src={`/avatars/${leadId}.png`} />
+                                 <AvatarFallback>
+                                   {fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'N'}
+                                 </AvatarFallback>
+                               </Avatar>
+                               <div>
+                                 <div className="font-medium text-gray-900">{fullName}</div>
+                                 <div className="text-sm text-gray-500">{email || 'No email'}</div>
+                               </div>
+                             </div>
+                           </TableCell>
+                           <TableCell className="font-medium">
+                             {jobTitle || 'N/A'}
+                           </TableCell>
+                           <TableCell>
+                             <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
+                           </TableCell>
+                           <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-1">
+                                <Badge className={getStatusColor(status)}>
+                                  {status.replace('_', ' ')}
+                                </Badge>
+                                <CallStatusBadge leadId={leadId} />
+                              </div>
+                            </TableCell>
+                           <TableCell className="text-sm text-gray-500">
+                             {phone || 'N/A'}
+                           </TableCell>
+                           <TableCell className="text-right">
+                             <div className="flex items-center justify-end space-x-2">
+                               <Button variant="ghost" size="sm" disabled={!email}>
+                                 <Mail className="h-4 w-4" />
+                               </Button>
+                               <Button variant="ghost" size="sm" disabled={!phone}>
+                                 <Phone className="h-4 w-4" />
+                               </Button>
+                               <Button variant="ghost" size="sm">
+                                 <Eye className="h-4 w-4" />
+                               </Button>
+                               <DropdownMenu>
+                                 <DropdownMenuTrigger asChild>
+                                   <Button variant="ghost" size="sm">
+                                     <MoreHorizontal className="h-4 w-4" />
+                                   </Button>
+                                 </DropdownMenuTrigger>
+                                 <DropdownMenuContent align="end" className="bg-white">
+                                   <DropdownMenuItem>Add to Campaign</DropdownMenuItem>
+                                   <DropdownMenuItem>Update Status</DropdownMenuItem>
+                                   <DropdownMenuItem>Add Note</DropdownMenuItem>
+                                   <DropdownMenuItem>Export Contact</DropdownMenuItem>
+                                 </DropdownMenuContent>
+                               </DropdownMenu>
+                             </div>
+                           </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell colSpan={8} className="p-0 border-t-0">
+                              <div className="px-4 pb-4">
+                                <CallActivity leadId={leadId} leadName={fullName} />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        </>
+                      );
+                   })}
+                 </TableBody>
+               </Table>
+             </div>
             
             {/* Pagination */}
             {totalPages > 1 && (
