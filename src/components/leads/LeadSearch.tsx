@@ -43,16 +43,16 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
     
     try {
       const requestBody = {
-        job_title: filters.jobTitle,
+        jobTitle: filters.jobTitle,
         industry: filters.industry,
         location: filters.location,
-        company: filters.company,
-        seniority_level: filters.seniorityLevel,
+        companyName: filters.company,
+        seniorityLevel: filters.seniorityLevel,
         department: filters.department,
-        company_size: filters.companySize,
-        current_company_only: filters.currentCompanyOnly,
-        years_of_experience: filters.yearsOfExperience[0],
-        number_of_leads: filters.numberOfLeads[0],
+        companySize: filters.companySize,
+        currentCompanyOnly: filters.currentCompanyOnly,
+        yearsExperience: filters.yearsOfExperience[0],
+        count: filters.numberOfLeads[0],
       };
 
       console.log("Sending API request to:", "http://localhost:8000/api/scrape-leads");
