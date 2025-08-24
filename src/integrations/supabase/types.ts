@@ -49,6 +49,68 @@ export type Database = {
           },
         ]
       }
+      campaigns: {
+        Row: {
+          call_window_end: number
+          call_window_start: number
+          caller_prompt: string
+          created_at: string
+          email_daily_cap: number
+          email_template_id: string | null
+          from_email: string
+          from_name: string
+          id: string
+          is_active: boolean
+          max_call_retries: number
+          name: string
+          retry_minutes: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          call_window_end?: number
+          call_window_start?: number
+          caller_prompt?: string
+          created_at?: string
+          email_daily_cap?: number
+          email_template_id?: string | null
+          from_email: string
+          from_name?: string
+          id?: string
+          is_active?: boolean
+          max_call_retries?: number
+          name: string
+          retry_minutes?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          call_window_end?: number
+          call_window_start?: number
+          caller_prompt?: string
+          created_at?: string
+          email_daily_cap?: number
+          email_template_id?: string | null
+          from_email?: string
+          from_name?: string
+          id?: string
+          is_active?: boolean
+          max_call_retries?: number
+          name?: string
+          retry_minutes?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_email_template_id_fkey"
+            columns: ["email_template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           body: string
@@ -90,10 +152,44 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          subject: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          subject: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           accepted_at: string | null
           call_attempts: number | null
+          campaign_id: string | null
           city_name: string | null
           company: string | null
           company_name: string | null
@@ -125,6 +221,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           call_attempts?: number | null
+          campaign_id?: string | null
           city_name?: string | null
           company?: string | null
           company_name?: string | null
@@ -156,6 +253,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           call_attempts?: number | null
+          campaign_id?: string | null
           city_name?: string | null
           company?: string | null
           company_name?: string | null
@@ -184,7 +282,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
