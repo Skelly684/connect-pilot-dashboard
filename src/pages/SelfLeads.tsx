@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { SelfLeadForm } from "@/components/selfLeads/SelfLeadForm";
@@ -6,7 +7,17 @@ import { SelfLeadPreview } from "@/components/selfLeads/SelfLeadPreview";
 import { SelfLeadsRecentTable } from "@/components/selfLeads/SelfLeadsRecentTable";
 
 export default function SelfLeads() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("self-leads");
+
+  const handleTabChange = (tab: string) => {
+    if (tab === "self-leads") {
+      setActiveTab(tab);
+    } else {
+      // Navigate to dashboard with the selected tab
+      navigate(`/dashboard?tab=${tab}`);
+    }
+  };
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -56,7 +67,7 @@ export default function SelfLeads() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <AppSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <AppSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
         <main className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
             <header className="border-b pb-4">

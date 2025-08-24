@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -13,9 +14,28 @@ import { OutreachCenter } from "@/components/outreach/OutreachCenter";
 import { useLeads } from "@/hooks/useLeads";
 
 const Dashboard = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Handle URL parameters for navigation from other pages
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  // Handle tab changes with proper navigation
+  const handleTabChange = (tab: string) => {
+    if (tab === "self-leads") {
+      navigate("/self-leads");
+    } else {
+      setActiveTab(tab);
+    }
+  };
   
   const { 
     leads, 
@@ -100,7 +120,7 @@ const Dashboard = () => {
       case "outreach":
         return <OutreachCenter />;
       case "self-leads":
-        window.location.href = "/self-leads";
+        navigate("/self-leads");
         return null;
       case "integrations":
         return <CRMIntegration />;
@@ -112,7 +132,7 @@ const Dashboard = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
-        <AppSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <AppSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
         <main className="flex-1 flex flex-col">
           <DashboardHeader />
           <div className="flex-1 p-6">
