@@ -99,6 +99,9 @@ const Dashboard = () => {
         );
       case "outreach":
         return <OutreachCenter />;
+      case "self-leads":
+        window.location.href = "/self-leads";
+        return null;
       case "integrations":
         return <CRMIntegration />;
       default:

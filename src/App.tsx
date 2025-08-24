@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Outreach from "./pages/Outreach";
+import SelfLeads from "./pages/SelfLeads";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,11 @@ const App = () => (
             <Route path="/outreach" element={
               <ProtectedRoute>
                 <Outreach />
+              </ProtectedRoute>
+            } />
+            <Route path="/self-leads" element={
+              <ProtectedRoute>
+                <SelfLeads />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
