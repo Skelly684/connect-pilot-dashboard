@@ -61,6 +61,7 @@ export type Database = {
           from_name: string
           id: string
           is_active: boolean
+          is_default: boolean | null
           max_call_retries: number
           name: string
           retry_minutes: number
@@ -78,6 +79,7 @@ export type Database = {
           from_name?: string
           id?: string
           is_active?: boolean
+          is_default?: boolean | null
           max_call_retries?: number
           name: string
           retry_minutes?: number
@@ -95,6 +97,7 @@ export type Database = {
           from_name?: string
           id?: string
           is_active?: boolean
+          is_default?: boolean | null
           max_call_retries?: number
           name?: string
           retry_minutes?: number
