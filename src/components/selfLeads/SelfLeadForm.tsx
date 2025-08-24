@@ -315,12 +315,12 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
 
           <div>
             <Label htmlFor="department">Department</Label>
-            <Select value={formData.department || ""} onValueChange={(value) => handleInputChange('department', value)}>
+            <Select value={formData.department || "none"} onValueChange={(value) => handleInputChange('department', value === 'none' ? '' : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select department" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No selection</SelectItem>
+                <SelectItem value="none">No selection</SelectItem>
                 <SelectItem value="N/A">N/A</SelectItem>
                 <SelectItem value="Sales">Sales</SelectItem>
                 <SelectItem value="Marketing">Marketing</SelectItem>
@@ -337,12 +337,12 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="industry">Industry</Label>
-              <Select value={formData.industry || ""} onValueChange={(value) => handleInputChange('industry', value)}>
+              <Select value={formData.industry || "none"} onValueChange={(value) => handleInputChange('industry', value === 'none' ? '' : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select industry" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No selection</SelectItem>
+                  <SelectItem value="none">No selection</SelectItem>
                   <SelectItem value="N/A">N/A</SelectItem>
                   <SelectItem value="Technology">Technology</SelectItem>
                   <SelectItem value="Healthcare">Healthcare</SelectItem>
@@ -358,12 +358,12 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
 
             <div>
               <Label htmlFor="company_size">Company Size</Label>
-              <Select value={formData.company_size || ""} onValueChange={(value) => handleInputChange('company_size', value)}>
+              <Select value={formData.company_size || "none"} onValueChange={(value) => handleInputChange('company_size', value === 'none' ? '' : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select size" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No selection</SelectItem>
+                  <SelectItem value="none">No selection</SelectItem>
                   <SelectItem value="N/A">N/A</SelectItem>
                   <SelectItem value="1-10">1-10 employees</SelectItem>
                   <SelectItem value="11-50">11-50 employees</SelectItem>
@@ -452,12 +452,12 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="seniority_level">Seniority Level</Label>
-            <Select value={formData.seniority_level || ""} onValueChange={(value) => handleInputChange('seniority_level', value)}>
+            <Select value={formData.seniority_level || "none"} onValueChange={(value) => handleInputChange('seniority_level', value === 'none' ? '' : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select seniority level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No selection</SelectItem>
+                <SelectItem value="none">No selection</SelectItem>
                 <SelectItem value="N/A">N/A</SelectItem>
                 <SelectItem value="Entry">Entry Level</SelectItem>
                 <SelectItem value="Mid">Mid Level</SelectItem>
@@ -493,12 +493,12 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
 
           <div>
             <Label htmlFor="campaign_id">Campaign</Label>
-            <Select value={formData.campaign_id || ""} onValueChange={(value) => handleInputChange('campaign_id', value)}>
+            <Select value={formData.campaign_id || "none"} onValueChange={(value) => handleInputChange('campaign_id', value === 'none' ? '' : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select campaign (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No campaign</SelectItem>
+                <SelectItem value="none">No campaign</SelectItem>
                 {campaigns.filter(c => c.is_active).map(campaign => (
                   <SelectItem key={campaign.id} value={campaign.id}>
                     {campaign.name}
