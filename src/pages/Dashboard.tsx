@@ -98,7 +98,9 @@ const Dashboard = () => {
           />
         );
       case "outreach":
-        return <OutreachCenter />;
+        // Redirect to dedicated outreach page
+        window.location.href = '/outreach';
+        return null;
       case "integrations":
         return <CRMIntegration />;
       default:
