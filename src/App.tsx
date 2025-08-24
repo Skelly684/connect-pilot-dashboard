@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import Outreach from "./pages/Outreach";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
