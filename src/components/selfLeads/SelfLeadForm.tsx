@@ -154,20 +154,20 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       const selectedCampaign = campaigns.find(c => c.id === formData.campaign_id);
       const emailTemplateId = selectedCampaign?.email_template_id || null;
 
-      // Send to backend for processing
-      const response = await fetch('/api/accepted-leads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Send to Supabase edge function for processing
+      const { data, error } = await supabase.functions.invoke('process-leads', {
+        body: {
           leads: [leadObject],
           emailTemplateId: emailTemplateId
-        }),
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to initiate contact');
+      if (error) {
+        throw error;
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to initiate contact');
       }
 
       toast({

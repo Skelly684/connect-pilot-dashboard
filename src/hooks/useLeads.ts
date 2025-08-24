@@ -91,19 +91,22 @@ export const useLeads = () => {
         });
       }
 
-      // Automatically send accepted leads to backend
+      // Automatically send accepted leads to backend via edge function
       if (newStatus === 'accepted' && currentLeads) {
         try {
-          const response = await fetch("http://localhost:8000/api/accepted-leads", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(currentLeads),
+          const { data, error } = await supabase.functions.invoke('process-leads', {
+            body: {
+              leads: currentLeads,
+              emailTemplateId: null
+            }
           });
 
-          if (!response.ok) {
-            throw new Error(`Backend API request failed with status ${response.status}`);
+          if (error) {
+            throw error;
+          }
+
+          if (!data?.success) {
+            throw new Error(data?.error || 'Failed to process leads');
           }
 
           console.log("Successfully sent accepted leads to backend");
@@ -154,21 +157,22 @@ export const useLeads = () => {
 
       console.log("Sending accepted leads to backend:", leadsData);
 
-      const response = await fetch("http://localhost:8000/api/accepted-leads", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(leadsData),
+      const { data, error } = await supabase.functions.invoke('process-leads', {
+        body: {
+          leads: leadsData,
+          emailTemplateId: campaignId
+        }
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+      if (error) {
+        throw error;
       }
 
-      const result = await response.json();
-      console.log("Backend response:", result);
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to process leads');
+      }
+
+      console.log("Backend response:", data);
 
       // Update the leads status to 'sent_for_contact'
       const leadIds = acceptedLeads.map(lead => lead.id);
