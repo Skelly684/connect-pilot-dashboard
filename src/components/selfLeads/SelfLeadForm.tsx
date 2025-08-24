@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,8 +22,16 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
   const [isSaving, setIsSaving] = useState(false);
   const [isContacting, setIsContacting] = useState(false);
   const { toast } = useToast();
-  const { campaigns } = useCampaigns();
+  const { campaigns, getDefaultCampaign } = useCampaigns();
   const { user } = useAuth();
+  
+  // Auto-select default campaign
+  useEffect(() => {
+    const defaultCampaign = getDefaultCampaign();
+    if (defaultCampaign && !formData.campaign_id) {
+      onFormDataChange({ campaign_id: defaultCampaign.id });
+    }
+  }, [campaigns, formData.campaign_id, getDefaultCampaign, onFormDataChange]);
 
   const handleInputChange = (field: string, value: any) => {
     onFormDataChange({ [field]: value });
@@ -501,7 +509,7 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
                 <SelectItem value="none">No campaign</SelectItem>
                 {campaigns.filter(c => c.is_active).map(campaign => (
                   <SelectItem key={campaign.id} value={campaign.id}>
-                    {campaign.name}
+                    {campaign.name} {campaign.is_default ? '(Default)' : ''}
                   </SelectItem>
                 ))}
               </SelectContent>

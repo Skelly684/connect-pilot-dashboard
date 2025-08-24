@@ -16,6 +16,7 @@ export interface Campaign {
   max_call_retries: number;
   retry_minutes: number;
   is_active: boolean;
+  is_default: boolean;
   created_at: string;
   updated_at: string;
   email_template?: EmailTemplate;
@@ -154,6 +155,35 @@ export const useCampaigns = () => {
     }
   };
 
+  const setDefaultCampaign = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ is_default: true })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      await fetchCampaigns();
+      toast({
+        title: "Success",
+        description: "Default campaign updated successfully",
+      });
+    } catch (error) {
+      console.error('Error setting default campaign:', error);
+      toast({
+        title: "Error",
+        description: "Failed to set default campaign",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const getDefaultCampaign = () => {
+    return campaigns.find(c => c.is_default);
+  };
+
   const updateEmailTemplate = async (id: string, updates: Partial<EmailTemplate>) => {
     try {
       const { error } = await supabase
@@ -195,5 +225,7 @@ export const useCampaigns = () => {
     updateCampaign,
     createEmailTemplate,
     updateEmailTemplate,
+    setDefaultCampaign,
+    getDefaultCampaign,
   };
 };

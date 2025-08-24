@@ -94,7 +94,8 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
         call_window_end: callWindowEnd,
         max_call_retries: maxCallRetries,
         retry_minutes: 30,
-        is_active: false
+        is_active: true,
+        is_default: false
       });
       
       // Reset form

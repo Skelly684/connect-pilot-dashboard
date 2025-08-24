@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Phone, Send, Play, Pause, Settings, Plus } from "lucide-react";
+import { Mail, Phone, Send, Play, Pause, Settings, Plus, Star, StarOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { NewCampaignDialog } from "@/components/outreach/NewCampaignDialog";
@@ -11,16 +11,29 @@ export const OutreachCenter = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null);
   const [showNewCampaign, setShowNewCampaign] = useState(false);
   const { toast } = useToast();
-  const { campaigns, isLoading } = useCampaigns();
+  const { campaigns, isLoading, updateCampaign, setDefaultCampaign } = useCampaigns();
 
   const activeCampaigns = campaigns.filter(c => c.is_active);
   const inactiveCampaigns = campaigns.filter(c => !c.is_active);
 
-  const handleCampaignAction = (action: string, campaignId: string) => {
-    toast({
-      title: `Campaign ${action}`,
-      description: `Campaign has been ${action.toLowerCase()}.`,
-    });
+  const handleCampaignAction = async (action: string, campaignId: string) => {
+    try {
+      if (action === "Started") {
+        await updateCampaign(campaignId, { is_active: true });
+      } else if (action === "Paused") {
+        await updateCampaign(campaignId, { is_active: false });
+      }
+    } catch (error) {
+      console.error('Error updating campaign:', error);
+    }
+  };
+
+  const handleSetDefault = async (campaignId: string) => {
+    try {
+      await setDefaultCampaign(campaignId);
+    } catch (error) {
+      console.error('Error setting default campaign:', error);
+    }
   };
 
   if (isLoading) {
@@ -64,93 +77,162 @@ export const OutreachCenter = () => {
                 </Button>
               </div>
             ) : (
-              campaigns.map((campaign) => (
-                <div
-                  key={campaign.id}
-                  className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setSelectedCampaign(parseInt(campaign.id))}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-gray-900">{campaign.name}</h3>
-                    <div className="flex items-center space-x-2">
-                      <Badge
-                        className={
-                          campaign.is_active
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }
+              <div className="space-y-4">
+                {activeCampaigns.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Active Campaigns</h4>
+                    {activeCampaigns.map((campaign) => (
+                      <div
+                        key={campaign.id}
+                        className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                        onClick={() => setSelectedCampaign(parseInt(campaign.id))}
                       >
-                        {campaign.is_active ? 'active' : 'inactive'}
-                      </Badge>
-                      {campaign.email_template_id && (
-                        <Mail className="h-4 w-4 text-blue-600" />
-                      )}
-                      {campaign.caller_prompt && (
-                        <Phone className="h-4 w-4 text-green-600" />
-                      )}
-                    </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium text-gray-900">{campaign.name}</h3>
+                            {campaign.is_default && (
+                              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                                Default
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge className="bg-green-100 text-green-800">
+                              active
+                            </Badge>
+                            {campaign.email_template_id && (
+                              <Mail className="h-4 w-4 text-blue-600" />
+                            )}
+                            {campaign.caller_prompt && (
+                              <Phone className="h-4 w-4 text-green-600" />
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-500">Email Cap</p>
+                            <p className="font-medium">{campaign.email_daily_cap}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Call Window</p>
+                            <p className="font-medium">{campaign.call_window_start}:00 - {campaign.call_window_end}:00</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Max Retries</p>
+                            <p className="font-medium">{campaign.max_call_retries}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                          <div className="flex gap-2">
+                            {campaign.email_template_id && (
+                              <Badge variant="outline" className="text-xs">
+                                Emails enabled
+                              </Badge>
+                            )}
+                            {campaign.caller_prompt && (
+                              <Badge variant="outline" className="text-xs">
+                                Calls enabled
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant={campaign.is_default ? "default" : "outline"}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSetDefault(campaign.id);
+                              }}
+                              disabled={campaign.is_default}
+                            >
+                              {campaign.is_default ? (
+                                <Star className="h-3 w-3 fill-current" />
+                              ) : (
+                                <StarOff className="h-3 w-3" />
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCampaignAction("Paused", campaign.id);
+                              }}
+                            >
+                              <Pause className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Settings logic here
+                              }}
+                            >
+                              <Settings className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-500">Email Cap</p>
-                      <p className="font-medium">{campaign.email_daily_cap}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Call Window</p>
-                      <p className="font-medium">{campaign.call_window_start}:00 - {campaign.call_window_end}:00</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Max Retries</p>
-                      <p className="font-medium">{campaign.max_call_retries}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                    <div className="flex gap-2">
-                      {campaign.email_template_id && (
-                        <Badge variant="outline" className="text-xs">
-                          Emails enabled
-                        </Badge>
-                      )}
-                      {campaign.caller_prompt && (
-                        <Badge variant="outline" className="text-xs">
-                          Calls enabled
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant={campaign.is_active ? "outline" : "default"}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCampaignAction(
-                            campaign.is_active ? "Paused" : "Started",
-                            campaign.id
-                          );
-                        }}
+                )}
+
+                {inactiveCampaigns.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Inactive Campaigns</h4>
+                    {inactiveCampaigns.map((campaign) => (
+                      <div
+                        key={campaign.id}
+                        className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer opacity-75"
+                        onClick={() => setSelectedCampaign(parseInt(campaign.id))}
                       >
-                        {campaign.is_active ? (
-                          <Pause className="h-3 w-3" />
-                        ) : (
-                          <Play className="h-3 w-3" />
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Settings logic here
-                        }}
-                      >
-                        <Settings className="h-3 w-3" />
-                      </Button>
-                    </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium text-gray-900">{campaign.name}</h3>
+                          <div className="flex items-center space-x-2">
+                            <Badge className="bg-yellow-100 text-yellow-800">
+                              inactive
+                            </Badge>
+                            {campaign.email_template_id && (
+                              <Mail className="h-4 w-4 text-blue-600" />
+                            )}
+                            {campaign.caller_prompt && (
+                              <Phone className="h-4 w-4 text-green-600" />
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-end mt-3 pt-3 border-t">
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCampaignAction("Started", campaign.id);
+                              }}
+                            >
+                              <Play className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Settings logic here
+                              }}
+                            >
+                              <Settings className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              ))
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
