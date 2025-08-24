@@ -135,7 +135,7 @@ export const useLeads = () => {
     }
   };
 
-  const sendAcceptedLeadsToBackend = async (acceptedLeads: any[]) => {
+  const sendAcceptedLeadsToBackend = async (acceptedLeads: any[], campaignId?: string) => {
     try {
       // Prepare the leads data for the backend
       const leadsData = acceptedLeads.map(lead => ({
