@@ -4,9 +4,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 import { Campaign } from '@/hooks/useCampaigns';
 import { Mail, Phone, Play } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ActionFooterProps {
   campaign: Campaign;
@@ -25,6 +28,15 @@ export const ActionFooter = ({ campaign }: ActionFooterProps) => {
   const { toast } = useToast();
 
   const handleTestEmail = async () => {
+    if (!campaign?.email_template_id) {
+      toast({
+        title: "No Email Template",
+        description: "Please configure an email template first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!testEmail) {
       toast({
         title: "Error",
@@ -36,7 +48,15 @@ export const ActionFooter = ({ campaign }: ActionFooterProps) => {
 
     setIsLoading(true);
     try {
-      // TODO: Implement test email API call
+      const { data, error } = await supabase.functions.invoke('test-email', {
+        body: {
+          emailTemplateId: campaign.email_template_id,
+          testEmail: testEmail
+        }
+      });
+
+      if (error) throw error;
+
       toast({
         title: "Test Email Sent",
         description: `Preview email sent to ${testEmail}`,
@@ -44,6 +64,7 @@ export const ActionFooter = ({ campaign }: ActionFooterProps) => {
       setShowTestEmail(false);
       setTestEmail('');
     } catch (error) {
+      console.error('Test email error:', error);
       toast({
         title: "Error",
         description: "Failed to send test email",
@@ -54,6 +75,15 @@ export const ActionFooter = ({ campaign }: ActionFooterProps) => {
   };
 
   const handleTestCall = async () => {
+    if (!campaign?.caller_prompt) {
+      toast({
+        title: "No Caller Script",
+        description: "Please configure a caller script first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!testPhone || !testName) {
       toast({
         title: "Error",
@@ -65,7 +95,17 @@ export const ActionFooter = ({ campaign }: ActionFooterProps) => {
 
     setIsLoading(true);
     try {
-      // TODO: Implement test call API call
+      const { data, error } = await supabase.functions.invoke('test-call', {
+        body: {
+          campaignId: campaign.id,
+          testPhone: testPhone,
+          testName: testName,
+          testCompany: testCompany
+        }
+      });
+
+      if (error) throw error;
+
       toast({
         title: "Test Call Initiated",
         description: `Test call initiated to ${testPhone}`,
@@ -75,6 +115,7 @@ export const ActionFooter = ({ campaign }: ActionFooterProps) => {
       setTestName('');
       setTestCompany('');
     } catch (error) {
+      console.error('Test call error:', error);
       toast({
         title: "Error",
         description: "Failed to initiate test call",
@@ -103,11 +144,21 @@ export const ActionFooter = ({ campaign }: ActionFooterProps) => {
         }
       }
 
-      // TODO: Implement start campaign API call
-      const payload = {
-        leads,
-        campaignId: campaign.id
-      };
+      // Call the accepted-leads API
+      const response = await fetch('https://zcgutkfkohonpqvwfukk.supabase.co/functions/v1/accepted-leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          leads,
+          campaignId: campaign.id
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start campaign');
+      }
 
       toast({
         title: "Campaign Started",
@@ -117,6 +168,7 @@ export const ActionFooter = ({ campaign }: ActionFooterProps) => {
       setShowStartCampaign(false);
       setLeadsJson('');
     } catch (error) {
+      console.error('Campaign start error:', error);
       toast({
         title: "Error",
         description: "Failed to start campaign",
@@ -128,6 +180,31 @@ export const ActionFooter = ({ campaign }: ActionFooterProps) => {
 
   return (
     <div className="sticky bottom-0 bg-background border-t p-4 mt-6">
+      {/* Campaign Status Summary */}
+      <div className="mb-4 p-3 bg-muted rounded-lg">
+        <h4 className="font-medium mb-2">Campaign Configuration</h4>
+        <div className="flex gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            <span>Emails: {campaign.email_template_id ? 'ON' : 'OFF'}</span>
+            {campaign.email_template_id && campaign.email_template && (
+              <Badge variant="outline" className="ml-2 text-xs">
+                {campaign.email_template.subject}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Phone className="h-4 w-4" />
+            <span>Calls: {campaign.caller_prompt ? 'ON' : 'OFF'}</span>
+            {campaign.caller_prompt && (
+              <Badge variant="outline" className="ml-2 text-xs">
+                {campaign.caller_prompt.substring(0, 30)}...
+              </Badge>
+            )}
+          </div>
+        </div>
+      </div>
+      
       <div className="flex gap-4 justify-end">
         {/* Test Email */}
         <Dialog open={showTestEmail} onOpenChange={setShowTestEmail}>

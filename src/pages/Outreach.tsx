@@ -100,8 +100,6 @@ export default function Outreach() {
       <NewCampaignDialog
         open={showNewCampaignDialog}
         onOpenChange={setShowNewCampaignDialog}
-        onCampaignCreated={handleCampaignCreated}
-        createCampaign={createCampaign}
       />
     </div>
   );
