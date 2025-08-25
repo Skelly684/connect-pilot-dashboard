@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useAuth } from "@/contexts/AuthContext";
+import { API_BASE_URL, API_ENDPOINTS } from "@/config/api";
 
 interface SelfLeadFormProps {
   formData: any;
@@ -119,10 +120,50 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Lead accepted successfully"
-      });
+      // Send to FastAPI backend since this is an accepted lead
+      try {
+        const payload = {
+          leads: [{
+            id: leadObject.id,
+            first_name: leadObject.first_name || '',
+            last_name: leadObject.last_name || '',
+            company_name: leadObject.company_name || '',
+            phone: leadObject.contact_phone_numbers ? 
+              JSON.parse(leadObject.contact_phone_numbers)[0]?.rawNumber || '' : '',
+            email_address: leadObject.email_address || '',
+            campaign_id: leadObject.campaign_id || undefined
+          }]
+        };
+
+        console.log("Sending self-generated lead to FastAPI backend:", `${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, payload);
+
+        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error(`FastAPI backend returned ${response.status}: ${response.statusText}`);
+        }
+
+        const responseData = await response.json();
+        console.log("FastAPI backend response:", responseData);
+        
+        toast({
+          title: "Success",
+          description: "Lead accepted and sent to backend"
+        });
+      } catch (backendError) {
+        console.error('Error sending lead to FastAPI backend:', backendError);
+        toast({
+          title: "Warning",
+          description: "Lead saved but failed to send to backend",
+          variant: "destructive"
+        });
+      }
 
       onReset();
     } catch (error: any) {
@@ -154,25 +195,41 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       const selectedCampaign = campaigns.find(c => c.id === formData.campaign_id);
       const emailTemplateId = selectedCampaign?.email_template_id || null;
 
-      // Send to Supabase edge function for processing
-      const { data, error } = await supabase.functions.invoke('process-leads', {
-        body: {
-          leads: [leadObject],
-          emailTemplateId: emailTemplateId
-        }
+      // Send to FastAPI backend for processing
+      const payload = {
+        leads: [{
+          id: leadObject.id,
+          first_name: leadObject.first_name || '',
+          last_name: leadObject.last_name || '',
+          company_name: leadObject.company_name || '',
+          phone: leadObject.contact_phone_numbers ? 
+            JSON.parse(leadObject.contact_phone_numbers)[0]?.rawNumber || '' : '',
+          email_address: leadObject.email_address || '',
+          campaign_id: leadObject.campaign_id || undefined
+        }],
+        emailTemplateId: emailTemplateId
+      };
+
+      console.log("Sending self-generated lead to FastAPI backend with contact:", `${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, payload);
+
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
       });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        throw new Error(`FastAPI backend returned ${response.status}: ${response.statusText}`);
       }
 
-      if (!data?.success) {
-        throw new Error(data?.error || 'Failed to initiate contact');
-      }
+      const responseData = await response.json();
+      console.log("FastAPI backend response:", responseData);
 
       toast({
         title: "Success",
-        description: "Contact initiated successfully"
+        description: "Lead saved, accepted and sent for contact"
       });
 
       onReset();
