@@ -16,28 +16,52 @@ export type Database = {
     Tables: {
       call_logs: {
         Row: {
+          attempt_number: number | null
           call_duration: number | null
           call_status: string
           created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          external_call_id: string | null
           id: string
           lead_id: string
           notes: string | null
+          provider: string | null
+          provider_call_id: string | null
+          recording_url: string | null
+          started_at: string | null
         }
         Insert: {
+          attempt_number?: number | null
           call_duration?: number | null
           call_status: string
           created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          external_call_id?: string | null
           id?: string
           lead_id: string
           notes?: string | null
+          provider?: string | null
+          provider_call_id?: string | null
+          recording_url?: string | null
+          started_at?: string | null
         }
         Update: {
+          attempt_number?: number | null
           call_duration?: number | null
           call_status?: string
           created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          external_call_id?: string | null
           id?: string
           lead_id?: string
           notes?: string | null
+          provider?: string | null
+          provider_call_id?: string | null
+          recording_url?: string | null
+          started_at?: string | null
         }
         Relationships: [
           {
