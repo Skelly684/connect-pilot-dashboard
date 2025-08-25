@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CampaignList } from '@/components/outreach/CampaignList';
@@ -7,10 +7,12 @@ import { CampaignStats } from '@/components/outreach/CampaignStats';
 import { ActionFooter } from '@/components/outreach/ActionFooter';
 import { NewCampaignDialog } from '@/components/outreach/NewCampaignDialog';
 import { useCampaigns, Campaign } from '@/hooks/useCampaigns';
+import { useSearchParams } from 'react-router-dom';
 
 export default function Outreach() {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [showNewCampaignDialog, setShowNewCampaignDialog] = useState(false);
+  const [searchParams] = useSearchParams();
   const { campaigns, isLoading, createCampaign } = useCampaigns();
 
   const handleNewCampaign = () => {
@@ -21,6 +23,17 @@ export default function Outreach() {
     setSelectedCampaign(campaign);
     setShowNewCampaignDialog(false);
   };
+
+  // Auto-select campaign from URL parameter
+  useEffect(() => {
+    const campaignId = searchParams.get('campaign');
+    if (campaignId && campaigns.length > 0) {
+      const campaign = campaigns.find(c => c.id === campaignId);
+      if (campaign) {
+        setSelectedCampaign(campaign);
+      }
+    }
+  }, [searchParams, campaigns]);
 
   if (isLoading) {
     return (
