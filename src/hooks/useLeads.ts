@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/hooks/useNotifications';
+import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 interface Lead {
   id?: string;
@@ -91,35 +92,53 @@ export const useLeads = () => {
         });
       }
 
-      // Automatically send accepted leads to backend via edge function
+      // Automatically send accepted leads to FastAPI backend
       if (newStatus === 'accepted' && currentLeads) {
         try {
-          const { data, error } = await supabase.functions.invoke('process-leads', {
-            body: {
-              leads: currentLeads,
-              emailTemplateId: null
-            }
+          // Format leads for FastAPI backend
+          const formattedLeads = currentLeads.map(lead => ({
+            id: lead.id,
+            first_name: lead.first_name || '',
+            last_name: lead.last_name || '',
+            company_name: lead.company_name || lead.company || '',
+            phone: lead.phone || (lead.contact_phone_numbers ? 
+              JSON.parse(lead.contact_phone_numbers as string)[0]?.rawNumber || 
+              JSON.parse(lead.contact_phone_numbers as string)[0]?.sanitizedNumber : ''),
+            email_address: lead.email_address || lead.email || '',
+            campaign_id: lead.campaign_id || undefined
+          }));
+
+          const payload = {
+            leads: formattedLeads,
+            emailTemplateId: undefined // optional
+          };
+
+          console.log("Sending to FastAPI backend:", `${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, payload);
+
+          const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
           });
 
-          if (error) {
-            throw error;
+          if (!response.ok) {
+            throw new Error(`FastAPI backend returned ${response.status}: ${response.statusText}`);
           }
 
-          if (!data?.success) {
-            throw new Error(data?.error || 'Failed to process leads');
-          }
-
-          console.log("Successfully sent accepted leads to backend");
+          const responseData = await response.json();
+          console.log("FastAPI backend response:", responseData);
           
           toast({
             title: "Success",
-            description: `Accepted ${leadIds.length} lead(s) and initiated contact`,
+            description: `Accepted ${leadIds.length} lead(s) and sent to backend`,
           });
         } catch (backendError) {
-          console.error('Error sending leads to backend:', backendError);
+          console.error('Error sending leads to FastAPI backend:', backendError);
           toast({
             title: "Warning",
-            description: "Leads accepted but failed to initiate contact",
+            description: "Leads accepted but failed to send to backend",
             variant: "destructive",
           });
         }
