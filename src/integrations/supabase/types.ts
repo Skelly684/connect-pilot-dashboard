@@ -122,6 +122,7 @@ export type Database = {
           error: string | null
           id: string
           lead_id: string
+          provider: string | null
           status: string
           subject: string
         }
@@ -132,6 +133,7 @@ export type Database = {
           error?: string | null
           id?: string
           lead_id: string
+          provider?: string | null
           status: string
           subject: string
         }
@@ -142,6 +144,7 @@ export type Database = {
           error?: string | null
           id?: string
           lead_id?: string
+          provider?: string | null
           status?: string
           subject?: string
         }
@@ -201,11 +204,13 @@ export type Database = {
           created_at: string
           email: string | null
           email_address: string | null
+          emailed_at: string | null
           first_name: string | null
           headline: string | null
           id: string
           job_title: string | null
           last_call_status: string | null
+          last_email_status: string | null
           last_name: string | null
           location: string | null
           name: string | null
@@ -233,11 +238,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           email_address?: string | null
+          emailed_at?: string | null
           first_name?: string | null
           headline?: string | null
           id?: string
           job_title?: string | null
           last_call_status?: string | null
+          last_email_status?: string | null
           last_name?: string | null
           location?: string | null
           name?: string | null
@@ -265,11 +272,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           email_address?: string | null
+          emailed_at?: string | null
           first_name?: string | null
           headline?: string | null
           id?: string
           job_title?: string | null
           last_call_status?: string | null
+          last_email_status?: string | null
           last_name?: string | null
           location?: string | null
           name?: string | null
