@@ -91,34 +91,8 @@ export const useLeads = () => {
         });
       }
 
-      // Automatically send accepted leads to backend via edge function
-      if (newStatus === 'accepted' && currentLeads) {
-        try {
-          const { data, error } = await supabase.functions.invoke('process-leads', {
-            body: {
-              leads: currentLeads,
-              emailTemplateId: null
-            }
-          });
-
-          if (error) {
-            throw error;
-          }
-
-          if (!data?.success) {
-            throw new Error(data?.error || 'Failed to process leads');
-          }
-
-          console.log("Successfully sent accepted leads to backend");
-        } catch (backendError) {
-          console.error('Error sending leads to backend:', backendError);
-          toast({
-            title: "Warning",
-            description: "Leads accepted but failed to send to backend for processing",
-            variant: "destructive",
-          });
-        }
-      }
+      // Note: Accepted leads now remain as "accepted" status and are only sent to backend 
+      // via campaigns when explicitly requested through sendAcceptedLeadsToBackend function
 
       toast({
         title: "Success",
