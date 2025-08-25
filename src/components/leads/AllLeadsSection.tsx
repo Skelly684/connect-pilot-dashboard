@@ -291,6 +291,11 @@ export const AllLeadsSection = ({
     
     const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
     
+    // Debug logging for accepted status filter
+    if (statusFilter === "accepted") {
+      console.log(`Lead ${lead.id}: status='${lead.status}', matches=${matchesStatus}`);
+    }
+    
     return matchesSearch && matchesStatus;
   });
 
