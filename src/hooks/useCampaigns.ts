@@ -184,6 +184,31 @@ export const useCampaigns = () => {
     return campaigns.find(c => c.is_default);
   };
 
+  const deleteCampaign = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      await fetchCampaigns();
+      toast({
+        title: "Success",
+        description: "Campaign deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete campaign",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const updateEmailTemplate = async (id: string, updates: Partial<EmailTemplate>) => {
     try {
       const { error } = await supabase
@@ -223,6 +248,7 @@ export const useCampaigns = () => {
     fetchCampaigns,
     createCampaign,
     updateCampaign,
+    deleteCampaign,
     createEmailTemplate,
     updateEmailTemplate,
     setDefaultCampaign,

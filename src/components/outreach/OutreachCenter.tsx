@@ -6,12 +6,13 @@ import { Mail, Phone, Send, Play, Pause, Settings, Plus, Star, StarOff } from "l
 import { useToast } from "@/hooks/use-toast";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { NewCampaignDialog } from "@/components/outreach/NewCampaignDialog";
+import { CampaignSettingsDialog } from "@/components/outreach/CampaignSettingsDialog";
 
 export const OutreachCenter = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null);
   const [showNewCampaign, setShowNewCampaign] = useState(false);
   const { toast } = useToast();
-  const { campaigns, isLoading, updateCampaign, setDefaultCampaign } = useCampaigns();
+  const { campaigns, isLoading, updateCampaign, setDefaultCampaign, deleteCampaign } = useCampaigns();
 
   const activeCampaigns = campaigns.filter(c => c.is_active);
   const inactiveCampaigns = campaigns.filter(c => !c.is_active);
@@ -33,6 +34,14 @@ export const OutreachCenter = () => {
       await setDefaultCampaign(campaignId);
     } catch (error) {
       console.error('Error setting default campaign:', error);
+    }
+  };
+
+  const handleDeleteCampaign = async (campaignId: string) => {
+    try {
+      await deleteCampaign(campaignId);
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
     }
   };
 
@@ -163,16 +172,10 @@ export const OutreachCenter = () => {
                             >
                               <Pause className="h-3 w-3" />
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Settings logic here
-                              }}
-                            >
-                              <Settings className="h-3 w-3" />
-                            </Button>
+                            <CampaignSettingsDialog
+                              campaign={campaign}
+                              onDelete={handleDeleteCampaign}
+                            />
                           </div>
                         </div>
                       </div>
@@ -216,16 +219,10 @@ export const OutreachCenter = () => {
                             >
                               <Play className="h-3 w-3" />
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Settings logic here
-                              }}
-                            >
-                              <Settings className="h-3 w-3" />
-                            </Button>
+                            <CampaignSettingsDialog
+                              campaign={campaign}
+                              onDelete={handleDeleteCampaign}
+                            />
                           </div>
                         </div>
                       </div>
