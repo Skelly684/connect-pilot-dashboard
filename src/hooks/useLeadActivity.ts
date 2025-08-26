@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '@/config/api';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface CallActivity {
   id: string;
@@ -70,9 +71,118 @@ export const useLeadActivity = (leadId: string | null) => {
     }
   };
 
+  const handleRealtimeUpdate = useCallback((payload: any) => {
+    if (!activity) return;
+
+    const { eventType, new: newRecord, table } = payload;
+    
+    setActivity(prevActivity => {
+      if (!prevActivity) return prevActivity;
+      
+      switch (table) {
+        case 'call_logs':
+          if (eventType === 'INSERT') {
+            // Add new call log
+            const newCall: CallActivity = {
+              id: newRecord.id,
+              attempt_number: newRecord.attempt_number || 0,
+              status: newRecord.call_status,
+              duration: newRecord.duration_seconds,
+              timestamp: newRecord.created_at,
+              recording_url: newRecord.recording_url,
+            };
+            return {
+              ...prevActivity,
+              calls: [newCall, ...prevActivity.calls],
+            };
+          }
+          break;
+          
+        case 'email_logs':
+          if (eventType === 'INSERT') {
+            // Add new email log
+            const newEmail: EmailActivity = {
+              id: newRecord.id,
+              status: newRecord.status,
+              timestamp: newRecord.created_at,
+              subject: newRecord.subject,
+              to: newRecord.email_to,
+            };
+            return {
+              ...prevActivity,
+              emails: [newEmail, ...prevActivity.emails],
+            };
+          }
+          break;
+          
+        case 'leads':
+          if (eventType === 'UPDATE' && newRecord.id === leadId) {
+            // Update lead data
+            return {
+              ...prevActivity,
+              lead: {
+                ...prevActivity.lead,
+                name: newRecord.name || prevActivity.lead.name,
+                email: newRecord.email || prevActivity.lead.email,
+                phone: newRecord.phone || prevActivity.lead.phone,
+                company: newRecord.company || prevActivity.lead.company,
+              },
+            };
+          }
+          break;
+      }
+      
+      return prevActivity;
+    });
+  }, [activity, leadId]);
+
   useEffect(() => {
+    // Initial fetch
     fetchLeadActivity();
   }, [leadId]);
+
+  useEffect(() => {
+    if (!leadId) return;
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel(`lead-activity-${leadId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'call_logs',
+          filter: `lead_id=eq.${leadId}`,
+        },
+        payload => handleRealtimeUpdate({ ...payload, table: 'call_logs' })
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'email_logs',
+          filter: `lead_id=eq.${leadId}`,
+        },
+        payload => handleRealtimeUpdate({ ...payload, table: 'email_logs' })
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'leads',
+          filter: `id=eq.${leadId}`,
+        },
+        payload => handleRealtimeUpdate({ ...payload, table: 'leads' })
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [leadId, handleRealtimeUpdate]);
 
   return {
     activity,
