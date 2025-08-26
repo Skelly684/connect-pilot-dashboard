@@ -524,7 +524,7 @@ export const ReviewNewLeadsSection = ({
                         <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(status)}>
-                            {status.replace('_', ' ')}
+                             {status?.replace('_', ' ') || 'new'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-gray-500">
@@ -637,7 +637,7 @@ export const ReviewNewLeadsSection = ({
                         <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(status)}>
-                            {status.replace('_', ' ')}
+                            {status?.replace('_', ' ') || 'new'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-gray-500">

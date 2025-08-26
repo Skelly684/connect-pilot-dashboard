@@ -700,7 +700,7 @@ export const AllLeadsSection = ({
                           <TableCell>
                             <div className="flex flex-col gap-1">
                               <Badge className={getStatusColor(status)}>
-                                {status.replace('_', ' ')}
+                                {status?.replace('_', ' ') || 'new'}
                               </Badge>
                               <EnhancedCallStatusBadge 
                                 leadId={leadId} 
