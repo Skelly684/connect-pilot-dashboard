@@ -45,7 +45,12 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/lead-activity/${leadId}`, {
+      // Get data from the last 7 days
+      const since = new Date();
+      since.setDate(since.getDate() - 7);
+      const sinceParam = since.toISOString();
+      
+      const response = await fetch(`${API_BASE_URL}/api/lead-activity/${leadId}?since=${sinceParam}`, {
         headers: {
           'ngrok-skip-browser-warning': 'true',
         },
@@ -61,10 +66,25 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
       console.error('Error fetching lead activity:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch lead activity';
       setError(errorMessage);
+      
+      // Show toast but don't break the UI - use gentle error handling
       toast({
-        title: "Error",
-        description: errorMessage,
+        title: "Activity Fetch Failed",
+        description: "Unable to load recent activity. List remains functional.",
         variant: "destructive",
+      });
+      
+      // Set empty activity state to prevent crashes
+      setActivity({
+        lead: {
+          id: leadId,
+          name: 'Unknown',
+          email: '',
+          phone: '',
+          company: '',
+        },
+        calls: [],
+        emails: [],
       });
     } finally {
       setIsLoading(false);
@@ -82,7 +102,7 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
       switch (table) {
         case 'call_logs':
           if (eventType === 'INSERT') {
-            // Add new call log
+            // Add new call log (newest first)
             const newCall: CallActivity = {
               id: newRecord.id,
               attempt_number: newRecord.attempt_number || 0,
@@ -91,6 +111,8 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
               timestamp: newRecord.created_at,
               recording_url: newRecord.recording_url,
             };
+            
+            // Insert at beginning for newest first ordering
             return {
               ...prevActivity,
               calls: [newCall, ...prevActivity.calls],
@@ -100,7 +122,7 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
           
         case 'email_logs':
           if (eventType === 'INSERT') {
-            // Add new email log
+            // Add new email log (newest first)
             const newEmail: EmailActivity = {
               id: newRecord.id,
               status: newRecord.status,
@@ -108,6 +130,8 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
               subject: newRecord.subject,
               to: newRecord.email_to,
             };
+            
+            // Insert at beginning for newest first ordering
             return {
               ...prevActivity,
               emails: [newEmail, ...prevActivity.emails],
@@ -123,9 +147,9 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
               lead: {
                 ...prevActivity.lead,
                 name: newRecord.name || prevActivity.lead.name,
-                email: newRecord.email || prevActivity.lead.email,
+                email: newRecord.email || newRecord.email_address || prevActivity.lead.email,
                 phone: newRecord.phone || prevActivity.lead.phone,
-                company: newRecord.company || prevActivity.lead.company,
+                company: newRecord.company || newRecord.company_name || prevActivity.lead.company,
               },
             };
           }
@@ -146,7 +170,9 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
   useEffect(() => {
     if (!leadId || !enabled) return;
 
-    // Subscribe to realtime updates
+    console.log(`Setting up realtime subscriptions for lead ${leadId}`);
+
+    // Subscribe to realtime updates for this specific lead
     const channel = supabase
       .channel(`lead-activity-${leadId}`)
       .on(
@@ -157,7 +183,10 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
           table: 'call_logs',
           filter: `lead_id=eq.${leadId}`,
         },
-        payload => handleRealtimeUpdate({ ...payload, table: 'call_logs' })
+        payload => {
+          console.log('Call log update:', payload);
+          handleRealtimeUpdate({ ...payload, table: 'call_logs' });
+        }
       )
       .on(
         'postgres_changes',
@@ -167,7 +196,10 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
           table: 'email_logs',
           filter: `lead_id=eq.${leadId}`,
         },
-        payload => handleRealtimeUpdate({ ...payload, table: 'email_logs' })
+        payload => {
+          console.log('Email log update:', payload);
+          handleRealtimeUpdate({ ...payload, table: 'email_logs' });
+        }
       )
       .on(
         'postgres_changes',
@@ -177,14 +209,19 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
           table: 'leads',
           filter: `id=eq.${leadId}`,
         },
-        payload => handleRealtimeUpdate({ ...payload, table: 'leads' })
+        payload => {
+          console.log('Lead update:', payload);
+          handleRealtimeUpdate({ ...payload, table: 'leads' });
+        }
       )
       .subscribe();
 
+    // Cleanup function to remove the channel
     return () => {
+      console.log(`Cleaning up realtime subscriptions for lead ${leadId}`);
       supabase.removeChannel(channel);
     };
-  }, [leadId, handleRealtimeUpdate]);
+  }, [leadId, handleRealtimeUpdate, enabled]);
 
   return {
     activity,
