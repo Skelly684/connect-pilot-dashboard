@@ -10,7 +10,9 @@ interface LeadActivityPanelProps {
   leadName?: string;
 }
 
-const getCallStatusColor = (status: CallActivity['status']): string => {
+const getCallStatusColor = (status?: CallActivity['status']): string => {
+  if (!status) return 'bg-gray-100 text-gray-800';
+  
   switch (status) {
     case 'completed':
       return 'bg-green-100 text-green-800';
@@ -25,7 +27,9 @@ const getCallStatusColor = (status: CallActivity['status']): string => {
   }
 };
 
-const getEmailStatusColor = (status: EmailActivity['status']): string => {
+const getEmailStatusColor = (status?: EmailActivity['status']): string => {
+  if (!status) return 'bg-gray-100 text-gray-800';
+  
   switch (status) {
     case 'sent':
       return 'bg-green-100 text-green-800';
@@ -116,7 +120,7 @@ export const LeadActivityPanel = ({ leadId, leadName }: LeadActivityPanelProps) 
               {latestCall ? (
                 <div className="space-y-1">
                   <Badge className={getCallStatusColor(latestCall.status)}>
-                    {latestCall.status.replace('-', ' ')}
+                    {latestCall.status?.replace('-', ' ') || 'Unknown'}
                   </Badge>
                   <p className="text-sm text-muted-foreground">
                     {formatRelativeTime(latestCall.timestamp).relative}
@@ -141,7 +145,7 @@ export const LeadActivityPanel = ({ leadId, leadName }: LeadActivityPanelProps) 
               {latestEmail ? (
                 <div className="space-y-1">
                   <Badge className={getEmailStatusColor(latestEmail.status)}>
-                    {latestEmail.status}
+                    {latestEmail.status || 'Unknown'}
                   </Badge>
                   <p className="text-sm text-muted-foreground">
                     {formatRelativeTime(latestEmail.timestamp).relative}
@@ -184,7 +188,7 @@ export const LeadActivityPanel = ({ leadId, leadName }: LeadActivityPanelProps) 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2">
                       <Badge className={getCallStatusColor(call.status)}>
-                        {call.status.replace('-', ' ')}
+                        {call.status?.replace('-', ' ') || 'Unknown'}
                       </Badge>
                       {call.duration && (
                         <span className="text-sm text-muted-foreground">
@@ -238,7 +242,7 @@ export const LeadActivityPanel = ({ leadId, leadName }: LeadActivityPanelProps) 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2">
                       <Badge className={getEmailStatusColor(email.status)}>
-                        {email.status}
+                        {email.status || 'Unknown'}
                       </Badge>
                     </div>
                     <p className="text-sm font-medium mt-1">
