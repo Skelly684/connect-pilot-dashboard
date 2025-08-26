@@ -8,6 +8,7 @@ import { formatRelativeTime } from "@/utils/timeUtils";
 interface LeadActivityPanelProps {
   leadId: string;
   leadName?: string;
+  enabled?: boolean;
 }
 
 const getCallStatusColor = (status?: CallActivity['status']): string => {
@@ -52,8 +53,8 @@ const formatDuration = (seconds?: number): string => {
   return `${remainingSeconds}s`;
 };
 
-export const LeadActivityPanel = ({ leadId, leadName }: LeadActivityPanelProps) => {
-  const { activity, isLoading, error } = useLeadActivity(leadId);
+export const LeadActivityPanel = ({ leadId, leadName, enabled = true }: LeadActivityPanelProps) => {
+  const { activity, isLoading, error } = useLeadActivity(leadId, enabled);
 
   if (isLoading) {
     return (

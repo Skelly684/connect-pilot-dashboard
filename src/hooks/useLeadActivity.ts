@@ -32,7 +32,7 @@ export interface LeadActivityData {
   emails: EmailActivity[];
 }
 
-export const useLeadActivity = (leadId: string | null) => {
+export const useLeadActivity = (leadId: string | null, enabled: boolean = true) => {
   const [activity, setActivity] = useState<LeadActivityData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,12 +137,14 @@ export const useLeadActivity = (leadId: string | null) => {
   }, [activity, leadId]);
 
   useEffect(() => {
-    // Initial fetch
-    fetchLeadActivity();
-  }, [leadId]);
+    // Only fetch if enabled
+    if (enabled) {
+      fetchLeadActivity();
+    }
+  }, [leadId, enabled]);
 
   useEffect(() => {
-    if (!leadId) return;
+    if (!leadId || !enabled) return;
 
     // Subscribe to realtime updates
     const channel = supabase

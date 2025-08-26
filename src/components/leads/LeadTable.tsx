@@ -247,6 +247,7 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
@@ -636,12 +637,24 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                                <Button variant="ghost" size="sm" disabled={!email}>
                                  <Mail className="h-4 w-4" />
                                </Button>
-                               <Button variant="ghost" size="sm" disabled={!phone}>
-                                 <Phone className="h-4 w-4" />
-                               </Button>
-                               <Button variant="ghost" size="sm">
-                                 <Eye className="h-4 w-4" />
-                               </Button>
+                                <Button variant="ghost" size="sm" disabled={!phone}>
+                                  <Phone className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
+                                    const newExpanded = new Set(expandedRows);
+                                    if (expandedRows.has(leadId)) {
+                                      newExpanded.delete(leadId);
+                                    } else {
+                                      newExpanded.add(leadId);
+                                    }
+                                    setExpandedRows(newExpanded);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
                                <DropdownMenu>
                                  <DropdownMenuTrigger asChild>
                                    <Button variant="ghost" size="sm">
@@ -657,14 +670,16 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                                </DropdownMenu>
                              </div>
                            </TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell colSpan={8} className="p-0 border-t-0">
-                              <div className="px-4 pb-4">
-                                <LeadActivityPanel leadId={leadId} leadName={fullName} />
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                           </TableRow>
+                           {expandedRows.has(leadId) && (
+                             <TableRow>
+                               <TableCell colSpan={8} className="p-0 border-t-0">
+                                 <div className="px-4 pb-4">
+                                   <LeadActivityPanel leadId={leadId} leadName={fullName} enabled={true} />
+                                 </div>
+                               </TableCell>
+                             </TableRow>
+                           )}
                         </>
                       );
                    })}
