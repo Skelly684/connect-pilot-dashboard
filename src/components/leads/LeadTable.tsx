@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Mail, Phone, Eye, MoreHorizontal, Search, Loader2, Trash2, Download, FileSpreadsheet, ExternalLink } from "lucide-react";
 import { EnhancedCallStatusBadge } from "./EnhancedCallStatusBadge";
 import { EnhancedCallActivity } from "./EnhancedCallActivity";
+import { LeadActivityPanel } from "./LeadActivityPanel";
 import {
   Table,
   TableBody,
@@ -657,13 +658,13 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                              </div>
                            </TableCell>
                           </TableRow>
-                         <TableRow>
-                           <TableCell colSpan={8} className="p-0 border-t-0">
-                             <div className="px-4 pb-4">
-                               <EnhancedCallActivity leadId={leadId} leadName={fullName} />
-                             </div>
-                           </TableCell>
-                         </TableRow>
+                          <TableRow>
+                            <TableCell colSpan={8} className="p-0 border-t-0">
+                              <div className="px-4 pb-4">
+                                <LeadActivityPanel leadId={leadId} leadName={fullName} />
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         </>
                       );
                    })}

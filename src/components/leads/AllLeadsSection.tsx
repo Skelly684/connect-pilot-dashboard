@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mail, Phone, Eye, MoreHorizontal, Search, Filter, Download, Trash2, Archive, FileSpreadsheet, ExternalLink, Loader2 } from "lucide-react";
 import { EnhancedCallStatusBadge } from "./EnhancedCallStatusBadge";
-import { EnhancedCallActivity } from "./EnhancedCallActivity";
+import { LeadActivityPanel } from "./LeadActivityPanel";
 import {
   Table,
   TableBody,
@@ -740,13 +740,13 @@ export const AllLeadsSection = ({
                              </div>
                            </TableCell>
                           </TableRow>
-                        <TableRow>
-                          <TableCell colSpan={8} className="p-0 border-t-0">
-                            <div className="px-4 pb-4">
-                              <EnhancedCallActivity leadId={leadId} leadName={fullName} />
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                         <TableRow>
+                           <TableCell colSpan={8} className="p-0 border-t-0">
+                             <div className="px-4 pb-4">
+                               <LeadActivityPanel leadId={leadId} leadName={fullName} />
+                             </div>
+                           </TableCell>
+                         </TableRow>
                         </>
                       );
                    })}
