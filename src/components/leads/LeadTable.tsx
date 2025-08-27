@@ -674,9 +674,13 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                            {expandedRows.has(leadId) && (
                              <TableRow>
                                <TableCell colSpan={8} className="p-0 border-t-0">
-                                 <div className="px-4 pb-4">
-                                   <LeadActivityPanel leadId={leadId} leadName={fullName} enabled={true} />
-                                 </div>
+                                  <div className="px-4 pb-4">
+                                    <LeadActivityPanel 
+                                      leadId={leadId} 
+                                      leadName={fullName} 
+                                      enabled={expandedRows.has(leadId)} 
+                                    />
+                                  </div>
                                </TableCell>
                              </TableRow>
                            )}
