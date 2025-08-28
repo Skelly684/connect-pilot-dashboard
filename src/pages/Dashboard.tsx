@@ -32,6 +32,8 @@ const Dashboard = () => {
   const handleTabChange = (tab: string) => {
     if (tab === "self-leads") {
       navigate("/self-leads");
+    } else if (tab === "calendar") {
+      navigate("/calendar");
     } else {
       setActiveTab(tab);
     }

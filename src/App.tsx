@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Outreach from "./pages/Outreach";
 import SelfLeads from "./pages/SelfLeads";
+import Calendar from "./pages/Calendar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,11 @@ const App = () => (
             <Route path="/self-leads" element={
               <ProtectedRoute>
                 <SelfLeads />
+              </ProtectedRoute>
+            } />
+            <Route path="/calendar" element={
+              <ProtectedRoute>
+                <Calendar />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

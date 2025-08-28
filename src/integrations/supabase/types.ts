@@ -215,6 +215,39 @@ export type Database = {
         }
         Relationships: []
       }
+      google_tokens: {
+        Row: {
+          access_token: string | null
+          client_id: string | null
+          client_secret: string | null
+          expiry: string | null
+          refresh_token: string | null
+          scopes: string[] | null
+          token_uri: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          client_id?: string | null
+          client_secret?: string | null
+          expiry?: string | null
+          refresh_token?: string | null
+          scopes?: string[] | null
+          token_uri?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          client_id?: string | null
+          client_secret?: string | null
+          expiry?: string | null
+          refresh_token?: string | null
+          scopes?: string[] | null
+          token_uri?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           accepted_at: string | null
