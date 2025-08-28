@@ -3,7 +3,7 @@ export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   (typeof window !== 'undefined' && (window as any).API_BASE_URL) ||
   (typeof window !== 'undefined' && localStorage.getItem('API_BASE_URL')) ||
-  (typeof window !== 'undefined' ? window.location.origin : '');
+  'https://dafed33295c9.ngrok-free.app';
 
 export const API_ENDPOINTS = {
   ACCEPTED_LEADS: '/api/accepted-leads',

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { API_BASE_URL } from '@/config/api';
 
 export interface CalendarEvent {
   id: string;
@@ -54,7 +55,7 @@ export const useGoogleCalendar = () => {
   const startGoogleAuth = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/auth/google/start', {
+      const response = await fetch(`${API_BASE_URL}/oauth/google/start`, {
         method: 'GET',
         headers: getHeaders(),
       });
@@ -103,7 +104,7 @@ export const useGoogleCalendar = () => {
   const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/calendar/list', {
+      const response = await fetch(`${API_BASE_URL}/api/calendar/list`, {
         method: 'GET',
         headers: getHeaders(),
       });
@@ -142,7 +143,7 @@ export const useGoogleCalendar = () => {
   const createQuickEvent = useCallback(async (eventData: QuickBookData) => {
     try {
       setLoading(true);
-      const response = await fetch('/api/calendar/quick-add', {
+      const response = await fetch(`${API_BASE_URL}/api/calendar/quick-add`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(eventData),
