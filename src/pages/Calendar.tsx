@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CalendarIcon, Clock, Users, Plus, RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addDays, startOfDay } from 'date-fns';
+import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 export interface CalendarEvent {
   id: string;
@@ -58,11 +59,11 @@ const Calendar = () => {
   // Health check
   const checkBackendHealth = useCallback(async () => {
     try {
-      const response = await fetch('/api/health');
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.HEALTH}`);
       const contentType = response.headers.get('content-type');
       
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Backend unavailable. Start FastAPI and try again.');
+        throw new Error(`Backend unavailable. Tried: ${API_BASE_URL}`);
       }
       
       setBackendHealthy(true);
@@ -70,7 +71,7 @@ const Calendar = () => {
       return true;
     } catch (error) {
       setBackendHealthy(false);
-      setErrorMessage('Backend unavailable. Start FastAPI and try again.');
+      setErrorMessage(`Backend unavailable. Tried: ${API_BASE_URL}`);
       setConnectionStatus('error');
       return false;
     }
@@ -82,7 +83,10 @@ const Calendar = () => {
     
     try {
       setConnectionStatus('loading');
-      const response = await fetch('/api/calendar/list', {
+      const timeMin = startOfDay(new Date()).toISOString();
+      const timeMax = addDays(new Date(), 14).toISOString();
+      
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CALENDAR_LIST}?timeMin=${timeMin}&timeMax=${timeMax}`, {
         method: 'GET',
         headers: getHeaders(),
       });
@@ -90,7 +94,7 @@ const Calendar = () => {
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const responseText = await response.text();
-        throw new Error(`Backend error ${response.status}: ${responseText.substring(0, 120)}...`);
+        throw new Error(`Backend unavailable. Tried: ${API_BASE_URL}`);
       }
 
       if (response.status === 401 || response.status === 404) {
@@ -131,7 +135,7 @@ const Calendar = () => {
     if (!backendHealthy) {
       toast({
         title: "Backend Unavailable",
-        description: "Please ensure FastAPI server is running.",
+        description: `Backend unavailable. Tried: ${API_BASE_URL}`,
         variant: "destructive",
       });
       return;
@@ -139,14 +143,14 @@ const Calendar = () => {
 
     try {
       setLoading(true);
-      const response = await fetch('/auth/google/start', {
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.OAUTH_GOOGLE_START}`, {
         method: 'GET',
         headers: getHeaders(),
       });
 
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Backend API not available - expected JSON response');
+        throw new Error(`Backend unavailable. Tried: ${API_BASE_URL}`);
       }
 
       if (!response.ok) {
@@ -155,62 +159,83 @@ const Calendar = () => {
 
       const data = await response.json();
       
-      // Open popup window
+      // Open centered popup window
+      const left = (window.screen.width / 2) - (520 / 2);
+      const top = (window.screen.height / 2) - (700 / 2);
       const popup = window.open(
         data.auth_url,
         'google-auth',
-        'width=520,height=700,scrollbars=yes,resizable=yes,noopener,noreferrer'
+        `width=520,height=700,left=${left},top=${top},scrollbars=yes,resizable=yes,noopener,noreferrer`
       );
 
       if (!popup) {
-        // Popup blocked, redirect current tab
-        window.location.href = data.auth_url;
+        toast({
+          title: "Popup Blocked",
+          description: "Please allow popups and try again, or we'll redirect you.",
+          variant: "destructive",
+        });
+        // Fallback: redirect current tab
+        setTimeout(() => {
+          window.location.href = data.auth_url;
+        }, 2000);
         return;
       }
 
-      // Poll for completion
+      // Poll for completion every 1.5s for up to 2 minutes
       let attempts = 0;
-      const maxAttempts = 60; // 60 seconds
+      const maxAttempts = 80; // 2 minutes at 1.5s intervals
       
       const pollForCompletion = setInterval(async () => {
         attempts++;
         
-        if (popup.closed || attempts >= maxAttempts) {
+        if (popup.closed) {
           clearInterval(pollForCompletion);
-          if (attempts >= maxAttempts) {
-            toast({
-              title: "Timeout",
-              description: "OAuth process timed out. Please try again.",
-              variant: "destructive",
-            });
-          }
+          toast({
+            title: "Authentication Cancelled",
+            description: "The popup was closed before authentication completed.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+        
+        if (attempts >= maxAttempts) {
+          clearInterval(pollForCompletion);
+          popup.close();
+          toast({
+            title: "Timeout",
+            description: "OAuth process timed out. Please try again.",
+            variant: "destructive",
+          });
           setLoading(false);
           return;
         }
 
         try {
-          const checkResponse = await fetch('/api/calendar/list', {
+          const statusResponse = await fetch(`${API_BASE_URL}${API_ENDPOINTS.OAUTH_STATUS}`, {
             method: 'GET',
             headers: getHeaders(),
           });
           
-          if (checkResponse.ok) {
-            const checkData = await checkResponse.json();
-            setEvents(checkData.items || []);
-            setConnectionStatus('connected');
-            popup.close();
-            clearInterval(pollForCompletion);
-            setLoading(false);
-            toast({
-              title: "Connected",
-              description: "Successfully connected to Google Calendar!",
-              variant: "default",
-            });
+          if (statusResponse.ok) {
+            const statusData = await statusResponse.json();
+            if (statusData.status === 'connected') {
+              popup.close();
+              clearInterval(pollForCompletion);
+              setLoading(false);
+              toast({
+                title: "Connected",
+                description: "Successfully connected to Google Calendar!",
+                variant: "default",
+              });
+              // Refresh events list
+              await checkConnection();
+            }
           }
         } catch (error) {
           // Continue polling
         }
-      }, 1000);
+      }, 1500);
 
     } catch (error) {
       console.error('Google auth error:', error);
@@ -253,7 +278,7 @@ const Calendar = () => {
         })
       };
 
-      const response = await fetch('/api/calendar/quick-add', {
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CALENDAR_BOOK}`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(eventData),
@@ -269,6 +294,19 @@ const Calendar = () => {
         variant: "default",
       });
 
+      // Optimistically add event to list
+      const newEvent: CalendarEvent = {
+        id: `temp-${Date.now()}`,
+        summary: formData.summary,
+        description: 'Booked from Dashboard',
+        start: { dateTime: new Date(formData.startDateTime).toISOString() },
+        end: { dateTime: new Date(formData.endDateTime).toISOString() },
+        ...(formData.attendeeEmail && {
+          attendees: [{ email: formData.attendeeEmail }]
+        })
+      };
+      setEvents(prev => [newEvent, ...prev]);
+
       // Reset form
       setFormData({
         summary: '',
@@ -277,8 +315,8 @@ const Calendar = () => {
         attendeeEmail: '',
       });
 
-      // Refresh events list
-      await checkConnection();
+      // Refresh events list to get actual event data
+      setTimeout(() => checkConnection(), 1000);
       
     } catch (error) {
       console.error('Create event error:', error);
@@ -329,7 +367,10 @@ const Calendar = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <CalendarIcon className="h-8 w-8 text-primary" />
-                  <h1 className="text-3xl font-bold">Google Calendar</h1>
+                  <div>
+                    <h1 className="text-3xl font-bold">Google Calendar</h1>
+                    <p className="text-xs text-muted-foreground">API: {API_BASE_URL}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusBadge />
