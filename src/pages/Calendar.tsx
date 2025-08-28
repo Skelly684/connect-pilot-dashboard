@@ -86,7 +86,7 @@ const Calendar = () => {
       const timeMin = startOfDay(new Date()).toISOString();
       const timeMax = addDays(new Date(), 14).toISOString();
       
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CALENDAR_LIST}?timeMin=${timeMin}&timeMax=${timeMax}`, {
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CALENDAR_EVENTS}?from=${timeMin}&to=${timeMax}`, {
         method: 'GET',
         headers: getHeaders(),
       });
@@ -108,7 +108,7 @@ const Calendar = () => {
       }
 
       const data = await response.json();
-      setEvents(data.items || []);
+      setEvents(data.items || data.events || []);
       setConnectionStatus('connected');
       setErrorMessage('');
     } catch (error) {
@@ -143,7 +143,7 @@ const Calendar = () => {
 
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.OAUTH_GOOGLE_START}`, {
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.OAUTH_GOOGLE_START}?redirect=/calendar`, {
         method: 'GET',
         headers: getHeaders(),
       });
@@ -219,7 +219,7 @@ const Calendar = () => {
           
           if (statusResponse.ok) {
             const statusData = await statusResponse.json();
-            if (statusData.status === 'connected') {
+            if (statusData.connected === true) {
               popup.close();
               clearInterval(pollForCompletion);
               setLoading(false);
@@ -265,20 +265,17 @@ const Calendar = () => {
     try {
       setLoading(true);
       const eventData = {
-        summary: formData.summary,
+        calendarId: 'primary', // Use primary calendar
+        title: formData.summary,
         description: 'Booked from Dashboard',
-        start: {
-          dateTime: new Date(formData.startDateTime).toISOString(),
-        },
-        end: {
-          dateTime: new Date(formData.endDateTime).toISOString(),
-        },
+        start: new Date(formData.startDateTime).toISOString(),
+        end: new Date(formData.endDateTime).toISOString(),
         ...(formData.attendeeEmail && {
           attendees: [{ email: formData.attendeeEmail }]
         })
       };
 
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CALENDAR_BOOK}`, {
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CALENDAR_EVENTS}`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(eventData),

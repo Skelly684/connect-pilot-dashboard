@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_events: {
+        Row: {
+          calendar_id: string
+          created_at: string
+          description: string | null
+          end_time: string
+          google_event_id: string | null
+          id: string
+          lead_id: string | null
+          location: string | null
+          meeting_link: string | null
+          start_time: string
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calendar_id: string
+          created_at?: string
+          description?: string | null
+          end_time: string
+          google_event_id?: string | null
+          id?: string
+          lead_id?: string | null
+          location?: string | null
+          meeting_link?: string | null
+          start_time: string
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calendar_id?: string
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          google_event_id?: string | null
+          id?: string
+          lead_id?: string | null
+          location?: string | null
+          meeting_link?: string | null
+          start_time?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       call_logs: {
         Row: {
           attempt_number: number | null
@@ -212,6 +263,108 @@ export type Database = {
           subject?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      google_calendars: {
+        Row: {
+          access_role: string | null
+          calendar_id: string
+          color: string | null
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          is_selected: boolean | null
+          summary: string | null
+          time_zone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_role?: string | null
+          calendar_id: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          is_selected?: boolean | null
+          summary?: string | null
+          time_zone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_role?: string | null
+          calendar_id?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          is_selected?: boolean | null
+          summary?: string | null
+          time_zone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_oauth_states: {
+        Row: {
+          created_at: string
+          redirect_path: string | null
+          state: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          redirect_path?: string | null
+          state: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          redirect_path?: string | null
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_oauth_tokens: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string
+          id: string
+          provider: string
+          refresh_token: string | null
+          scope: string | null
+          token_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          provider?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          provider?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

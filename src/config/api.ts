@@ -10,6 +10,8 @@ export const API_ENDPOINTS = {
   HEALTH: '/api/health',
   CALENDAR_LIST: '/api/calendar/list',
   CALENDAR_BOOK: '/api/calendar/book',
+  CALENDAR_EVENTS: '/calendar/events',
+  CALENDAR_CALENDARS: '/calendar/calendars',
   OAUTH_GOOGLE_START: '/oauth/google/start',
-  OAUTH_STATUS: '/oauth/status',
+  OAUTH_STATUS: '/oauth/google/status',
 } as const;
