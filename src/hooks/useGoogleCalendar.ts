@@ -63,6 +63,11 @@ export const useGoogleCalendar = () => {
         throw new Error('Failed to initiate Google OAuth');
       }
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Backend API not available - expected JSON response');
+      }
+
       const data = await response.json();
       
       // Open popup window
@@ -84,9 +89,10 @@ export const useGoogleCalendar = () => {
       return popup;
     } catch (error) {
       console.error('Google auth error:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to connect to Google Calendar";
       toast({
-        title: "Connection Failed",
-        description: "Failed to connect to Google Calendar. Please try again.",
+        title: "Connection Failed", 
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -111,15 +117,21 @@ export const useGoogleCalendar = () => {
         throw new Error('Failed to fetch events');
       }
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Backend API not available - please ensure FastAPI server is running');
+      }
+
       const data = await response.json();
       setEvents(data.items || []);
       setIsConnected(true);
     } catch (error) {
       console.error('Fetch events error:', error);
       setIsConnected(false);
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch calendar events";
       toast({
-        title: "Error",
-        description: "Failed to fetch calendar events. Please try reconnecting.",
+        title: "Connection Error",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
