@@ -11,6 +11,7 @@ import { ReviewNewLeadsSection } from "@/components/leads/ReviewNewLeadsSection"
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { CRMIntegration } from "@/components/integrations/CRMIntegration";
 import { OutreachCenter } from "@/components/outreach/OutreachCenter";
+import { SettingsPage } from "@/components/settings/SettingsPage";
 import { useLeads } from "@/hooks/useLeads";
 
 const Dashboard = () => {
@@ -126,6 +127,8 @@ const Dashboard = () => {
         return null;
       case "integrations":
         return <CRMIntegration />;
+      case "settings":
+        return <SettingsPage />;
       default:
         return <DashboardOverview />;
     }

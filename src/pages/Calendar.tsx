@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { CalendarIcon, Clock, Users, Plus, RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, addDays, startOfDay } from 'date-fns';
-import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { getApiUrl } from '@/config/api';
 
 export interface CalendarEvent {
   id: string;
@@ -59,11 +59,12 @@ const Calendar = () => {
   // Health check
   const checkBackendHealth = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.HEALTH}`);
+      const response = await fetch(getApiUrl('/api/health'));
       const contentType = response.headers.get('content-type');
       
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(`Backend unavailable. Tried: ${API_BASE_URL}`);
+        const currentApiUrl = localStorage.getItem('API_BASE_URL') || '/api';
+        throw new Error(`Backend unavailable. Tried: ${currentApiUrl}`);
       }
       
       setBackendHealthy(true);
@@ -71,7 +72,8 @@ const Calendar = () => {
       return true;
     } catch (error) {
       setBackendHealthy(false);
-      setErrorMessage(`Backend unavailable. Tried: ${API_BASE_URL}`);
+      const currentApiUrl = localStorage.getItem('API_BASE_URL') || '/api';
+      setErrorMessage(`Backend unavailable. Tried: ${currentApiUrl}`);
       setConnectionStatus('error');
       return false;
     }
@@ -86,7 +88,7 @@ const Calendar = () => {
       const timeMin = startOfDay(new Date()).toISOString();
       const timeMax = addDays(new Date(), 14).toISOString();
       
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CALENDAR_EVENTS}?from=${timeMin}&to=${timeMax}`, {
+      const response = await fetch(getApiUrl(`/calendar/events?from=${timeMin}&to=${timeMax}`), {
         method: 'GET',
         headers: getHeaders(),
       });
@@ -94,7 +96,8 @@ const Calendar = () => {
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const responseText = await response.text();
-        throw new Error(`Backend unavailable. Tried: ${API_BASE_URL}`);
+        const currentApiUrl = localStorage.getItem('API_BASE_URL') || '/api';
+        throw new Error(`Backend unavailable. Tried: ${currentApiUrl}`);
       }
 
       if (response.status === 401 || response.status === 404) {
@@ -118,6 +121,23 @@ const Calendar = () => {
     }
   }, [backendHealthy]);
 
+  // Listen for API config changes and refresh health check
+  useEffect(() => {
+    const handleConfigChange = () => {
+      // Re-initialize when API config changes
+      const initializeCalendar = async () => {
+        const healthy = await checkBackendHealth();
+        if (healthy) {
+          await checkConnection();
+        }
+      };
+      initializeCalendar();
+    };
+
+    window.addEventListener('api-config-changed', handleConfigChange);
+    return () => window.removeEventListener('api-config-changed', handleConfigChange);
+  }, [checkBackendHealth, checkConnection]);
+
   // Initialize on mount
   useEffect(() => {
     const initializeCalendar = async () => {
@@ -135,7 +155,7 @@ const Calendar = () => {
     if (!backendHealthy) {
       toast({
         title: "Backend Unavailable",
-        description: `Backend unavailable. Tried: ${API_BASE_URL}`,
+        description: `Backend unavailable. Tried: ${localStorage.getItem('API_BASE_URL') || '/api'}`,
         variant: "destructive",
       });
       return;
@@ -143,14 +163,15 @@ const Calendar = () => {
 
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.OAUTH_GOOGLE_START}?redirect=/calendar`, {
+      const response = await fetch(getApiUrl('/oauth/google/start?redirect=/calendar'), {
         method: 'GET',
         headers: getHeaders(),
       });
 
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(`Backend unavailable. Tried: ${API_BASE_URL}`);
+        const currentApiUrl = localStorage.getItem('API_BASE_URL') || '/api';
+        throw new Error(`Backend unavailable. Tried: ${currentApiUrl}`);
       }
 
       if (!response.ok) {
@@ -212,7 +233,7 @@ const Calendar = () => {
         }
 
         try {
-          const statusResponse = await fetch(`${API_BASE_URL}${API_ENDPOINTS.OAUTH_STATUS}`, {
+          const statusResponse = await fetch(getApiUrl('/oauth/google/status'), {
             method: 'GET',
             headers: getHeaders(),
           });
@@ -275,7 +296,7 @@ const Calendar = () => {
         })
       };
 
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.CALENDAR_EVENTS}`, {
+      const response = await fetch(getApiUrl('/calendar/events'), {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(eventData),
@@ -366,7 +387,7 @@ const Calendar = () => {
                   <CalendarIcon className="h-8 w-8 text-primary" />
                   <div>
                     <h1 className="text-3xl font-bold">Google Calendar</h1>
-                    <p className="text-xs text-muted-foreground">API: {API_BASE_URL}</p>
+                    <p className="text-xs text-muted-foreground">API: {localStorage.getItem('API_BASE_URL') || '/api'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

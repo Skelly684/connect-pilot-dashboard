@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { API_BASE_URL } from '@/config/api';
+import { getApiUrl } from '@/config/api';
 
 export interface CalendarEvent {
   id: string;
@@ -52,10 +52,49 @@ export const useGoogleCalendar = () => {
     };
   }, [user?.id]);
 
+  const fetchEvents = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(getApiUrl('/api/calendar/list'), {
+        method: 'GET',
+        headers: getHeaders(),
+      });
+
+      if (response.status === 401) {
+        setIsConnected(false);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch events');
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Backend API not available - please ensure FastAPI server is running');
+      }
+
+      const data = await response.json();
+      setEvents(data.items || []);
+      setIsConnected(true);
+    } catch (error) {
+      console.error('Fetch events error:', error);
+      setIsConnected(false);
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch calendar events";
+      toast({
+        title: "Connection Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [getHeaders, toast]);
+
   const startGoogleAuth = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/oauth/google/start`, {
+      const response = await fetch(getApiUrl('/oauth/google/start'), {
         method: 'GET',
         headers: getHeaders(),
       });
@@ -99,51 +138,23 @@ export const useGoogleCalendar = () => {
     } finally {
       setLoading(false);
     }
-  }, [getHeaders, toast]);
+  }, [getHeaders, toast, fetchEvents]);
 
-  const fetchEvents = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/calendar/list`, {
-        method: 'GET',
-        headers: getHeaders(),
-      });
+  // Listen for API config changes (after fetchEvents is defined)
+  useEffect(() => {
+    const handleConfigChange = () => {
+      // Refresh connection status when API config changes
+      fetchEvents();
+    };
 
-      if (response.status === 401) {
-        setIsConnected(false);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch events');
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Backend API not available - please ensure FastAPI server is running');
-      }
-
-      const data = await response.json();
-      setEvents(data.items || []);
-      setIsConnected(true);
-    } catch (error) {
-      console.error('Fetch events error:', error);
-      setIsConnected(false);
-      const errorMessage = error instanceof Error ? error.message : "Failed to fetch calendar events";
-      toast({
-        title: "Connection Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [getHeaders, toast]);
+    window.addEventListener('api-config-changed', handleConfigChange);
+    return () => window.removeEventListener('api-config-changed', handleConfigChange);
+  }, [fetchEvents]);
 
   const createQuickEvent = useCallback(async (eventData: QuickBookData) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/calendar/quick-add`, {
+      const response = await fetch(getApiUrl('/api/calendar/quick-add'), {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(eventData),

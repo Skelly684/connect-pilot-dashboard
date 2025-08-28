@@ -1,9 +1,17 @@
-// API Configuration with fallback chain
-export const API_BASE_URL = 
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  (typeof window !== 'undefined' && (window as any).API_BASE_URL) ||
-  (typeof window !== 'undefined' && localStorage.getItem('API_BASE_URL')) ||
-  'https://dafed33295c9.ngrok-free.app';
+// API Configuration with localStorage support
+const getApiBaseUrl = () => {
+  if (typeof window === 'undefined') return '/api';
+  return localStorage.getItem('API_BASE_URL') || '/api';
+};
+
+export let API_BASE_URL = getApiBaseUrl();
+
+// Update API_BASE_URL when settings change
+if (typeof window !== 'undefined') {
+  window.addEventListener('api-config-changed', (event: any) => {
+    API_BASE_URL = event.detail.apiBaseUrl || '/api';
+  });
+}
 
 export const API_ENDPOINTS = {
   ACCEPTED_LEADS: '/api/accepted-leads',
@@ -15,3 +23,15 @@ export const API_ENDPOINTS = {
   OAUTH_GOOGLE_START: '/oauth/google/start',
   OAUTH_STATUS: '/oauth/google/status',
 } as const;
+
+// Helper function to get full API URL
+export const getApiUrl = (endpoint: string) => {
+  const baseUrl = typeof window !== 'undefined' ? 
+    localStorage.getItem('API_BASE_URL') || '/api' : '/api';
+  
+  if (baseUrl === '/api') {
+    return endpoint; // Same origin
+  }
+  
+  return `${baseUrl}${endpoint}`;
+};
