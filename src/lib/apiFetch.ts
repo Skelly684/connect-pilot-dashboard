@@ -19,21 +19,23 @@ export interface ApiFetchOptions extends Omit<RequestInit, 'credentials'> {
   headers?: Record<string, string>;
 }
 
-export async function apiFetch(path: string, options: ApiFetchOptions = {}): Promise<any> {
-  const baseUrl = appConfig.getApiBaseUrl();
-  
-  // Ensure path starts with /api for API endpoints
-  let apiPath = path;
-  if (!path.startsWith('/api/')) {
-    if (path.startsWith('/')) {
-      apiPath = `/api${path}`;
-    } else {
-      apiPath = `/api/${path}`;
-    }
+// Helper to build proper API URLs
+export const apiUrl = (path: string): string => {
+  // If already absolute URL, return as-is
+  if (/^https?:\/\//i.test(path)) {
+    return path;
   }
   
-  // Construct full URL
-  const fullUrl = baseUrl === '/api' ? apiPath : `${baseUrl}${apiPath}`;
+  const baseUrl = appConfig.getApiBaseUrl();
+  const base = baseUrl.replace(/\/+$/, ''); // Remove trailing slashes
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  
+  return `${base}${normalizedPath}`;
+};
+
+export async function apiFetch(path: string, options: ApiFetchOptions = {}): Promise<any> {
+  // Build full URL using apiUrl helper
+  const fullUrl = apiUrl(path);
   
   const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',

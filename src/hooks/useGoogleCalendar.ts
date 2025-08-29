@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { appConfig } from '@/lib/appConfig';
-import { apiFetch, ApiError } from '@/lib/apiFetch';
+import { apiFetch, ApiError, apiUrl } from '@/lib/apiFetch';
 
 // Constant user ID for backend authentication
 const USER_ID = "409547ac-ed07-4550-a27f-66926515e2b9";
@@ -77,12 +77,24 @@ export const useGoogleCalendar = () => {
       setLoading(true);
       
       // Step 1: Get auth URL from backend
-      const baseUrl = appConfig.getApiBaseUrl();
-      const authStartUrl = baseUrl === '/api' ? `/auth/google/start?state=uid:${USER_ID}` : `${baseUrl}/auth/google/start?state=uid:${USER_ID}`;
+      const authStartUrl = `/auth/google/start?state=${encodeURIComponent('uid:409547ac-ed07-4550-a27f-66926515e2b9')}`;
       
-      const authResponse = await apiFetch(authStartUrl);
+      const authResponse = await fetch(apiUrl(authStartUrl), {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+          'X-User-Id': USER_ID,
+        },
+      });
+
+      if (!authResponse.ok) {
+        throw new Error(`Failed to start OAuth: ${authResponse.status} ${authResponse.statusText}`);
+      }
+
+      const authData = await authResponse.json();
       
-      if (!authResponse.auth_url) {
+      if (!authData.auth_url) {
         throw new Error('No auth URL received from backend');
       }
 
@@ -90,7 +102,7 @@ export const useGoogleCalendar = () => {
       const left = (window.screen.width / 2) - (260);
       const top = (window.screen.height / 2) - (320);
       const popup = window.open(
-        authResponse.auth_url,
+        authData.auth_url,
         'gcal_oauth',
         `width=520,height=640,left=${left},top=${top},noopener,noreferrer`
       );
@@ -105,7 +117,7 @@ export const useGoogleCalendar = () => {
         
         // Create and click a fallback link
         const fallbackLink = document.createElement('a');
-        fallbackLink.href = authResponse.auth_url;
+        fallbackLink.href = authData.auth_url;
         fallbackLink.target = '_blank';
         fallbackLink.rel = 'noopener noreferrer';
         fallbackLink.textContent = 'Open Google OAuth';
@@ -142,46 +154,35 @@ export const useGoogleCalendar = () => {
 
         try {
           // Poll calendar list endpoint for success
-          const listUrl = baseUrl === '/api' ? '/api/calendar/list' : `${baseUrl}/api/calendar/list`;
-          const response = await apiFetch(listUrl);
+          const response = await fetch(apiUrl('/api/calendar/list'), {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+              'X-User-Id': USER_ID,
+            },
+          });
           
           // Success condition: HTTP 200 with ok: true
-          if (response && (response.ok === true || response.items || response.events)) {
-            clearInterval(pollForCompletion);
-            popup.close();
-            setIsConnected(true);
-            setEvents(response.items || response.events || []);
-            setLoading(false);
-            
-            toast({
-              title: "Google Connected",
-              description: "Successfully connected to Google Calendar!",
-            });
-            return;
+          if (response.ok) {
+            const data = await response.json();
+            if (data && (data.ok === true || data.items || data.events)) {
+              clearInterval(pollForCompletion);
+              popup.close();
+              setIsConnected(true);
+              setEvents(data.items || data.events || []);
+              setLoading(false);
+              
+              toast({
+                title: "Google Connected",
+                description: "Successfully connected to Google Calendar!",
+              });
+              return;
+            }
           }
         } catch (error) {
-          const apiError = error as ApiError;
-          
-          // Handle specific error codes
-          if (apiError.status === 401) {
-            // Still not authenticated - continue polling
-            return;
-          }
-          
-          if (apiError.status >= 500) {
-            // Server error - stop polling and show error
-            clearInterval(pollForCompletion);
-            popup.close();
-            setLoading(false);
-            toast({
-              title: "Connection Error",
-              description: `Server error from ${apiError.url}: ${apiError.message}`,
-              variant: "destructive",
-            });
-            return;
-          }
-          
-          // Other errors - continue polling for now
+          // Error during polling - continue polling for other attempts
+          // Most likely a network error or temporary server issue
         }
       }, 2000);
 
@@ -189,11 +190,10 @@ export const useGoogleCalendar = () => {
       console.error('Google auth error:', error);
       const apiError = error as ApiError;
       const errorMessage = apiError?.message || (error instanceof Error ? error.message : "Failed to connect to Google Calendar");
-      const errorUrl = apiError?.url ? ` (${apiError.url})` : '';
       
       toast({
         title: "Connection Failed", 
-        description: `${errorMessage}${errorUrl}`,
+        description: errorMessage,
         variant: "destructive",
       });
       setLoading(false);
