@@ -76,69 +76,129 @@ export const useGoogleCalendar = () => {
     try {
       setLoading(true);
       
-      // Open popup directly to auth URL with user state
+      // Step 1: Get auth URL from backend
       const baseUrl = appConfig.getApiBaseUrl();
-      const authUrl = baseUrl === '/api' ? `/auth/google/start?state=uid:${USER_ID}` : `${baseUrl}/auth/google/start?state=uid:${USER_ID}`;
+      const authStartUrl = baseUrl === '/api' ? `/auth/google/start?state=uid:${USER_ID}` : `${baseUrl}/auth/google/start?state=uid:${USER_ID}`;
       
-      const left = (window.screen.width / 2) - (520 / 2);
-      const top = (window.screen.height / 2) - (700 / 2);
+      const authResponse = await apiFetch(authStartUrl);
+      
+      if (!authResponse.auth_url) {
+        throw new Error('No auth URL received from backend');
+      }
+
+      // Step 2: Open popup with auth URL
+      const left = (window.screen.width / 2) - (260);
+      const top = (window.screen.height / 2) - (320);
       const popup = window.open(
-        authUrl,
-        'google-auth',
-        `width=520,height=700,left=${left},top=${top},scrollbars=yes,resizable=yes,noopener,noreferrer`
+        authResponse.auth_url,
+        'gcal_oauth',
+        `width=520,height=640,left=${left},top=${top},noopener,noreferrer`
       );
 
       if (!popup) {
-        throw new Error('Popup blocked - please allow popups and try again');
+        // Popup blocked - show fallback link
+        toast({
+          title: "Popup Blocked",
+          description: "Please allow popups and click again, or use the direct link below",
+          variant: "destructive",
+        });
+        
+        // Create and click a fallback link
+        const fallbackLink = document.createElement('a');
+        fallbackLink.href = authResponse.auth_url;
+        fallbackLink.target = '_blank';
+        fallbackLink.rel = 'noopener noreferrer';
+        fallbackLink.textContent = 'Open Google OAuth';
+        fallbackLink.click();
+        return;
       }
 
-      // Poll for completion every 2s for up to 60s
+      // Step 3: Show waiting UI and poll for completion
       let attempts = 0;
       const maxAttempts = 30; // 60 seconds at 2s intervals
       
       const pollForCompletion = setInterval(async () => {
         attempts++;
         
+        // Check if popup was closed manually
         if (popup.closed) {
           clearInterval(pollForCompletion);
+          setLoading(false);
           return;
         }
         
+        // Check if we've timed out
         if (attempts >= maxAttempts) {
           clearInterval(pollForCompletion);
           popup.close();
-          throw new Error('OAuth process timed out');
+          setLoading(false);
+          toast({
+            title: "Connection Timeout",
+            description: "OAuth process timed out. Please try again.",
+            variant: "destructive",
+          });
+          return;
         }
 
         try {
-          // Check if we have tokens by trying to fetch events
-          await fetchEvents();
-          if (isConnected) {
-            popup.close();
+          // Poll calendar list endpoint for success
+          const listUrl = baseUrl === '/api' ? '/api/calendar/list' : `${baseUrl}/api/calendar/list`;
+          const response = await apiFetch(listUrl);
+          
+          // Success condition: HTTP 200 with ok: true
+          if (response && (response.ok === true || response.items || response.events)) {
             clearInterval(pollForCompletion);
+            popup.close();
+            setIsConnected(true);
+            setEvents(response.items || response.events || []);
+            setLoading(false);
+            
             toast({
-              title: "Connected",
+              title: "Google Connected",
               description: "Successfully connected to Google Calendar!",
             });
+            return;
           }
         } catch (error) {
-          // Continue polling - not connected yet
+          const apiError = error as ApiError;
+          
+          // Handle specific error codes
+          if (apiError.status === 401) {
+            // Still not authenticated - continue polling
+            return;
+          }
+          
+          if (apiError.status >= 500) {
+            // Server error - stop polling and show error
+            clearInterval(pollForCompletion);
+            popup.close();
+            setLoading(false);
+            toast({
+              title: "Connection Error",
+              description: `Server error from ${apiError.url}: ${apiError.message}`,
+              variant: "destructive",
+            });
+            return;
+          }
+          
+          // Other errors - continue polling for now
         }
       }, 2000);
 
-      return popup;
     } catch (error) {
       console.error('Google auth error:', error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to connect to Google Calendar";
+      const apiError = error as ApiError;
+      const errorMessage = apiError?.message || (error instanceof Error ? error.message : "Failed to connect to Google Calendar");
+      const errorUrl = apiError?.url ? ` (${apiError.url})` : '';
+      
       toast({
         title: "Connection Failed", 
-        description: errorMessage,
+        description: `${errorMessage}${errorUrl}`,
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
-  }, [toast, fetchEvents, isConnected]);
+  }, [toast]);
 
   // Listen for API config changes
   useEffect(() => {

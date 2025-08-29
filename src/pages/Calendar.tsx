@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { CalendarIcon, Clock, Users, Plus, RefreshCw, AlertCircle } from 'lucide-react';
+import { CalendarIcon, Clock, Users, Plus, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, addDays, startOfDay } from 'date-fns';
 import { appConfig } from '@/lib/appConfig';
@@ -38,11 +39,17 @@ export interface CalendarEvent {
 
 const Calendar = () => {
   const { toast } = useToast();
+  const { 
+    startGoogleAuth, 
+    events: googleEvents, 
+    isConnected: googleConnected, 
+    loading: googleLoading,
+    fetchEvents 
+  } = useGoogleCalendar();
+  
   const [backendHealthy, setBackendHealthy] = useState<boolean | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'not-connected' | 'loading' | 'error'>('unknown');
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [loading, setLoading] = useState(false);
   
   // Quick booking form state
   const [formData, setFormData] = useState({
@@ -51,10 +58,6 @@ const Calendar = () => {
     endDateTime: '',
     attendeeEmail: '',
   });
-
-  const getUserId = () => {
-    return USER_ID;
-  };
 
   // Health check
   const checkBackendHealth = useCallback(async () => {
@@ -67,78 +70,27 @@ const Calendar = () => {
       setBackendHealthy(false);
       const apiError = error as ApiError;
       setErrorMessage(`Backend unavailable. Tried: ${apiError.url} - ${apiError.message}`);
-      setConnectionStatus('error');
       return false;
     }
   }, []);
 
-  // Check connection status
-  const checkConnection = useCallback(async () => {
-    if (!backendHealthy) return;
-    
-    try {
-      setConnectionStatus('loading');
-      
-      const data = await apiFetch('/api/calendar/list');
-      setEvents(data.items || data.events || []);
-      setConnectionStatus('connected');
-      setErrorMessage('');
-    } catch (error) {
-      console.error('Connection check error:', error);
-      const apiError = error as ApiError;
-      
-      if (apiError.status === 401 || apiError.status === 404) {
-        setConnectionStatus('not-connected');
-        setEvents([]);
-        return;
-      }
-      
-      setConnectionStatus('error');
-      setErrorMessage(`Failed to fetch events from ${apiError.url}: ${apiError.message}`);
-    }
-  }, [backendHealthy]);
-
   // Listen for API config changes and refresh health check
   useEffect(() => {
     const handleConfigChange = () => {
-      // Re-initialize when API config changes
-      const initializeCalendar = async () => {
-        try {
-          const healthy = await checkBackendHealth();
-          if (healthy) {
-            await checkConnection();
-          }
-        } catch (error) {
-          // Silently handle config change errors to avoid blocking UI
-          console.error('Calendar config change error:', error);
-        }
-      };
-      initializeCalendar();
+      checkBackendHealth();
     };
 
     window.addEventListener('app-config-changed', handleConfigChange);
     return () => window.removeEventListener('app-config-changed', handleConfigChange);
-  }, [checkBackendHealth, checkConnection]);
+  }, [checkBackendHealth]);
 
   // Initialize on mount
   useEffect(() => {
-    const initializeCalendar = async () => {
-      try {
-        const healthy = await checkBackendHealth();
-        if (healthy) {
-          await checkConnection();
-        }
-      } catch (error) {
-        // Silently handle initialization errors to avoid blocking UI
-        console.error('Calendar initialization error:', error);
-      }
-    };
-    
-    initializeCalendar();
-  }, [checkBackendHealth, checkConnection]);
+    checkBackendHealth();
+  }, [checkBackendHealth]);
 
-  // OAuth connect flow
-  const handleConnect = async () => {
+  // Connect to Google Calendar
+  const handleConnect = () => {
     if (!backendHealthy) {
       toast({
         title: "Backend Unavailable",
@@ -147,128 +99,7 @@ const Calendar = () => {
       });
       return;
     }
-
-    try {
-      setLoading(true);
-      const baseUrl = appConfig.getApiBaseUrl();
-      
-      // Call auth start endpoint to get auth URL
-      const authStartUrl = baseUrl === '/api' ? `/auth/google/start?state=uid:${USER_ID}` : `${baseUrl}/auth/google/start?state=uid:${USER_ID}`;
-      
-      const authResponse = await fetch(authStartUrl, {
-        method: 'GET',
-        mode: 'cors',
-        credentials: 'omit',
-        headers: {
-          'Accept': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
-          'X-User-Id': USER_ID,
-        },
-      });
-
-      if (!authResponse.ok) {
-        throw new Error(`Failed to start OAuth: ${authResponse.status} ${authResponse.statusText}`);
-      }
-
-      const authData = await authResponse.json();
-      const authUrl = authData.auth_url || authStartUrl; // fallback to direct URL
-
-      const left = (window.screen.width / 2) - (520 / 2);
-      const top = (window.screen.height / 2) - (700 / 2);
-      const popup = window.open(
-        authUrl,
-        'google-auth',
-        `width=520,height=700,left=${left},top=${top},scrollbars=yes,resizable=yes,noopener,noreferrer`
-      );
-
-      if (!popup) {
-        toast({
-          title: "Popup Blocked",
-          description: "Please allow popups and try again, or we'll redirect you.",
-          variant: "destructive",
-        });
-        // Fallback: redirect current tab
-        setTimeout(() => {
-          window.location.href = authUrl;
-        }, 2000);
-        return;
-      }
-
-      // Poll for completion every 2s for up to 60s
-      let attempts = 0;
-      const maxAttempts = 30; // 60 seconds at 2s intervals
-      
-      const pollForCompletion = setInterval(async () => {
-        attempts++;
-        
-        if (popup.closed) {
-          clearInterval(pollForCompletion);
-          toast({
-            title: "Authentication Cancelled",
-            description: "The popup was closed before authentication completed.",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-        
-        if (attempts >= maxAttempts) {
-          clearInterval(pollForCompletion);
-          popup.close();
-          toast({
-            title: "Timeout",
-            description: "OAuth process timed out. Please try again.",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-
-        try {
-          // Poll calendar list endpoint
-          const listUrl = baseUrl === '/api' ? `/api/calendar/list` : `${baseUrl}/api/calendar/list`;
-          const response = await fetch(listUrl, {
-            method: 'GET',
-            mode: 'cors',
-            credentials: 'omit',
-            headers: {
-              'Accept': 'application/json',
-              'ngrok-skip-browser-warning': 'true',
-              'X-User-Id': USER_ID,
-            },
-          });
-          
-          if (response.status === 200) {
-            const data = await response.json();
-            if (data.items || data.events) {
-              // Tokens are present, connected successfully
-              popup.close();
-              clearInterval(pollForCompletion);
-              setLoading(false);
-              toast({
-                title: "Connected",
-                description: "Successfully connected to Google Calendar!",
-                variant: "default",
-              });
-              // Refresh events list
-              await checkConnection();
-            }
-          }
-        } catch (error) {
-          // Continue polling - not connected yet
-          console.log('Polling attempt failed, continuing...', error);
-        }
-      }, 2000);
-
-    } catch (error) {
-      console.error('Google auth error:', error);
-      toast({
-        title: "Connection Failed", 
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
-        variant: "destructive",
-      });
-      setLoading(false);
-    }
+    startGoogleAuth();
   };
 
   // Quick book event
@@ -319,7 +150,6 @@ const Calendar = () => {
           attendees: [{ email: formData.attendeeEmail }]
         })
       };
-      setEvents(prev => [newEvent, ...prev]);
 
       // Reset form
       setFormData({
@@ -330,7 +160,7 @@ const Calendar = () => {
       });
 
       // Refresh events list to get actual event data
-      setTimeout(() => checkConnection(), 1000);
+      setTimeout(() => fetchEvents(), 1000);
       
     } catch (error) {
       console.error('Create event error:', error);
@@ -347,7 +177,7 @@ const Calendar = () => {
 
   // Refresh events
   const handleRefresh = async () => {
-    await checkConnection();
+    await fetchEvents();
   };
 
   const formatEventTime = (dateTimeString: string) => {
@@ -361,11 +191,11 @@ const Calendar = () => {
 
   // Status badge component
   const StatusBadge = () => {
-    const variant = connectionStatus === 'connected' ? 'default' : 
-                   connectionStatus === 'loading' ? 'secondary' : 'destructive';
-    const text = connectionStatus === 'connected' ? 'Connected' :
-                 connectionStatus === 'loading' ? 'Loading...' :
-                 connectionStatus === 'not-connected' ? 'Not Connected' : 'Error';
+    if (googleConnected === null) return <Badge variant="secondary">Unknown</Badge>;
+    if (googleLoading) return <Badge variant="secondary">Loading...</Badge>;
+    
+    const variant = googleConnected ? 'default' : 'destructive';
+    const text = googleConnected ? 'Connected' : 'Not Connected';
     
     return <Badge variant={variant}>{text}</Badge>;
   };
@@ -393,14 +223,14 @@ const Calendar = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusBadge />
-                  {connectionStatus === 'connected' && (
+                  {googleConnected && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleRefresh}
-                      disabled={loading}
+                      disabled={googleLoading}
                     >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`h-4 w-4 mr-2 ${googleLoading ? 'animate-spin' : ''}`} />
                       Refresh
                     </Button>
                   )}
@@ -416,7 +246,7 @@ const Calendar = () => {
               )}
 
               {/* Content based on connection status */}
-              {connectionStatus === 'not-connected' && backendHealthy && (
+              {!googleConnected && backendHealthy && (
                 <Card className="max-w-md mx-auto">
                   <CardHeader className="text-center">
                     <CalendarIcon className="h-12 w-12 text-primary mx-auto mb-4" />
@@ -426,14 +256,15 @@ const Calendar = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="text-center">
-                    <Button onClick={handleConnect} disabled={loading || !backendHealthy}>
-                      {loading ? 'Connecting...' : 'Connect Google Calendar'}
+                    <Button onClick={handleConnect} disabled={googleLoading || !backendHealthy} className="gap-2">
+                      {googleLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {googleLoading ? 'Connecting to Google...' : 'Connect Google Calendar'}
                     </Button>
                   </CardContent>
                 </Card>
               )}
 
-              {connectionStatus === 'connected' && (
+              {googleConnected && (
                 <div className="grid lg:grid-cols-2 gap-6">
                   {/* Upcoming Events */}
                   <Card>
@@ -445,13 +276,13 @@ const Calendar = () => {
                       <CardDescription>Next 10 events from your calendar</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {events.length === 0 ? (
+                      {googleEvents.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                           No upcoming events.
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          {events.map((event) => (
+                          {googleEvents.slice(0, 10).map((event) => (
                             <div key={event.id} className="border rounded-lg p-4 space-y-2">
                               <div className="flex items-start justify-between">
                                 <h4 className="font-medium">{event.summary}</h4>
@@ -545,7 +376,7 @@ const Calendar = () => {
 
                         <Separator />
 
-                        <Button type="submit" className="w-full" disabled={loading}>
+                        <Button type="submit" className="w-full" disabled={loading || !googleConnected}>
                           {loading ? 'Creating Event...' : 'Create Event'}
                         </Button>
                       </form>
