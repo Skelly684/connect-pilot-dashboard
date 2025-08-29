@@ -7,34 +7,41 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle, Link, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { appConfig } from "@/lib/appConfig";
 
 export const SettingsPage = () => {
   const [apiBaseUrl, setApiBaseUrl] = useState("");
   const [isValidating, setIsValidating] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'error'>('unknown');
   const [errorMessage, setErrorMessage] = useState("");
+  const [testedUrl, setTestedUrl] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load saved API base URL from localStorage
-    const savedUrl = localStorage.getItem('API_BASE_URL');
-    if (savedUrl) {
-      setApiBaseUrl(savedUrl);
-    } else {
-      setApiBaseUrl('/api'); // Default to same origin
-    }
+    // Load saved API base URL from app config
+    const config = appConfig.getConfig();
+    setApiBaseUrl(config.api_base_url);
   }, []);
 
   const validateConnection = async (url: string) => {
     setIsValidating(true);
     setConnectionStatus('unknown');
     setErrorMessage("");
+    setTestedUrl(url);
     
     try {
-      const testUrl = url === '/api' ? '/api/health' : `${url}/api/health`;
+      // Validate URL format first
+      const trimmed = url.trim();
+      if (trimmed !== '/api' && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+        throw new Error('URL must start with http:// or https://');
+      }
+
+      // Test the health endpoint
+      const testUrl = trimmed === '/api' ? '/api/health' : `${trimmed}/api/health`;
       
       const response = await fetch(testUrl, {
         method: 'GET',
+        credentials: 'omit',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -46,7 +53,7 @@ export const SettingsPage = () => {
 
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Backend API not available - expected JSON response');
+        throw new Error(`Expected JSON response but received ${contentType || 'unknown content type'}`);
       }
 
       await response.json();
@@ -61,21 +68,23 @@ export const SettingsPage = () => {
   };
 
   const handleSave = () => {
-    const trimmedUrl = apiBaseUrl.trim();
-    localStorage.setItem('API_BASE_URL', trimmedUrl);
-    
-    // Trigger a custom event to notify other parts of the app
-    window.dispatchEvent(new CustomEvent('api-config-changed', { 
-      detail: { apiBaseUrl: trimmedUrl } 
-    }));
-    
-    toast({
-      title: "Settings Saved",
-      description: "API base URL has been updated successfully.",
-    });
+    try {
+      appConfig.setApiBaseUrl(apiBaseUrl);
+      
+      toast({
+        title: "Settings Saved",
+        description: "API base URL has been updated successfully.",
+      });
 
-    // Test the connection with the new URL
-    validateConnection(trimmedUrl);
+      // Test the connection with the new URL
+      validateConnection(apiBaseUrl);
+    } catch (error) {
+      toast({
+        title: "Validation Error",
+        description: error instanceof Error ? error.message : "Invalid URL format",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleTest = () => {
@@ -140,7 +149,10 @@ export const SettingsPage = () => {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Connection failed: {errorMessage}
+                <div>Connection failed: {errorMessage}</div>
+                {testedUrl && (
+                  <div className="text-xs mt-1 font-mono">Tested URL: {testedUrl === '/api' ? '/api/health' : `${testedUrl}/api/health`}</div>
+                )}
               </AlertDescription>
             </Alert>
           )}

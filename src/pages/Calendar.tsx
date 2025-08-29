@@ -11,7 +11,9 @@ import { Separator } from '@/components/ui/separator';
 import { CalendarIcon, Clock, Users, Plus, RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, addDays, startOfDay } from 'date-fns';
-import { getApiUrl } from '@/config/api';
+import { appConfig } from '@/lib/appConfig';
+import { apiFetch, ApiError } from '@/lib/apiFetch';
+import { ApiStatusBanner } from '@/components/calendar/ApiStatusBanner';
 
 export interface CalendarEvent {
   id: string;
@@ -48,32 +50,20 @@ const Calendar = () => {
   });
 
   const getUserId = () => {
-    return localStorage.getItem('user_id') || '';
+    return localStorage.getItem('user_id') || 'anonymous';
   };
-
-  const getHeaders = () => ({
-    'Content-Type': 'application/json',
-    'X-User-Id': getUserId(),
-  });
 
   // Health check
   const checkBackendHealth = useCallback(async () => {
     try {
-      const response = await fetch(getApiUrl('/api/health'));
-      const contentType = response.headers.get('content-type');
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        const currentApiUrl = localStorage.getItem('API_BASE_URL') || '/api';
-        throw new Error(`Backend unavailable. Tried: ${currentApiUrl}`);
-      }
-      
+      await apiFetch('/api/health');
       setBackendHealthy(true);
       setErrorMessage('');
       return true;
     } catch (error) {
       setBackendHealthy(false);
-      const currentApiUrl = localStorage.getItem('API_BASE_URL') || '/api';
-      setErrorMessage(`Backend unavailable. Tried: ${currentApiUrl}`);
+      const apiError = error as ApiError;
+      setErrorMessage(`Backend unavailable. Tried: ${apiError.url} - ${apiError.message}`);
       setConnectionStatus('error');
       return false;
     }
@@ -85,39 +75,23 @@ const Calendar = () => {
     
     try {
       setConnectionStatus('loading');
-      const timeMin = startOfDay(new Date()).toISOString();
-      const timeMax = addDays(new Date(), 14).toISOString();
       
-      const response = await fetch(getApiUrl(`/calendar/events?from=${timeMin}&to=${timeMax}`), {
-        method: 'GET',
-        headers: getHeaders(),
-      });
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const responseText = await response.text();
-        const currentApiUrl = localStorage.getItem('API_BASE_URL') || '/api';
-        throw new Error(`Backend unavailable. Tried: ${currentApiUrl}`);
-      }
-
-      if (response.status === 401 || response.status === 404) {
-        setConnectionStatus('not-connected');
-        setEvents([]);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch events: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await apiFetch('/api/calendar/list');
       setEvents(data.items || data.events || []);
       setConnectionStatus('connected');
       setErrorMessage('');
     } catch (error) {
       console.error('Connection check error:', error);
+      const apiError = error as ApiError;
+      
+      if (apiError.status === 401 || apiError.status === 404) {
+        setConnectionStatus('not-connected');
+        setEvents([]);
+        return;
+      }
+      
       setConnectionStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Connection check failed');
+      setErrorMessage(`Failed to fetch events from ${apiError.url}: ${apiError.message}`);
     }
   }, [backendHealthy]);
 
@@ -134,8 +108,8 @@ const Calendar = () => {
       initializeCalendar();
     };
 
-    window.addEventListener('api-config-changed', handleConfigChange);
-    return () => window.removeEventListener('api-config-changed', handleConfigChange);
+    window.addEventListener('app-config-changed', handleConfigChange);
+    return () => window.removeEventListener('app-config-changed', handleConfigChange);
   }, [checkBackendHealth, checkConnection]);
 
   // Initialize on mount
@@ -155,7 +129,7 @@ const Calendar = () => {
     if (!backendHealthy) {
       toast({
         title: "Backend Unavailable",
-        description: `Backend unavailable. Tried: ${localStorage.getItem('API_BASE_URL') || '/api'}`,
+        description: errorMessage,
         variant: "destructive",
       });
       return;
@@ -163,28 +137,15 @@ const Calendar = () => {
 
     try {
       setLoading(true);
-      const response = await fetch(getApiUrl('/oauth/google/start?redirect=/calendar'), {
-        method: 'GET',
-        headers: getHeaders(),
-      });
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const currentApiUrl = localStorage.getItem('API_BASE_URL') || '/api';
-        throw new Error(`Backend unavailable. Tried: ${currentApiUrl}`);
-      }
-
-      if (!response.ok) {
-        throw new Error('Failed to initiate Google OAuth');
-      }
-
-      const data = await response.json();
+      const userId = getUserId();
       
-      // Open centered popup window
+      // Open popup to auth URL with user state
+      const authUrl = `${appConfig.getApiBaseUrl()}/auth/google/start?state=uid:${userId}`;
+      
       const left = (window.screen.width / 2) - (520 / 2);
       const top = (window.screen.height / 2) - (700 / 2);
       const popup = window.open(
-        data.auth_url,
+        authUrl,
         'google-auth',
         `width=520,height=700,left=${left},top=${top},scrollbars=yes,resizable=yes,noopener,noreferrer`
       );
@@ -197,14 +158,14 @@ const Calendar = () => {
         });
         // Fallback: redirect current tab
         setTimeout(() => {
-          window.location.href = data.auth_url;
+          window.location.href = authUrl;
         }, 2000);
         return;
       }
 
-      // Poll for completion every 1.5s for up to 2 minutes
+      // Poll for completion every 2s for up to 60s
       let attempts = 0;
-      const maxAttempts = 80; // 2 minutes at 1.5s intervals
+      const maxAttempts = 30; // 60 seconds at 2s intervals
       
       const pollForCompletion = setInterval(async () => {
         attempts++;
@@ -233,37 +194,31 @@ const Calendar = () => {
         }
 
         try {
-          const statusResponse = await fetch(getApiUrl('/oauth/google/status'), {
-            method: 'GET',
-            headers: getHeaders(),
-          });
-          
-          if (statusResponse.ok) {
-            const statusData = await statusResponse.json();
-            if (statusData.connected === true) {
-              popup.close();
-              clearInterval(pollForCompletion);
-              setLoading(false);
-              toast({
-                title: "Connected",
-                description: "Successfully connected to Google Calendar!",
-                variant: "default",
-              });
-              // Refresh events list
-              await checkConnection();
-            }
+          const data = await apiFetch('/api/calendar/list');
+          if (data.items || data.events) {
+            // Tokens are present, connected successfully
+            popup.close();
+            clearInterval(pollForCompletion);
+            setLoading(false);
+            toast({
+              title: "Connected",
+              description: "Successfully connected to Google Calendar!",
+              variant: "default",
+            });
+            // Refresh events list
+            await checkConnection();
           }
         } catch (error) {
-          // Continue polling
+          // Continue polling - not connected yet
         }
-      }, 1500);
+      }, 2000);
 
     } catch (error) {
       console.error('Google auth error:', error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to connect to Google Calendar";
+      const apiError = error as ApiError;
       toast({
         title: "Connection Failed", 
-        description: errorMessage,
+        description: `${apiError.message} (${apiError.url})`,
         variant: "destructive",
       });
       setLoading(false);
@@ -286,7 +241,7 @@ const Calendar = () => {
     try {
       setLoading(true);
       const eventData = {
-        calendarId: 'primary', // Use primary calendar
+        calendarId: 'primary',
         title: formData.summary,
         description: 'Booked from Dashboard',
         start: new Date(formData.startDateTime).toISOString(),
@@ -296,15 +251,10 @@ const Calendar = () => {
         })
       };
 
-      const response = await fetch(getApiUrl('/calendar/events'), {
+      await apiFetch('/api/calendar/events', {
         method: 'POST',
-        headers: getHeaders(),
         body: JSON.stringify(eventData),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to create event');
-      }
 
       toast({
         title: "Event Created",
@@ -338,9 +288,10 @@ const Calendar = () => {
       
     } catch (error) {
       console.error('Create event error:', error);
+      const apiError = error as ApiError;
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create calendar event.",
+        description: `Failed to create event at ${apiError.url}: ${apiError.message}`,
         variant: "destructive",
       });
     } finally {
@@ -381,13 +332,16 @@ const Calendar = () => {
           <DashboardHeader />
           <div className="flex-1 p-6">
             <div className="max-w-6xl mx-auto space-y-6">
+              {/* API Status Banner */}
+              <ApiStatusBanner />
+              
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <CalendarIcon className="h-8 w-8 text-primary" />
                   <div>
                     <h1 className="text-3xl font-bold">Google Calendar</h1>
-                    <p className="text-xs text-muted-foreground">API: {localStorage.getItem('API_BASE_URL') || '/api'}</p>
+                    <p className="text-muted-foreground">Connect your Google account to view and book follow-ups.</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
