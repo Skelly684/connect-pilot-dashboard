@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
@@ -39,12 +40,16 @@ export interface CalendarEvent {
 
 const Calendar = () => {
   const { toast } = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { 
     startGoogleAuth, 
     events: googleEvents, 
     isConnected: googleConnected, 
     loading: googleLoading,
-    fetchEvents 
+    errorMessage: calendarError,
+    fetchEvents,
+    checkConnectionStatus
   } = useGoogleCalendar();
   
   const [backendHealthy, setBackendHealthy] = useState<boolean | null>(null);
@@ -84,10 +89,46 @@ const Calendar = () => {
     return () => window.removeEventListener('app-config-changed', handleConfigChange);
   }, [checkBackendHealth]);
 
-  // Initialize on mount
+  // Handle query params from same-tab OAuth return
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const gcalParam = urlParams.get('gcal');
+    
+    if (gcalParam === 'connected') {
+      // Clear URL param and check connection
+      navigate('/calendar', { replace: true });
+      toast({
+        title: "Google Connected",
+        description: "Successfully returned from Google OAuth",
+      });
+      checkConnectionStatus();
+    } else if (gcalParam?.startsWith('error=')) {
+      // Clear URL param and show error
+      const errorMsg = gcalParam.slice('error='.length);
+      navigate('/calendar', { replace: true });
+      toast({
+        title: "OAuth Error",
+        description: errorMsg || 'Authentication failed',
+        variant: "destructive",
+      });
+    }
+  }, [location.search, navigate, toast, checkConnectionStatus]);
+
+  // Initialize on mount and check connection status
   useEffect(() => {
     checkBackendHealth();
-  }, [checkBackendHealth]);
+    checkConnectionStatus();
+  }, [checkBackendHealth, checkConnectionStatus]);
+
+  // Listen for window focus to refresh connection status
+  useEffect(() => {
+    const handleFocus = () => {
+      checkConnectionStatus();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [checkConnectionStatus]);
 
   // Connect to Google Calendar
   const handleConnect = () => {
@@ -191,14 +232,17 @@ const Calendar = () => {
 
   // Status badge component
   const StatusBadge = () => {
-    if (googleConnected === null) return <Badge variant="secondary">Unknown</Badge>;
-    if (googleLoading) return <Badge variant="secondary">Loading...</Badge>;
+    if (googleConnected === null) return <Badge variant="secondary">Checking...</Badge>;
+    if (googleLoading) return <Badge variant="secondary">Connecting...</Badge>;
     
     const variant = googleConnected ? 'default' : 'destructive';
     const text = googleConnected ? 'Connected' : 'Not Connected';
     
     return <Badge variant={variant}>{text}</Badge>;
   };
+
+  // Get display error message
+  const displayError = calendarError || errorMessage;
 
   return (
     <SidebarProvider>
@@ -218,7 +262,7 @@ const Calendar = () => {
                   <div>
                     <h1 className="text-3xl font-bold">Google Calendar</h1>
                     <p className="text-muted-foreground">Connect your Google account to view and book follow-ups.</p>
-                    {process.env.NODE_ENV === 'development' && (
+                    {process.env.NODE_ENV !== 'production' && (
                       <p className="text-xs text-muted-foreground mt-1">API: <code className="font-mono">{appConfig.getApiBaseUrl()}</code></p>
                     )}
                   </div>
@@ -240,10 +284,10 @@ const Calendar = () => {
               </div>
 
               {/* Error message */}
-              {errorMessage && (
+              {displayError && (
                 <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg">
                   <AlertCircle className="h-4 w-4" />
-                  <span className="text-sm">{errorMessage}</span>
+                  <span className="text-sm">{displayError}</span>
                 </div>
               )}
 
@@ -254,7 +298,10 @@ const Calendar = () => {
                     <CalendarIcon className="h-12 w-12 text-primary mx-auto mb-4" />
                     <CardTitle>Google Calendar</CardTitle>
                     <CardDescription>
-                      Connect your Google account to view and book follow-ups.
+                      {calendarError?.includes('permissions') 
+                        ? 'Permissions too narrow. Reconnect to grant Calendar access.'
+                        : 'Connect your Google account to view and book follow-ups.'
+                      }
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="text-center">
@@ -264,6 +311,8 @@ const Calendar = () => {
                           <Loader2 className="h-4 w-4 animate-spin" />
                           Connecting to Google...
                         </>
+                      ) : calendarError?.includes('permissions') ? (
+                        'Reconnect Google Calendar'
                       ) : (
                         'Connect Google Calendar'
                       )}

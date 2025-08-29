@@ -45,39 +45,69 @@ export const useGoogleCalendar = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
-  const fetchEvents = useCallback(async () => {
+  const checkConnectionStatus = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await apiFetch('/api/calendar/list');
-      setEvents(data.items || data.events || []);
-      setIsConnected(true);
-    } catch (error) {
-      console.error('Fetch events error:', error);
-      const apiError = error as ApiError;
+      setErrorMessage('');
       
-      if (apiError.status === 401) {
-        setIsConnected(false);
-        return;
-      }
-      
-      setIsConnected(false);
-      toast({
-        title: "Connection Error",
-        description: `Failed to fetch events from ${apiError.url}: ${apiError.message}`,
-        variant: "destructive",
+      const response = await fetch(apiUrl('/api/calendar/list'), {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+          'X-User-Id': USER_ID,
+        },
       });
+
+      if (response.ok) {
+        const data = await response.json();
+        setEvents(data.items || data.events || []);
+        setIsConnected(true);
+        return true;
+      } else if (response.status === 401) {
+        setIsConnected(false);
+        setEvents([]);
+        return false;
+      } else if (response.status === 403) {
+        const errorData = await response.json().catch(() => ({}));
+        const insufficientPermissions = errorData.detail && 
+          (errorData.detail.includes('insufficient') || errorData.detail.includes('forbidden'));
+        
+        if (insufficientPermissions) {
+          setIsConnected(false);
+          setEvents([]);
+          setErrorMessage('Google permissions are too narrow. Click Reconnect to grant Calendar access.');
+        }
+        return false;
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Check connection error:', error);
+      const apiError = error as ApiError;
+      setIsConnected(false);
+      setEvents([]);
+      setErrorMessage(`Failed to connect: ${apiError?.message || 'Network error'}`);
+      return false;
     } finally {
       setLoading(false);
     }
   }, [toast]);
 
+  const fetchEvents = useCallback(async () => {
+    return await checkConnectionStatus();
+  }, [checkConnectionStatus]);
+
   const startGoogleAuth = useCallback(async () => {
     try {
       setLoading(true);
+      setErrorMessage('');
       
-      // Step 1: Get auth URL from backend
-      const authStartUrl = `/auth/google/start?state=${encodeURIComponent('uid:409547ac-ed07-4550-a27f-66926515e2b9')}`;
+      // Step 1: Get auth URL from backend with return URL in state
+      const returnUrl = encodeURIComponent(window.location.origin + '/calendar');
+      const authStartUrl = `/auth/google/start?state=${encodeURIComponent(`uid:${USER_ID}|return:${returnUrl}`)}`;
       
       const authResponse = await fetch(apiUrl(authStartUrl), {
         method: 'GET',
@@ -98,7 +128,7 @@ export const useGoogleCalendar = () => {
         throw new Error('No auth URL received from backend');
       }
 
-      // Step 2: Open popup with auth URL
+      // Step 2: Try to open popup with auth URL
       const left = (window.screen.width / 2) - (260);
       const top = (window.screen.height / 2) - (320);
       const popup = window.open(
@@ -108,12 +138,14 @@ export const useGoogleCalendar = () => {
       );
 
       if (!popup) {
+        // Fallback to same-tab redirect if popup is blocked
         setLoading(false);
         toast({
           title: "Popup Blocked",
-          description: "Please allow popups and click again.",
-          variant: "destructive",
+          description: "Redirecting to Google in this tab...",
+          variant: "default",
         });
+        window.location.href = authData.auth_url;
         return;
       }
 
@@ -134,6 +166,7 @@ export const useGoogleCalendar = () => {
           setLoading(false);
           setIsConnected(false);
           const errorMsg = event.data.slice('google_oauth_error:'.length);
+          setErrorMessage(`OAuth Error: ${errorMsg}`);
           toast({
             title: "OAuth Error",
             description: errorMsg,
@@ -165,6 +198,7 @@ export const useGoogleCalendar = () => {
             setIsConnected(true);
             setEvents(data.items || data.events || []);
             setLoading(false);
+            setErrorMessage('');
             
             const eventCount = (data.items || data.events || []).length;
             toast({
@@ -179,6 +213,8 @@ export const useGoogleCalendar = () => {
         } catch (error) {
           setLoading(false);
           setIsConnected(false);
+          const errorMsg = error instanceof Error ? error.message : 'Connection failed';
+          setErrorMessage(errorMsg);
           throw error;
         }
       };
@@ -201,6 +237,7 @@ export const useGoogleCalendar = () => {
           popup.close();
           setLoading(false);
           setIsConnected(false);
+          setErrorMessage('OAuth process timed out');
           toast({
             title: "Connection Timeout",
             description: "OAuth process timed out. Please try again.",
@@ -229,6 +266,7 @@ export const useGoogleCalendar = () => {
               setIsConnected(true);
               setEvents(data.items || data.events || []);
               setLoading(false);
+              setErrorMessage('');
               
               const eventCount = (data.items || data.events || []).length;
               toast({
@@ -250,6 +288,7 @@ export const useGoogleCalendar = () => {
                 popup.close();
                 setLoading(false);
                 setIsConnected(false);
+                setErrorMessage('Google not connected');
                 toast({
                   title: "Connection Failed",
                   description: "Google not connected. Click Reconnect to try again.",
@@ -265,6 +304,7 @@ export const useGoogleCalendar = () => {
             popup.close();
             setLoading(false);
             setIsConnected(false);
+            setErrorMessage('Google permissions are too narrow. Click Reconnect to grant Calendar access.');
             toast({
               title: "Insufficient Permissions",
               description: "Google permissions are too narrow. Click Reconnect to grant Calendar access.",
@@ -279,6 +319,7 @@ export const useGoogleCalendar = () => {
             popup.close();
             setLoading(false);
             setIsConnected(false);
+            setErrorMessage(`Server error: ${errorText}`);
             toast({
               title: "Server Error",
               description: `${errorText} (${apiUrl('/api/calendar/list')})`,
@@ -295,6 +336,7 @@ export const useGoogleCalendar = () => {
             setLoading(false);
             setIsConnected(false);
             const errorMessage = error instanceof Error ? error.message : 'Network error';
+            setErrorMessage(`Network error: ${errorMessage}`);
             toast({
               title: "Network Error",
               description: `${errorMessage} (${apiUrl('/api/calendar/list')})`,
@@ -310,6 +352,7 @@ export const useGoogleCalendar = () => {
       const apiError = error as ApiError;
       const errorMessage = apiError?.message || (error instanceof Error ? error.message : "Failed to connect to Google Calendar");
       
+      setErrorMessage(`Connection failed: ${errorMessage}`);
       toast({
         title: "Connection Failed", 
         description: `${errorMessage} (${apiError?.url || 'Unknown URL'})`,
@@ -318,18 +361,18 @@ export const useGoogleCalendar = () => {
       setLoading(false);
       setIsConnected(false);
     }
-  }, [toast, fetchEvents]);
+  }, [toast]);
 
   // Listen for API config changes
   useEffect(() => {
     const handleConfigChange = () => {
       // Refresh connection status when API config changes
-      fetchEvents();
+      checkConnectionStatus();
     };
 
     window.addEventListener('app-config-changed', handleConfigChange);
     return () => window.removeEventListener('app-config-changed', handleConfigChange);
-  }, [fetchEvents]);
+  }, [checkConnectionStatus]);
 
   const createQuickEvent = useCallback(async (eventData: QuickBookData) => {
     try {
@@ -366,8 +409,10 @@ export const useGoogleCalendar = () => {
     events,
     isConnected,
     loading,
+    errorMessage,
     startGoogleAuth,
     fetchEvents,
     createQuickEvent,
+    checkConnectionStatus,
   };
 };
