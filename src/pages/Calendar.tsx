@@ -100,9 +100,14 @@ const Calendar = () => {
     const handleConfigChange = () => {
       // Re-initialize when API config changes
       const initializeCalendar = async () => {
-        const healthy = await checkBackendHealth();
-        if (healthy) {
-          await checkConnection();
+        try {
+          const healthy = await checkBackendHealth();
+          if (healthy) {
+            await checkConnection();
+          }
+        } catch (error) {
+          // Silently handle config change errors to avoid blocking UI
+          console.error('Calendar config change error:', error);
         }
       };
       initializeCalendar();
@@ -115,9 +120,14 @@ const Calendar = () => {
   // Initialize on mount
   useEffect(() => {
     const initializeCalendar = async () => {
-      const healthy = await checkBackendHealth();
-      if (healthy) {
-        await checkConnection();
+      try {
+        const healthy = await checkBackendHealth();
+        if (healthy) {
+          await checkConnection();
+        }
+      } catch (error) {
+        // Silently handle initialization errors to avoid blocking UI
+        console.error('Calendar initialization error:', error);
       }
     };
     
@@ -138,11 +148,28 @@ const Calendar = () => {
     try {
       setLoading(true);
       const userId = getUserId();
-      
-      // Open popup to auth URL with user state  
       const baseUrl = appConfig.getApiBaseUrl();
-      const authUrl = baseUrl === '/api' ? `/auth/google/start?state=uid:${userId}` : `${baseUrl}/auth/google/start?state=uid:${userId}`;
       
+      // Call auth start endpoint to get auth URL
+      const authStartUrl = baseUrl === '/api' ? `/auth/google/start?state=uid:${userId}` : `${baseUrl}/auth/google/start?state=uid:${userId}`;
+      
+      const authResponse = await fetch(authStartUrl, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit',
+        headers: {
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+
+      if (!authResponse.ok) {
+        throw new Error(`Failed to start OAuth: ${authResponse.status} ${authResponse.statusText}`);
+      }
+
+      const authData = await authResponse.json();
+      const authUrl = authData.auth_url || authStartUrl; // fallback to direct URL
+
       const left = (window.screen.width / 2) - (520 / 2);
       const top = (window.screen.height / 2) - (700 / 2);
       const popup = window.open(
@@ -195,31 +222,45 @@ const Calendar = () => {
         }
 
         try {
-          const data = await apiFetch('/api/calendar/list');
-          if (data.items || data.events) {
-            // Tokens are present, connected successfully
-            popup.close();
-            clearInterval(pollForCompletion);
-            setLoading(false);
-            toast({
-              title: "Connected",
-              description: "Successfully connected to Google Calendar!",
-              variant: "default",
-            });
-            // Refresh events list
-            await checkConnection();
+          // Poll calendar list endpoint
+          const listUrl = baseUrl === '/api' ? `/api/calendar/list` : `${baseUrl}/api/calendar/list`;
+          const response = await fetch(listUrl, {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'omit',
+            headers: {
+              'Accept': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+          });
+          
+          if (response.status === 200) {
+            const data = await response.json();
+            if (data.items || data.events) {
+              // Tokens are present, connected successfully
+              popup.close();
+              clearInterval(pollForCompletion);
+              setLoading(false);
+              toast({
+                title: "Connected",
+                description: "Successfully connected to Google Calendar!",
+                variant: "default",
+              });
+              // Refresh events list
+              await checkConnection();
+            }
           }
         } catch (error) {
           // Continue polling - not connected yet
+          console.log('Polling attempt failed, continuing...', error);
         }
       }, 2000);
 
     } catch (error) {
       console.error('Google auth error:', error);
-      const apiError = error as ApiError;
       toast({
         title: "Connection Failed", 
-        description: `${apiError.message} (${apiError.url})`,
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
         variant: "destructive",
       });
       setLoading(false);

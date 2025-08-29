@@ -30,22 +30,23 @@ export const SettingsPage = () => {
     setTestedUrl(url);
     
     try {
-      // Validate URL format first
-      const trimmed = url.trim();
-      if (trimmed !== '/api' && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      // Validate URL format first and normalize it
+      const trimmed = url.trim().replace(/\/api$/, '');
+      if (trimmed && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
         throw new Error('URL must start with http:// or https://');
       }
 
-      // Test the health endpoint with cache busting and redirect manual
-      // For settings page, we need to manually construct the URL since we're testing a potential new base URL
-      const testUrl = trimmed === '/api' ? `/api/health?t=${Date.now()}` : `${trimmed}/api/health?t=${Date.now()}`;
+      // Build test URL - API_BASE_URL should NOT include '/api'
+      const testUrl = `${trimmed || '/api'}/api/health?t=${Date.now()}`;
       
       const response = await fetch(testUrl, {
         method: 'GET',
+        mode: 'cors',
         credentials: 'omit',
-        redirect: 'manual',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
         },
       });
 
@@ -56,18 +57,39 @@ export const SettingsPage = () => {
         return;
       }
 
-      // Check content type
+      // Try to parse response
       const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        // Parse JSON and show success
-        await response.json();
+      let data: any;
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        // Try to handle non-JSON responses that might still contain JSON
+        const responseText = await response.text();
+        const trimmedText = responseText.trim();
+        
+        if (trimmedText.startsWith('{') || trimmedText.startsWith('[')) {
+          try {
+            data = JSON.parse(trimmedText);
+          } catch (parseError) {
+            setConnectionStatus('error');
+            setErrorMessage(`Response appears to be JSON but failed to parse. Response: ${responseText.substring(0, 300)}${responseText.length > 300 ? '...' : ''}`);
+            return;
+          }
+        } else {
+          setConnectionStatus('error');
+          setErrorMessage(`Expected JSON response but received ${contentType || 'unknown content type'}. Response: ${responseText.substring(0, 300)}${responseText.length > 300 ? '...' : ''}`);
+          return;
+        }
+      } else {
+        // Parse JSON normally
+        data = await response.json();
+      }
+
+      // Check if response indicates success
+      if (data.ok === true) {
         setConnectionStatus('connected');
       } else {
-        // Not JSON, read text and show first 300 characters
-        const responseText = await response.text();
-        const truncatedText = responseText.substring(0, 300);
         setConnectionStatus('error');
-        setErrorMessage(`Expected JSON response but received ${contentType || 'unknown content type'}. Response: ${truncatedText}${responseText.length > 300 ? '...' : ''}`);
+        setErrorMessage(`Health check failed: ${JSON.stringify(data)}`);
       }
     } catch (error) {
       console.error('Connection test failed:', error);

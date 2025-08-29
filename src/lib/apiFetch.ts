@@ -34,6 +34,8 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
   
   const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
   };
 
   // Add user ID header if available
@@ -44,7 +46,8 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
 
   const requestOptions: RequestInit = {
     ...options,
-    credentials: 'omit', // Explicitly omit credentials for CORS
+    mode: 'cors',
+    credentials: 'omit',
     headers: {
       ...defaultHeaders,
       ...options.headers,
@@ -56,18 +59,37 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
     
     // Check content type
     const contentType = response.headers.get('content-type');
+    let data: any;
+    
     if (!contentType || !contentType.includes('application/json')) {
+      // Try to handle non-JSON responses that might still contain JSON
       const responseText = await response.text();
-      throw new ApiError(
-        `Expected JSON response but received ${contentType || 'unknown content type'}. Response: ${responseText.substring(0, 300)}${responseText.length > 300 ? '...' : ''}`,
-        response.status,
-        fullUrl,
-        responseText
-      );
+      
+      // Check if it looks like JSON (starts with { or [)
+      const trimmedText = responseText.trim();
+      if (trimmedText.startsWith('{') || trimmedText.startsWith('[')) {
+        try {
+          data = JSON.parse(trimmedText);
+        } catch (parseError) {
+          throw new ApiError(
+            `Response appears to be JSON but failed to parse. Response: ${responseText.substring(0, 300)}${responseText.length > 300 ? '...' : ''}`,
+            response.status,
+            fullUrl,
+            responseText
+          );
+        }
+      } else {
+        throw new ApiError(
+          `Expected JSON response but received ${contentType || 'unknown content type'}. Response: ${responseText.substring(0, 300)}${responseText.length > 300 ? '...' : ''}`,
+          response.status,
+          fullUrl,
+          responseText
+        );
+      }
+    } else {
+      // Parse JSON normally
+      data = await response.json();
     }
-
-    // Parse JSON
-    const data = await response.json();
 
     // Check if response is ok
     if (!response.ok) {
