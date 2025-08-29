@@ -16,6 +16,7 @@ import { format, parseISO, addDays, startOfDay } from 'date-fns';
 import { appConfig } from '@/lib/appConfig';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { ApiStatusBanner } from '@/components/calendar/ApiStatusBanner';
+import { GoogleCalendarDiagnostics } from '@/components/integrations/GoogleCalendarDiagnostics';
 
 // Constant user ID for backend authentication
 const USER_ID = "409547ac-ed07-4550-a27f-66926515e2b9";
@@ -439,6 +440,13 @@ const Calendar = () => {
                       </form>
                     </CardContent>
                   </Card>
+                </div>
+              )}
+
+              {/* Add diagnostics component in dev mode */}
+              {import.meta.env.DEV && (
+                <div className="max-w-2xl mx-auto">
+                  <GoogleCalendarDiagnostics />
                 </div>
               )}
             </div>

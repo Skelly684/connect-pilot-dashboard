@@ -105,17 +105,15 @@ export const useGoogleCalendar = () => {
       setLoading(true);
       setErrorMessage('');
       
-      // Step 1: Get auth URL from backend with return URL in state
-      const returnUrl = encodeURIComponent(window.location.origin + '/calendar');
-      const authStartUrl = `/auth/google/start?state=${encodeURIComponent(`uid:${USER_ID}|return:${returnUrl}`)}`;
+      // Get auth URL from new edge function
+      const supabaseUrl = "https://zcgutkfkohonpqvwfukk.supabase.co";
+      const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZ3V0a2Zrb2hvbnBxdndmdWtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNjQ1NDQsImV4cCI6MjA2Njg0MDU0NH0.o-TqrNAurwz7JLJlKXsiK-4ELyhhlYb1BhCh-Ix9ZWs";
       
-      const authResponse = await fetch(apiUrl(authStartUrl), {
-        method: 'GET',
+      const authResponse = await fetch(`${supabaseUrl}/functions/v1/google-oauth-start?return=/calendar`, {
         headers: {
-          'Accept': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
           'X-User-Id': USER_ID,
-        },
+          'Authorization': `Bearer ${supabaseAnonKey}`
+        }
       });
 
       if (!authResponse.ok) {
