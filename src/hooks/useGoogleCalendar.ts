@@ -4,6 +4,9 @@ import { useToast } from '@/hooks/use-toast';
 import { appConfig } from '@/lib/appConfig';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
 
+// Constant user ID for backend authentication
+const USER_ID = "409547ac-ed07-4550-a27f-66926515e2b9";
+
 export interface CalendarEvent {
   id: string;
   summary: string;
@@ -72,11 +75,10 @@ export const useGoogleCalendar = () => {
   const startGoogleAuth = useCallback(async () => {
     try {
       setLoading(true);
-      const userId = localStorage.getItem('user_id') || 'anonymous';
       
       // Open popup directly to auth URL with user state
       const baseUrl = appConfig.getApiBaseUrl();
-      const authUrl = baseUrl === '/api' ? `/auth/google/start?state=uid:${userId}` : `${baseUrl}/auth/google/start?state=uid:${userId}`;
+      const authUrl = baseUrl === '/api' ? `/auth/google/start?state=uid:${USER_ID}` : `${baseUrl}/auth/google/start?state=uid:${USER_ID}`;
       
       const left = (window.screen.width / 2) - (520 / 2);
       const top = (window.screen.height / 2) - (700 / 2);

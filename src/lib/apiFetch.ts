@@ -1,5 +1,8 @@
 import { appConfig } from './appConfig';
 
+// Constant user ID for backend authentication
+const USER_ID = "409547ac-ed07-4550-a27f-66926515e2b9";
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -38,11 +41,8 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
     'ngrok-skip-browser-warning': 'true',
   };
 
-  // Add user ID header if available
-  const userId = localStorage.getItem('user_id');
-  if (userId) {
-    defaultHeaders['X-User-Id'] = userId;
-  }
+  // Add user ID header
+  defaultHeaders['X-User-Id'] = USER_ID;
 
   const requestOptions: RequestInit = {
     ...options,

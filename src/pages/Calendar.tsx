@@ -15,6 +15,9 @@ import { appConfig } from '@/lib/appConfig';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { ApiStatusBanner } from '@/components/calendar/ApiStatusBanner';
 
+// Constant user ID for backend authentication
+const USER_ID = "409547ac-ed07-4550-a27f-66926515e2b9";
+
 export interface CalendarEvent {
   id: string;
   summary: string;
@@ -50,7 +53,7 @@ const Calendar = () => {
   });
 
   const getUserId = () => {
-    return localStorage.getItem('user_id') || 'anonymous';
+    return USER_ID;
   };
 
   // Health check
@@ -147,11 +150,10 @@ const Calendar = () => {
 
     try {
       setLoading(true);
-      const userId = getUserId();
       const baseUrl = appConfig.getApiBaseUrl();
       
       // Call auth start endpoint to get auth URL
-      const authStartUrl = baseUrl === '/api' ? `/auth/google/start?state=uid:${userId}` : `${baseUrl}/auth/google/start?state=uid:${userId}`;
+      const authStartUrl = baseUrl === '/api' ? `/auth/google/start?state=uid:${USER_ID}` : `${baseUrl}/auth/google/start?state=uid:${USER_ID}`;
       
       const authResponse = await fetch(authStartUrl, {
         method: 'GET',
@@ -160,6 +162,7 @@ const Calendar = () => {
         headers: {
           'Accept': 'application/json',
           'ngrok-skip-browser-warning': 'true',
+          'X-User-Id': USER_ID,
         },
       });
 
@@ -231,6 +234,7 @@ const Calendar = () => {
             headers: {
               'Accept': 'application/json',
               'ngrok-skip-browser-warning': 'true',
+              'X-User-Id': USER_ID,
             },
           });
           
