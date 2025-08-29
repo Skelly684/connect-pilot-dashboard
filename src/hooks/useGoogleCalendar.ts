@@ -108,42 +108,99 @@ export const useGoogleCalendar = () => {
       );
 
       if (!popup) {
-        // Popup blocked - show fallback link
+        setLoading(false);
         toast({
           title: "Popup Blocked",
-          description: "Please allow popups and click again, or use the direct link below",
+          description: "Please allow popups and click again.",
           variant: "destructive",
         });
-        
-        // Create and click a fallback link
-        const fallbackLink = document.createElement('a');
-        fallbackLink.href = authData.auth_url;
-        fallbackLink.target = '_blank';
-        fallbackLink.rel = 'noopener noreferrer';
-        fallbackLink.textContent = 'Open Google OAuth';
-        fallbackLink.click();
         return;
       }
 
-      // Step 3: Show waiting UI and poll for completion
-      let attempts = 0;
-      const maxAttempts = 30; // 60 seconds at 2s intervals
+      // Step 3: Set up postMessage listener for faster response
+      let pollInterval: NodeJS.Timeout | null = null;
       
-      const pollForCompletion = setInterval(async () => {
+      const handleMessage = (event: MessageEvent) => {
+        if (typeof event.data !== 'string') return;
+        
+        if (event.data === 'google_oauth_success') {
+          if (pollInterval) clearInterval(pollInterval);
+          popup.close();
+          fetchAndRenderOnce();
+          window.removeEventListener('message', handleMessage);
+        } else if (event.data.startsWith('google_oauth_error:')) {
+          if (pollInterval) clearInterval(pollInterval);
+          popup.close();
+          setLoading(false);
+          setIsConnected(false);
+          const errorMsg = event.data.slice('google_oauth_error:'.length);
+          toast({
+            title: "OAuth Error",
+            description: errorMsg,
+            variant: "destructive",
+          });
+          window.removeEventListener('message', handleMessage);
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+
+      // Step 4: Poll for completion (fallback)
+      let attempts = 0;
+      const maxAttempts = 15; // 30 seconds at 2s intervals
+      
+      const fetchAndRenderOnce = async () => {
+        try {
+          const response = await fetch(apiUrl('/api/calendar/list'), {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+              'X-User-Id': USER_ID,
+            },
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setIsConnected(true);
+            setEvents(data.items || data.events || []);
+            setLoading(false);
+            
+            const eventCount = (data.items || data.events || []).length;
+            toast({
+              title: "Google Connected",
+              description: eventCount === 0 
+                ? "Connected — no upcoming events" 
+                : `Successfully connected! Found ${eventCount} events.`,
+            });
+          } else {
+            throw new Error(`HTTP ${response.status}`);
+          }
+        } catch (error) {
+          setLoading(false);
+          setIsConnected(false);
+          throw error;
+        }
+      };
+      
+      pollInterval = setInterval(async () => {
         attempts++;
         
         // Check if popup was closed manually
         if (popup.closed) {
-          clearInterval(pollForCompletion);
+          clearInterval(pollInterval!);
+          window.removeEventListener('message', handleMessage);
           setLoading(false);
           return;
         }
         
-        // Check if we've timed out
+        // Check if we've timed out (30 seconds)
         if (attempts >= maxAttempts) {
-          clearInterval(pollForCompletion);
+          clearInterval(pollInterval!);
+          window.removeEventListener('message', handleMessage);
           popup.close();
           setLoading(false);
+          setIsConnected(false);
           toast({
             title: "Connection Timeout",
             description: "OAuth process timed out. Please try again.",
@@ -163,26 +220,88 @@ export const useGoogleCalendar = () => {
             },
           });
           
-          // Success condition: HTTP 200 with ok: true
           if (response.ok) {
             const data = await response.json();
             if (data && (data.ok === true || data.items || data.events)) {
-              clearInterval(pollForCompletion);
+              clearInterval(pollInterval!);
+              window.removeEventListener('message', handleMessage);
               popup.close();
               setIsConnected(true);
               setEvents(data.items || data.events || []);
               setLoading(false);
               
+              const eventCount = (data.items || data.events || []).length;
               toast({
                 title: "Google Connected",
-                description: "Successfully connected to Google Calendar!",
+                description: eventCount === 0 
+                  ? "Connected — no upcoming events" 
+                  : `Successfully connected! Found ${eventCount} events.`,
               });
               return;
             }
+          } else if (response.status === 401) {
+            // Handle 401 - not connected
+            const errorData = await response.json().catch(() => ({}));
+            if (errorData.detail && errorData.detail.includes('not connected')) {
+              // Continue polling for a few more attempts
+              if (attempts >= maxAttempts - 2) {
+                clearInterval(pollInterval!);
+                window.removeEventListener('message', handleMessage);
+                popup.close();
+                setLoading(false);
+                setIsConnected(false);
+                toast({
+                  title: "Connection Failed",
+                  description: "Google not connected. Click Reconnect to try again.",
+                  variant: "destructive",
+                });
+                return;
+              }
+            }
+          } else if (response.status === 403) {
+            // Handle 403 - insufficient permissions
+            clearInterval(pollInterval!);
+            window.removeEventListener('message', handleMessage);
+            popup.close();
+            setLoading(false);
+            setIsConnected(false);
+            toast({
+              title: "Insufficient Permissions",
+              description: "Google permissions are too narrow. Click Reconnect to grant Calendar access.",
+              variant: "destructive",
+            });
+            return;
+          } else if (response.status >= 500) {
+            // Handle 500+ server errors
+            const errorText = await response.text().catch(() => 'Server error');
+            clearInterval(pollInterval!);
+            window.removeEventListener('message', handleMessage);
+            popup.close();
+            setLoading(false);
+            setIsConnected(false);
+            toast({
+              title: "Server Error",
+              description: `${errorText} (${apiUrl('/api/calendar/list')})`,
+              variant: "destructive",
+            });
+            return;
           }
         } catch (error) {
-          // Error during polling - continue polling for other attempts
-          // Most likely a network error or temporary server issue
+          // Network error - stop polling after max attempts
+          if (attempts >= maxAttempts) {
+            clearInterval(pollInterval!);
+            window.removeEventListener('message', handleMessage);
+            popup.close();
+            setLoading(false);
+            setIsConnected(false);
+            const errorMessage = error instanceof Error ? error.message : 'Network error';
+            toast({
+              title: "Network Error",
+              description: `${errorMessage} (${apiUrl('/api/calendar/list')})`,
+              variant: "destructive",
+            });
+            return;
+          }
         }
       }, 2000);
 
@@ -193,12 +312,13 @@ export const useGoogleCalendar = () => {
       
       toast({
         title: "Connection Failed", 
-        description: errorMessage,
+        description: `${errorMessage} (${apiError?.url || 'Unknown URL'})`,
         variant: "destructive",
       });
       setLoading(false);
+      setIsConnected(false);
     }
-  }, [toast]);
+  }, [toast, fetchEvents]);
 
   // Listen for API config changes
   useEffect(() => {

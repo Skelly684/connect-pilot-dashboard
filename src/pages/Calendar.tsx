@@ -218,7 +218,9 @@ const Calendar = () => {
                   <div>
                     <h1 className="text-3xl font-bold">Google Calendar</h1>
                     <p className="text-muted-foreground">Connect your Google account to view and book follow-ups.</p>
-                    <p className="text-xs text-muted-foreground mt-1">API: <code className="font-mono">{appConfig.getApiBaseUrl()}</code></p>
+                    {process.env.NODE_ENV === 'development' && (
+                      <p className="text-xs text-muted-foreground mt-1">API: <code className="font-mono">{appConfig.getApiBaseUrl()}</code></p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -257,8 +259,14 @@ const Calendar = () => {
                   </CardHeader>
                   <CardContent className="text-center">
                     <Button onClick={handleConnect} disabled={googleLoading || !backendHealthy} className="gap-2">
-                      {googleLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                      {googleLoading ? 'Connecting to Google...' : 'Connect Google Calendar'}
+                      {googleLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Connecting to Google...
+                        </>
+                      ) : (
+                        'Connect Google Calendar'
+                      )}
                     </Button>
                   </CardContent>
                 </Card>
