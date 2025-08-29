@@ -370,33 +370,42 @@ export type Database = {
       }
       google_tokens: {
         Row: {
-          access_token: string | null
-          client_id: string | null
-          client_secret: string | null
-          expiry: string | null
+          access_token: string
+          created_at: string
+          expires_at: number
+          id: string
+          id_token: string | null
+          provider: string
           refresh_token: string | null
-          scopes: string[] | null
-          token_uri: string | null
+          scope: string | null
+          token_type: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
-          access_token?: string | null
-          client_id?: string | null
-          client_secret?: string | null
-          expiry?: string | null
+          access_token: string
+          created_at?: string
+          expires_at: number
+          id?: string
+          id_token?: string | null
+          provider?: string
           refresh_token?: string | null
-          scopes?: string[] | null
-          token_uri?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
-          access_token?: string | null
-          client_id?: string | null
-          client_secret?: string | null
-          expiry?: string | null
+          access_token?: string
+          created_at?: string
+          expires_at?: number
+          id?: string
+          id_token?: string | null
+          provider?: string
           refresh_token?: string | null
-          scopes?: string[] | null
-          token_uri?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
