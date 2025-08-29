@@ -36,28 +36,38 @@ export const SettingsPage = () => {
         throw new Error('URL must start with http:// or https://');
       }
 
-      // Test the health endpoint
-      const testUrl = trimmed === '/api' ? '/api/health' : `${trimmed}/api/health`;
+      // Test the health endpoint with cache busting and redirect manual
+      const testUrl = trimmed === '/api' ? `/api/health?t=${Date.now()}` : `${trimmed}/api/health?t=${Date.now()}`;
       
       const response = await fetch(testUrl, {
         method: 'GET',
         credentials: 'omit',
+        redirect: 'manual',
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Check status first
+      if (response.status !== 200) {
+        setConnectionStatus('error');
+        setErrorMessage(`Error: ${response.status} ${response.statusText}`);
+        return;
       }
 
+      // Check content type
       const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(`Expected JSON response but received ${contentType || 'unknown content type'}`);
+      if (contentType && contentType.includes('application/json')) {
+        // Parse JSON and show success
+        await response.json();
+        setConnectionStatus('connected');
+      } else {
+        // Not JSON, read text and show first 300 characters
+        const responseText = await response.text();
+        const truncatedText = responseText.substring(0, 300);
+        setConnectionStatus('error');
+        setErrorMessage(`Expected JSON response but received ${contentType || 'unknown content type'}. Response: ${truncatedText}${responseText.length > 300 ? '...' : ''}`);
       }
-
-      await response.json();
-      setConnectionStatus('connected');
     } catch (error) {
       console.error('Connection test failed:', error);
       setConnectionStatus('error');

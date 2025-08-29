@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { getApiUrl } from '@/config/api';
+import { appConfig } from '@/lib/appConfig';
+import { apiFetch, ApiError } from '@/lib/apiFetch';
 
 export interface CalendarEvent {
   id: string;
@@ -42,89 +43,85 @@ export const useGoogleCalendar = () => {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const getHeaders = useCallback(() => {
-    if (!user?.id) {
-      throw new Error('User not authenticated');
-    }
-    return {
-      'Content-Type': 'application/json',
-      'X-User-Id': user.id,
-    };
-  }, [user?.id]);
-
   const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(getApiUrl('/api/calendar/list'), {
-        method: 'GET',
-        headers: getHeaders(),
-      });
-
-      if (response.status === 401) {
-        setIsConnected(false);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch events');
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Backend API not available - please ensure FastAPI server is running');
-      }
-
-      const data = await response.json();
-      setEvents(data.items || []);
+      const data = await apiFetch('/api/calendar/list');
+      setEvents(data.items || data.events || []);
       setIsConnected(true);
     } catch (error) {
       console.error('Fetch events error:', error);
+      const apiError = error as ApiError;
+      
+      if (apiError.status === 401) {
+        setIsConnected(false);
+        return;
+      }
+      
       setIsConnected(false);
-      const errorMessage = error instanceof Error ? error.message : "Failed to fetch calendar events";
       toast({
         title: "Connection Error",
-        description: errorMessage,
+        description: `Failed to fetch events from ${apiError.url}: ${apiError.message}`,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [getHeaders, toast]);
+  }, [toast]);
 
   const startGoogleAuth = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(getApiUrl('/oauth/google/start'), {
-        method: 'GET',
-        headers: getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to initiate Google OAuth');
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Backend API not available - expected JSON response');
-      }
-
-      const data = await response.json();
+      const userId = localStorage.getItem('user_id') || 'anonymous';
       
-      // Open popup window
+      // Open popup directly to auth URL with user state
+      const authUrl = `${appConfig.getApiBaseUrl()}/auth/google/start?state=uid:${userId}`;
+      
+      const left = (window.screen.width / 2) - (520 / 2);
+      const top = (window.screen.height / 2) - (700 / 2);
       const popup = window.open(
-        data.auth_url,
+        authUrl,
         'google-auth',
-        'width=500,height=600,scrollbars=yes,resizable=yes'
+        `width=520,height=700,left=${left},top=${top},scrollbars=yes,resizable=yes,noopener,noreferrer`
       );
 
-      // Poll for popup closure
-      const pollTimer = setInterval(() => {
-        if (popup?.closed) {
-          clearInterval(pollTimer);
-          // Verify connection after popup closes
-          fetchEvents();
+      if (!popup) {
+        throw new Error('Popup blocked - please allow popups and try again');
+      }
+
+      // Poll for completion every 2s for up to 60s
+      let attempts = 0;
+      const maxAttempts = 30; // 60 seconds at 2s intervals
+      
+      const pollForCompletion = setInterval(async () => {
+        attempts++;
+        
+        if (popup.closed) {
+          clearInterval(pollForCompletion);
+          return;
         }
-      }, 1000);
+        
+        if (attempts >= maxAttempts) {
+          clearInterval(pollForCompletion);
+          popup.close();
+          throw new Error('OAuth process timed out');
+        }
+
+        try {
+          // Check if we have tokens by trying to fetch events
+          await fetchEvents();
+          if (isConnected) {
+            popup.close();
+            clearInterval(pollForCompletion);
+            toast({
+              title: "Connected",
+              description: "Successfully connected to Google Calendar!",
+            });
+          }
+        } catch (error) {
+          // Continue polling - not connected yet
+        }
+      }, 2000);
 
       return popup;
     } catch (error) {
@@ -138,38 +135,30 @@ export const useGoogleCalendar = () => {
     } finally {
       setLoading(false);
     }
-  }, [getHeaders, toast, fetchEvents]);
+  }, [toast, fetchEvents, isConnected]);
 
-  // Listen for API config changes (after fetchEvents is defined)
+  // Listen for API config changes
   useEffect(() => {
     const handleConfigChange = () => {
       // Refresh connection status when API config changes
       fetchEvents();
     };
 
-    window.addEventListener('api-config-changed', handleConfigChange);
-    return () => window.removeEventListener('api-config-changed', handleConfigChange);
+    window.addEventListener('app-config-changed', handleConfigChange);
+    return () => window.removeEventListener('app-config-changed', handleConfigChange);
   }, [fetchEvents]);
 
   const createQuickEvent = useCallback(async (eventData: QuickBookData) => {
     try {
       setLoading(true);
-      const response = await fetch(getApiUrl('/api/calendar/quick-add'), {
+      const data = await apiFetch('/api/calendar/events', {
         method: 'POST',
-        headers: getHeaders(),
         body: JSON.stringify(eventData),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to create event');
-      }
-
-      const data = await response.json();
       
       toast({
         title: "Event Created",
         description: "Your calendar event has been successfully created.",
-        variant: "default",
       });
 
       // Refresh events list
@@ -178,16 +167,17 @@ export const useGoogleCalendar = () => {
       return data;
     } catch (error) {
       console.error('Create event error:', error);
+      const apiError = error as ApiError;
       toast({
         title: "Error",
-        description: "Failed to create calendar event. Please try again.",
+        description: `Failed to create event at ${apiError.url}: ${apiError.message}`,
         variant: "destructive",
       });
       throw error;
     } finally {
       setLoading(false);
     }
-  }, [getHeaders, toast, fetchEvents]);
+  }, [toast, fetchEvents]);
 
   return {
     events,

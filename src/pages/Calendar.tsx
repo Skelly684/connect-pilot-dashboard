@@ -342,6 +342,7 @@ const Calendar = () => {
                   <div>
                     <h1 className="text-3xl font-bold">Google Calendar</h1>
                     <p className="text-muted-foreground">Connect your Google account to view and book follow-ups.</p>
+                    <p className="text-xs text-muted-foreground mt-1">API: <code className="font-mono">{appConfig.getApiBaseUrl()}</code></p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
