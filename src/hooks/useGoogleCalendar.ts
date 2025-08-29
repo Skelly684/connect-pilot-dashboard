@@ -75,7 +75,8 @@ export const useGoogleCalendar = () => {
       const userId = localStorage.getItem('user_id') || 'anonymous';
       
       // Open popup directly to auth URL with user state
-      const authUrl = `${appConfig.getApiBaseUrl()}/auth/google/start?state=uid:${userId}`;
+      const baseUrl = appConfig.getApiBaseUrl();
+      const authUrl = baseUrl === '/api' ? `/auth/google/start?state=uid:${userId}` : `${baseUrl}/auth/google/start?state=uid:${userId}`;
       
       const left = (window.screen.width / 2) - (520 / 2);
       const top = (window.screen.height / 2) - (700 / 2);

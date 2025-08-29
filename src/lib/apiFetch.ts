@@ -18,7 +18,19 @@ export interface ApiFetchOptions extends Omit<RequestInit, 'credentials'> {
 
 export async function apiFetch(path: string, options: ApiFetchOptions = {}): Promise<any> {
   const baseUrl = appConfig.getApiBaseUrl();
-  const fullUrl = baseUrl === '/api' ? path : `${baseUrl}${path}`;
+  
+  // Ensure path starts with /api for API endpoints
+  let apiPath = path;
+  if (!path.startsWith('/api/')) {
+    if (path.startsWith('/')) {
+      apiPath = `/api${path}`;
+    } else {
+      apiPath = `/api/${path}`;
+    }
+  }
+  
+  // Construct full URL
+  const fullUrl = baseUrl === '/api' ? apiPath : `${baseUrl}${apiPath}`;
   
   const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -47,7 +59,7 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
     if (!contentType || !contentType.includes('application/json')) {
       const responseText = await response.text();
       throw new ApiError(
-        'Expected JSON response but received HTML/text',
+        `Expected JSON response but received ${contentType || 'unknown content type'}. Response: ${responseText.substring(0, 300)}${responseText.length > 300 ? '...' : ''}`,
         response.status,
         fullUrl,
         responseText

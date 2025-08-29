@@ -67,12 +67,15 @@ export class AppConfigStore {
     // Trim whitespace and ensure proper protocol
     const trimmed = url.trim();
     
-    if (trimmed !== '/api' && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    // Remove "/api" suffix if present, as we'll append it automatically
+    const withoutApiSuffix = trimmed.replace(/\/api$/, '');
+    
+    if (withoutApiSuffix !== '/api' && withoutApiSuffix && !withoutApiSuffix.startsWith('http://') && !withoutApiSuffix.startsWith('https://')) {
       throw new Error('URL must start with http:// or https://');
     }
 
-    // Remove trailing slash for consistency
-    const normalized = trimmed === '/api' ? trimmed : trimmed.replace(/\/$/, '');
+    // Remove trailing slash for consistency, but keep "/api" as default
+    const normalized = withoutApiSuffix === '' ? '/api' : withoutApiSuffix.replace(/\/$/, '');
     
     this.config.api_base_url = normalized;
     this.saveConfig();

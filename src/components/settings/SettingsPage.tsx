@@ -37,6 +37,7 @@ export const SettingsPage = () => {
       }
 
       // Test the health endpoint with cache busting and redirect manual
+      // For settings page, we need to manually construct the URL since we're testing a potential new base URL
       const testUrl = trimmed === '/api' ? `/api/health?t=${Date.now()}` : `${trimmed}/api/health?t=${Date.now()}`;
       
       const response = await fetch(testUrl, {

@@ -139,8 +139,9 @@ const Calendar = () => {
       setLoading(true);
       const userId = getUserId();
       
-      // Open popup to auth URL with user state
-      const authUrl = `${appConfig.getApiBaseUrl()}/auth/google/start?state=uid:${userId}`;
+      // Open popup to auth URL with user state  
+      const baseUrl = appConfig.getApiBaseUrl();
+      const authUrl = baseUrl === '/api' ? `/auth/google/start?state=uid:${userId}` : `${baseUrl}/auth/google/start?state=uid:${userId}`;
       
       const left = (window.screen.width / 2) - (520 / 2);
       const top = (window.screen.height / 2) - (700 / 2);
