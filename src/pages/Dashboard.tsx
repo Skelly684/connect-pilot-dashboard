@@ -12,6 +12,7 @@ import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { CRMIntegration } from "@/components/integrations/CRMIntegration";
 import { OutreachCenter } from "@/components/outreach/OutreachCenter";
 import { SettingsPage } from "@/components/settings/SettingsPage";
+import { LeadScrapeForm } from "@/components/leads/LeadScrapeForm";
 import { useLeads } from "@/hooks/useLeads";
 
 const Dashboard = () => {
@@ -35,6 +36,8 @@ const Dashboard = () => {
       navigate("/self-leads");
     } else if (tab === "calendar") {
       navigate("/calendar");
+    } else if (tab === "activity") {
+      navigate("/activity");
     } else {
       setActiveTab(tab);
     }
@@ -84,6 +87,7 @@ const Dashboard = () => {
       case "leads":
         return (
           <div className="space-y-6">
+            <LeadScrapeForm />
             <LeadSearch 
               onResults={handleSearchResults}
               onSearchStart={handleSearchStart}

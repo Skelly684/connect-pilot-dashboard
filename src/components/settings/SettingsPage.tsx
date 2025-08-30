@@ -8,13 +8,23 @@ import { AlertCircle, CheckCircle, Link, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { appConfig } from "@/lib/appConfig";
+import { apiFetch } from "@/lib/apiFetch";
 
 export const SettingsPage = () => {
+  // Admin gate check
+  const CURRENT_USER_ID = "409547ac-ed07-4550-a27f-66926515e2b9"; // From apiFetch.ts
+  const ADMIN_USER_ID = "409547ac-ed07-4550-a27f-66926515e2b9"; // Same as current for now
+  const isAdmin = !ADMIN_USER_ID || CURRENT_USER_ID === ADMIN_USER_ID;
+
   const [apiBaseUrl, setApiBaseUrl] = useState("");
   const [isValidating, setIsValidating] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'error'>('unknown');
   const [errorMessage, setErrorMessage] = useState("");
   const [testedUrl, setTestedUrl] = useState("");
+  const [googleStatus, setGoogleStatus] = useState<any>(null);
+  const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<any>(null);
+  const [isLoadingHealth, setIsLoadingHealth] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -124,6 +134,60 @@ export const SettingsPage = () => {
     validateConnection(apiBaseUrl.trim());
   };
 
+  const checkGoogleStatus = async () => {
+    setIsLoadingGoogle(true);
+    try {
+      const response = await apiFetch('/oauth/status');
+      setGoogleStatus(response);
+    } catch (error: any) {
+      toast({
+        title: "Google Status Check Failed",
+        description: error.message || "Failed to check Google connection status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingGoogle(false);
+    }
+  };
+
+  const disconnectGoogle = async () => {
+    try {
+      await apiFetch('/oauth/google/disconnect', { method: 'POST' });
+      toast({
+        title: "Google Disconnected",
+        description: "Google account has been disconnected successfully",
+      });
+      checkGoogleStatus(); // Refresh status
+    } catch (error: any) {
+      toast({
+        title: "Disconnect Failed",
+        description: error.message || "Failed to disconnect Google account",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const pingHealth = async () => {
+    setIsLoadingHealth(true);
+    try {
+      const response = await apiFetch('/api/health');
+      setHealthStatus(response);
+      toast({
+        title: "Health Check Complete",
+        description: `API responded at ${response.time || 'unknown time'}`,
+      });
+    } catch (error: any) {
+      setHealthStatus({ error: error.message });
+      toast({
+        title: "Health Check Failed",
+        description: error.message || "Failed to ping API health endpoint",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingHealth(false);
+    }
+  };
+
   const getStatusBadge = () => {
     switch (connectionStatus) {
       case 'connected':
@@ -134,6 +198,18 @@ export const SettingsPage = () => {
         return <Badge variant="secondary">Unknown</Badge>;
     }
   };
+
+  // Check admin access
+  if (!isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground text-red-600">You do not have access to this page.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -198,6 +274,75 @@ export const SettingsPage = () => {
               <div>• Local dev: <code>http://localhost:8000</code></div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Google Connection Management Panel */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5" />
+            Google Connection Management
+          </CardTitle>
+          <CardDescription>
+            Manage your Google Calendar and OAuth integration
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Button onClick={checkGoogleStatus} disabled={isLoadingGoogle} variant="outline">
+              {isLoadingGoogle ? "Checking..." : "Check Status"}
+            </Button>
+            {googleStatus && (
+              <Badge variant={googleStatus.connected ? "default" : "destructive"}>
+                {googleStatus.connected ? "✅ Connected" : "❌ Not Connected"}
+              </Badge>
+            )}
+          </div>
+          
+          {googleStatus?.connected && (
+            <Button onClick={disconnectGoogle} variant="destructive">
+              Disconnect Google
+            </Button>
+          )}
+          
+          {googleStatus && (
+            <div className="text-sm text-muted-foreground">
+              Last checked: {new Date().toLocaleString()}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* System Health Panel */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            System Health
+          </CardTitle>
+          <CardDescription>
+            Check API connectivity and system status
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button onClick={pingHealth} disabled={isLoadingHealth} variant="outline">
+            {isLoadingHealth ? "Pinging..." : "Ping API"}
+          </Button>
+          
+          {healthStatus && (
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="font-mono text-sm">
+                {healthStatus.error ? (
+                  <span className="text-red-600">Error: {healthStatus.error}</span>
+                ) : (
+                  <span className="text-green-600">
+                    ✅ API OK - Time: {healthStatus.time}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

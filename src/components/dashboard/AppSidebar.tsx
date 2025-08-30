@@ -1,5 +1,5 @@
 
-import { Home, Users, Send, Settings, BarChart3, Zap, CheckSquare, Eye, Database, Plus, Calendar } from "lucide-react";
+import { Home, Users, Send, Settings, BarChart3, Zap, CheckSquare, Eye, Database, Plus, Calendar, Activity } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -24,6 +24,7 @@ const menuItems = [
   { id: "review-leads", title: "Review New Leads", icon: CheckSquare },
   { id: "all-leads", title: "All Leads", icon: Database },
   { id: "self-leads", title: "Self-Generated Leads", icon: Plus },
+  { id: "activity", title: "Activity", icon: Activity },
   { id: "outreach", title: "Outreach Center", icon: Send },
   { id: "calendar", title: "Calendar", icon: Calendar },
   { id: "integrations", title: "Integrations", icon: Zap },
