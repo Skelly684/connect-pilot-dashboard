@@ -1,5 +1,5 @@
 
-import { Home, Users, Send, Settings, BarChart3, Zap, CheckSquare, Eye, Database, Plus, Calendar, Activity } from "lucide-react";
+import { Home, Users, Send, Settings, BarChart3, Zap, CheckSquare, Eye, Database, Plus, Calendar, Activity, Shield } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -12,6 +12,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 interface AppSidebarProps {
   activeTab: string;
@@ -34,6 +35,12 @@ const menuItems = [
 export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const { isAdmin } = useAdminCheck();
+
+  const allMenuItems = [
+    ...menuItems,
+    ...(isAdmin ? [{ id: "admin", title: "Admin", icon: Shield }] : [])
+  ];
 
   return (
     <Sidebar className={isCollapsed ? "w-14" : "w-64"} collapsible="icon">
@@ -56,7 +63,7 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {allMenuItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
                     onClick={() => setActiveTab(item.id)}
