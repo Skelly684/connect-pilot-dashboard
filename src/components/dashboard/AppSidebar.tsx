@@ -1,5 +1,5 @@
 
-import { Home, Users, Send, Settings, BarChart3, Zap, CheckSquare, Eye, Database, Plus, Calendar } from "lucide-react";
+import { Home, Users, Send, Settings, BarChart3, Zap, CheckSquare, Eye, Database, Plus, Calendar, Shield } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -12,6 +12,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 interface AppSidebarProps {
   activeTab: string;
@@ -33,6 +34,11 @@ const menuItems = [
 export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const { isAdmin } = useAdminCheck();
+
+  const adminMenuItems = [
+    { id: "admin", title: "Admin", icon: Shield },
+  ];
 
   return (
     <Sidebar className={isCollapsed ? "w-14" : "w-64"} collapsible="icon">
@@ -73,6 +79,33 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel className={isCollapsed ? "hidden" : "block"}>
+              Administration
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full justify-start ${
+                        activeTab === item.id
+                          ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                          : "hover:bg-gray-50"
+                      }`}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span className="ml-3">{item.title}</span>}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   );

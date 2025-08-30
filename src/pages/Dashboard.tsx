@@ -12,6 +12,7 @@ import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { CRMIntegration } from "@/components/integrations/CRMIntegration";
 import { OutreachCenter } from "@/components/outreach/OutreachCenter";
 import { SettingsPage } from "@/components/settings/SettingsPage";
+import { AdminPage } from "@/components/admin/AdminPage";
 import { useLeads } from "@/hooks/useLeads";
 
 const Dashboard = () => {
@@ -129,6 +130,8 @@ const Dashboard = () => {
         return <CRMIntegration />;
       case "settings":
         return <SettingsPage />;
+      case "admin":
+        return <AdminPage />;
       default:
         return <DashboardOverview />;
     }
