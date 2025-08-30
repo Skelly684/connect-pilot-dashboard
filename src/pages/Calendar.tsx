@@ -245,10 +245,20 @@ const Calendar = () => {
   // Get display error message
   const displayError = calendarError || errorMessage;
 
+  // Handle navigation from sidebar
+  const handleTabChange = (tab: string) => {
+    if (tab === "overview" || tab === "leads" || tab === "all-leads" || tab === "review-leads" || tab === "outreach" || tab === "integrations" || tab === "settings") {
+      navigate("/dashboard", { state: { tab } });
+    } else if (tab === "self-leads") {
+      navigate("/self-leads");
+    }
+    // Stay on calendar if tab === "calendar"
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
-        <AppSidebar activeTab="calendar" setActiveTab={() => {}} />
+        <AppSidebar activeTab="calendar" setActiveTab={handleTabChange} />
         <main className="flex-1 flex flex-col">
           <DashboardHeader />
           <div className="flex-1 p-6">
