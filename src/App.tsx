@@ -15,7 +15,6 @@ import Dashboard from "./pages/Dashboard";
 import Outreach from "./pages/Outreach";
 import SelfLeads from "./pages/SelfLeads";
 import Calendar from "./pages/Calendar";
-import Activity from "./pages/Activity";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,25 +48,11 @@ const App = () => (
                 <Calendar />
               </ProtectedRoute>
             } />
-            <Route path="/activity" element={
-              <ProtectedRoute>
-                <Activity />
-              </ProtectedRoute>
-            } />
             <Route path="/settings" element={
               <ProtectedRoute>
                 <SidebarProvider>
                   <div className="min-h-screen flex w-full bg-gray-50">
-                    <AppSidebar 
-                      activeTab="settings" 
-                      setActiveTab={(tab) => {
-                        if (tab === "overview" || tab === "leads" || tab === "all-leads" || tab === "review-leads" || tab === "outreach" || tab === "integrations" || tab === "calendar" || tab === "activity") {
-                          window.location.href = tab === "calendar" ? "/calendar" : tab === "activity" ? "/activity" : "/dashboard";
-                        } else if (tab === "self-leads") {
-                          window.location.href = "/self-leads";
-                        }
-                      }} 
-                    />
+                    <AppSidebar activeTab="settings" setActiveTab={() => {}} />
                     <main className="flex-1 flex flex-col">
                       <DashboardHeader />
                       <div className="flex-1 p-6">
