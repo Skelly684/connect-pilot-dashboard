@@ -30,6 +30,8 @@ export const AdminPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
   const [formData, setFormData] = useState<CreateUserForm>({
     email: '',
     password: '',
@@ -137,9 +139,61 @@ export const AdminPage = () => {
     }
   };
 
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === 'PSNai684!') {
+      setIsAuthenticated(true);
+      fetchUsers();
+    } else {
+      toast({
+        title: "Error",
+        description: "Incorrect password",
+        variant: "destructive"
+      });
+      setPassword('');
+    }
+  };
+
   useEffect(() => {
-    fetchUsers();
-  }, [user]);
+    if (isAuthenticated) {
+      fetchUsers();
+    }
+  }, [user, isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Admin Access</h1>
+          <p className="text-muted-foreground">Enter the admin password to continue</p>
+        </div>
+        
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Password Required</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="admin-password">Admin Password</Label>
+                <Input
+                  id="admin-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter admin password"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                Access Admin Panel
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return <div className="p-6">Loading...</div>;

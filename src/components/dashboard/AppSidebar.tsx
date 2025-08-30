@@ -80,32 +80,30 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
         
-        {isAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel className={isCollapsed ? "hidden" : "block"}>
-              Administration
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminMenuItems.map((item) => (
-                  <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full justify-start ${
-                        activeTab === item.id
-                          ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
-                          : "hover:bg-gray-50"
-                      }`}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span className="ml-3">{item.title}</span>}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        <SidebarGroup>
+          <SidebarGroupLabel className={isCollapsed ? "hidden" : "block"}>
+            Administration
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminMenuItems.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full justify-start ${
+                      activeTab === item.id
+                        ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {!isCollapsed && <span className="ml-3">{item.title}</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   );
