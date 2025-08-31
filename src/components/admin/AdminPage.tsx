@@ -5,11 +5,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getApiUrl } from '@/config/api';
+import { CheckCircle, Copy, RefreshCw, Unlink } from 'lucide-react';
 
 interface User {
   id: string;
@@ -17,6 +20,7 @@ interface User {
   created_at: string;
   is_admin: boolean;
   name?: string;
+  googleConnected?: boolean;
 }
 
 interface CreateUserForm {
@@ -36,6 +40,7 @@ export const AdminPage = () => {
   const [password, setPassword] = useState('');
   const [resetPassword, setResetPassword] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [refreshingGoogle, setRefreshingGoogle] = useState(false);
   const [formData, setFormData] = useState<CreateUserForm>({
     email: '',
     password: '',
@@ -65,7 +70,28 @@ export const AdminPage = () => {
         throw error;
       }
       
-      setUsers(data || []);
+      const usersWithGoogle = data || [];
+      // Fetch Google status for each user
+      await Promise.all(usersWithGoogle.map(async (userData) => {
+        try {
+          const response = await fetch(getApiUrl(`/oauth/status?user_id=${userData.id}`), {
+            headers: {
+              'X-User-Id': user.id,
+              'Accept': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            }
+          });
+          if (response.ok) {
+            const googleData = await response.json();
+            userData.googleConnected = googleData.connected || false;
+          }
+        } catch (error) {
+          console.error(`Failed to fetch Google status for user ${userData.id}:`, error);
+          userData.googleConnected = false;
+        }
+      }));
+      
+      setUsers(usersWithGoogle);
       
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -228,6 +254,149 @@ export const AdminPage = () => {
     }
   };
 
+  const copyConnectLink = async (targetUserId: string, targetEmail: string) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch(getApiUrl(`/auth/google/start?user_id=${targetUserId}`), {
+        headers: {
+          'X-User-Id': user.id,
+          'Accept': 'application/json', 
+          'ngrok-skip-browser-warning': 'true',
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        await navigator.clipboard.writeText(data.auth_url);
+        toast({
+          title: "Link Copied",
+          description: `Link copied. Ask ${targetEmail} to open it and finish Google consent. When the popup closes, they'll be connected.`
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || errorData.detail || errorData.message || "Failed to generate connect link",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error copying connect link:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate connect link",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const disconnectGoogleForUser = async (targetUserId: string, targetEmail: string) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch(getApiUrl(`/oauth/google/disconnect?user_id=${targetUserId}`), {
+        method: 'POST',
+        headers: {
+          'X-User-Id': user.id,
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        }
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success", 
+          description: `Google account disconnected for ${targetEmail}`
+        });
+        // Refresh the user's Google status
+        await refreshSingleUserGoogleStatus(targetUserId);
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || errorData.detail || errorData.message || "Failed to disconnect Google account",
+          variant: "destructive" 
+        });
+      }
+    } catch (error) {
+      console.error('Error disconnecting Google for user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to disconnect Google account",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const refreshSingleUserGoogleStatus = async (targetUserId: string) => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch(getApiUrl(`/oauth/status?user_id=${targetUserId}`), {
+        headers: {
+          'X-User-Id': user.id,
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        }
+      });
+      
+      if (response.ok) {
+        const googleData = await response.json();
+        setUsers(prevUsers => 
+          prevUsers.map(userData => 
+            userData.id === targetUserId 
+              ? { ...userData, googleConnected: googleData.connected || false }
+              : userData
+          )
+        );
+      }
+    } catch (error) {
+      console.error(`Failed to refresh Google status for user ${targetUserId}:`, error);
+    }
+  };
+
+  const refreshAllGoogleStatuses = async () => {
+    if (!user) return;
+    
+    setRefreshingGoogle(true);
+    try {
+      await Promise.all(users.map(async (userData) => {
+        try {
+          const response = await fetch(getApiUrl(`/oauth/status?user_id=${userData.id}`), {
+            headers: {
+              'X-User-Id': user.id,
+              'Accept': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            }
+          });
+          if (response.ok) {
+            const googleData = await response.json();
+            userData.googleConnected = googleData.connected || false;
+          }
+        } catch (error) {
+          console.error(`Failed to refresh Google status for user ${userData.id}:`, error);
+          userData.googleConnected = false;
+        }
+      }));
+      
+      setUsers([...users]); // Force re-render
+      toast({
+        title: "Success",
+        description: "Google statuses refreshed for all users"
+      });
+    } catch (error) {
+      console.error('Error refreshing Google statuses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh Google statuses",
+        variant: "destructive"
+      });
+    } finally {
+      setRefreshingGoogle(false);
+    }
+  };
+
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === 'PSNai684!') {
@@ -351,7 +520,18 @@ export const AdminPage = () => {
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Existing Users</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Existing Users</CardTitle>
+            <Button
+              onClick={refreshAllGoogleStatuses}
+              disabled={refreshingGoogle}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshingGoogle ? 'animate-spin' : ''}`} />
+              Refresh Google Statuses
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -361,6 +541,7 @@ export const AdminPage = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead>Admin Status</TableHead>
+                <TableHead>Google</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -376,11 +557,40 @@ export const AdminPage = () => {
                     {userData.is_admin ? 'Admin' : 'User'}
                   </TableCell>
                   <TableCell>
+                    {userData.googleConnected ? (
+                      <Badge variant="default" className="bg-green-100 text-green-800">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Connected
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">Not Connected</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={userData.is_admin}
                         onCheckedChange={(checked) => toggleAdminStatus(userData.id, checked)}
                       />
+                      
+                      <Button
+                        onClick={() => copyConnectLink(userData.id, userData.email)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Copy className="h-4 w-4 mr-1" />
+                        Copy Connect Link
+                      </Button>
+
+                      <Button
+                        onClick={() => disconnectGoogleForUser(userData.id, userData.email)}
+                        variant="outline"
+                        size="sm"
+                        disabled={!userData.googleConnected}
+                      >
+                        <Unlink className="h-4 w-4 mr-1" />
+                        Disconnect Google
+                      </Button>
                       
                       <Dialog>
                         <DialogTrigger asChild>
