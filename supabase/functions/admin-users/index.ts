@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, PATCH, OPTIONS',
 }
 
 serve(async (req) => {
@@ -129,6 +129,56 @@ serve(async (req) => {
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
+    }
+
+    if (req.method === 'DELETE') {
+      const { userId } = await req.json()
+
+      console.log('Deleting user:', userId)
+
+      // Delete user from auth
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+
+      if (authError) {
+        console.error('Auth delete error:', authError)
+        return new Response(JSON.stringify({ error: authError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      console.log('User deleted successfully')
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    if (req.method === 'PATCH') {
+      const { userId, action, newPassword } = await req.json()
+
+      if (action === 'reset_password') {
+        console.log('Resetting password for user:', userId)
+
+        // Update user password
+        const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+          password: newPassword
+        })
+
+        if (authError) {
+          console.error('Password reset error:', authError)
+          return new Response(JSON.stringify({ error: authError.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        console.log('Password reset successfully')
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
     }
 
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
