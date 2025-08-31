@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChevronDown, Save, Eye, Mail, Phone } from 'lucide-react';
 import { useCampaigns, DeliveryRules } from '@/hooks/useCampaigns';
 import { DeliveryRulesTab } from './DeliveryRulesTab';
+import { supabase } from '@/integrations/supabase/client';
 
 interface NewCampaignDialogProps {
   open: boolean;
@@ -78,12 +79,19 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
     
     setIsLoading(true);
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('You must be logged in to create a campaign');
+        return;
+      }
+
       let emailTemplateId = null;
       
       // Create email template if provided
       if (emailSubject.trim() && emailBody.trim()) {
         const template = await createEmailTemplate({
-          user_id: null,
+          user_id: user.id,
           campaign_id: null,
           name: `${campaignName} - Email Template`,
           subject: emailSubject,
@@ -95,7 +103,7 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
       
       // Create campaign with delivery rules
       const newCampaign = await createCampaign({
-        user_id: null,
+        user_id: user.id,
         name: campaignName,
         from_email: fromEmail,
         from_name: fromName,
@@ -121,7 +129,7 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
           // For new campaigns with inline templates, create the template first
           if (!templateId && step.subject && step.body) {
             const template = await createEmailTemplate({
-              user_id: null,
+              user_id: user.id,
               campaign_id: newCampaign.id,
               name: `${campaignName} - Step ${step.step_number}`,
               subject: step.subject,
