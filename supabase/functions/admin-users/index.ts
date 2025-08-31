@@ -81,11 +81,10 @@ serve(async (req) => {
 
       console.log('Creating user with email:', email)
 
-      // Create user in auth with email confirmation
+      // Create user in auth - this will trigger confirmation email
       const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
-        email_confirm: true, // Send confirmation email
         user_metadata: { name }
       })
 
