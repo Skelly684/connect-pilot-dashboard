@@ -72,7 +72,7 @@ export const useCampaigns = () => {
         .from('campaigns')
         .select(`
           *,
-          email_template:email_templates(*)
+          email_templates!campaigns_email_template_id_fkey(*)
         `)
         .order('updated_at', { ascending: false });
 
