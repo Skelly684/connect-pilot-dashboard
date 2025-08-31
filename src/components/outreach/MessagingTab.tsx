@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Campaign, EmailTemplate } from '@/hooks/useCampaigns';
 import { TemplatePreview } from './TemplatePreview';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MessagingTabProps {
   campaign: Campaign;
@@ -37,14 +38,20 @@ export const MessagingTab = ({
 
       // Handle email template
       if (selectedTemplateId === 'new' || !campaign.email_template_id) {
-        // Create new template
+        // Create new template - get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error('User not authenticated');
+          return;
+        }
+        
         const newTemplate = await onCreateEmailTemplate({
           name: `Campaign – ${campaign.name}`,
           subject: emailSubject,
           body: emailBody,
-          user_id: null,
+          user_id: user.id,
           campaign_id: campaign.id,
-          is_active: false
+          is_active: true
         });
         
         // Link template to campaign

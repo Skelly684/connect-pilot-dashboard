@@ -24,12 +24,13 @@ export default function Outreach() {
     setShowNewCampaignDialog(false);
   };
 
-  // Auto-select campaign from URL parameter
+  // Auto-select campaign from URL parameter and update when campaigns change
   useEffect(() => {
     const campaignId = searchParams.get('campaign');
     if (campaignId && campaigns.length > 0) {
       const campaign = campaigns.find(c => c.id === campaignId);
       if (campaign) {
+        // Update selectedCampaign with fresh data from campaigns
         setSelectedCampaign(campaign);
       }
     }
