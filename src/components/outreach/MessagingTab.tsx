@@ -43,6 +43,7 @@ export const MessagingTab = ({
           subject: emailSubject,
           body: emailBody,
           user_id: null,
+          campaign_id: campaign.id,
           is_active: false
         });
         

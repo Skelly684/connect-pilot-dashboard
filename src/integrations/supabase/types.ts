@@ -127,12 +127,58 @@ export type Database = {
           },
         ]
       }
+      campaign_email_steps: {
+        Row: {
+          campaign_id: string
+          id: string
+          is_active: boolean
+          send_at: string | null
+          send_offset_minutes: number | null
+          step_number: number
+          template_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          id?: string
+          is_active?: boolean
+          send_at?: string | null
+          send_offset_minutes?: number | null
+          step_number: number
+          template_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          id?: string
+          is_active?: boolean
+          send_at?: string | null
+          send_offset_minutes?: number | null
+          step_number?: number
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_email_steps_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_email_steps_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           call_window_end: number
           call_window_start: number
           caller_prompt: string
           created_at: string
+          delivery_rules: Json | null
           email_daily_cap: number
           email_template_id: string | null
           from_email: string
@@ -151,6 +197,7 @@ export type Database = {
           call_window_start?: number
           caller_prompt?: string
           created_at?: string
+          delivery_rules?: Json | null
           email_daily_cap?: number
           email_template_id?: string | null
           from_email: string
@@ -169,6 +216,7 @@ export type Database = {
           call_window_start?: number
           caller_prompt?: string
           created_at?: string
+          delivery_rules?: Json | null
           email_daily_cap?: number
           email_template_id?: string | null
           from_email?: string
@@ -242,6 +290,7 @@ export type Database = {
       email_templates: {
         Row: {
           body: string
+          campaign_id: string | null
           created_at: string
           id: string
           is_active: boolean
@@ -252,6 +301,7 @@ export type Database = {
         }
         Insert: {
           body: string
+          campaign_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -262,6 +312,7 @@ export type Database = {
         }
         Update: {
           body?: string
+          campaign_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -270,7 +321,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       google_calendars: {
         Row: {
@@ -444,17 +503,21 @@ export type Database = {
           created_at: string
           email: string | null
           email_address: string | null
+          email_sequence_stopped: boolean
           emailed_at: string | null
           first_name: string | null
           headline: string | null
           id: string
           job_title: string | null
           last_call_status: string | null
+          last_email_reply_at: string | null
           last_email_status: string | null
           last_name: string | null
           location: string | null
           name: string | null
           next_call_at: string | null
+          next_email_at: string | null
+          next_email_step: number | null
           notes: string | null
           phone: string | null
           raw_address: string | null
@@ -478,17 +541,21 @@ export type Database = {
           created_at?: string
           email?: string | null
           email_address?: string | null
+          email_sequence_stopped?: boolean
           emailed_at?: string | null
           first_name?: string | null
           headline?: string | null
           id?: string
           job_title?: string | null
           last_call_status?: string | null
+          last_email_reply_at?: string | null
           last_email_status?: string | null
           last_name?: string | null
           location?: string | null
           name?: string | null
           next_call_at?: string | null
+          next_email_at?: string | null
+          next_email_step?: number | null
           notes?: string | null
           phone?: string | null
           raw_address?: string | null
@@ -512,17 +579,21 @@ export type Database = {
           created_at?: string
           email?: string | null
           email_address?: string | null
+          email_sequence_stopped?: boolean
           emailed_at?: string | null
           first_name?: string | null
           headline?: string | null
           id?: string
           job_title?: string | null
           last_call_status?: string | null
+          last_email_reply_at?: string | null
           last_email_status?: string | null
           last_name?: string | null
           location?: string | null
           name?: string | null
           next_call_at?: string | null
+          next_email_at?: string | null
+          next_email_step?: number | null
           notes?: string | null
           phone?: string | null
           raw_address?: string | null

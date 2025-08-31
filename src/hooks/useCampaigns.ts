@@ -2,6 +2,20 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 
+export interface DeliveryRules {
+  use_email: boolean;
+  use_calls: boolean;
+  call: {
+    max_attempts: number;
+    retry_minutes: number;
+    window_start: number;
+    window_end: number;
+  };
+  email: {
+    send_initial: boolean;
+  };
+}
+
 export interface Campaign {
   id: string;
   user_id: string | null;
@@ -19,12 +33,24 @@ export interface Campaign {
   is_default: boolean;
   created_at: string;
   updated_at: string;
+  delivery_rules?: any; // Use any for JSON compatibility with Supabase
   email_template?: EmailTemplate;
+}
+
+export interface EmailStep {
+  id?: string;
+  campaign_id: string;
+  step_number: number;
+  template_id: string | null;
+  send_at: string | null;
+  send_offset_minutes: number | null;
+  is_active: boolean;
 }
 
 export interface EmailTemplate {
   id: string;
   user_id: string | null;
+  campaign_id: string | null;
   name: string;
   subject: string;
   body: string;
@@ -36,6 +62,7 @@ export interface EmailTemplate {
 export const useCampaigns = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [emailSteps, setEmailSteps] = useState<EmailStep[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -73,6 +100,59 @@ export const useCampaigns = () => {
       setEmailTemplates(data || []);
     } catch (error) {
       console.error('Error fetching email templates:', error);
+    }
+  };
+
+  const fetchEmailSteps = async (campaignId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('campaign_email_steps')
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .order('step_number');
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching email steps:', error);
+      return [];
+    }
+  };
+
+  const saveEmailSteps = async (campaignId: string, steps: Omit<EmailStep, 'id' | 'campaign_id'>[]) => {
+    try {
+      // Delete existing steps
+      await supabase
+        .from('campaign_email_steps')
+        .delete()
+        .eq('campaign_id', campaignId);
+
+      // Insert new steps
+      if (steps.length > 0) {
+        const stepsWithCampaignId = steps.map(step => ({
+          ...step,
+          campaign_id: campaignId
+        }));
+
+        const { error } = await supabase
+          .from('campaign_email_steps')
+          .insert(stepsWithCampaignId);
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: "Email steps saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving email steps:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save email steps",
+        variant: "destructive",
+      });
+      throw error;
     }
   };
 
@@ -244,6 +324,7 @@ export const useCampaigns = () => {
   return {
     campaigns,
     emailTemplates,
+    emailSteps,
     isLoading,
     fetchCampaigns,
     createCampaign,
@@ -253,5 +334,7 @@ export const useCampaigns = () => {
     updateEmailTemplate,
     setDefaultCampaign,
     getDefaultCampaign,
+    fetchEmailSteps,
+    saveEmailSteps,
   };
 };

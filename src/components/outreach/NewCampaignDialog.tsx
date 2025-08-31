@@ -73,6 +73,7 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
       if (emailSubject.trim() && emailBody.trim()) {
         const template = await createEmailTemplate({
           user_id: null,
+          campaign_id: null,
           name: `${campaignName} - Email Template`,
           subject: emailSubject,
           body: emailBody,
