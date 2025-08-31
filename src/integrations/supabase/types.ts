@@ -81,6 +81,7 @@ export type Database = {
           provider_call_id: string | null
           recording_url: string | null
           started_at: string | null
+          user_id: string | null
         }
         Insert: {
           attempt_number?: number | null
@@ -97,6 +98,7 @@ export type Database = {
           provider_call_id?: string | null
           recording_url?: string | null
           started_at?: string | null
+          user_id?: string | null
         }
         Update: {
           attempt_number?: number | null
@@ -113,6 +115,7 @@ export type Database = {
           provider_call_id?: string | null
           recording_url?: string | null
           started_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -200,6 +203,7 @@ export type Database = {
           provider: string | null
           status: string
           subject: string
+          user_id: string | null
         }
         Insert: {
           body: string
@@ -211,6 +215,7 @@ export type Database = {
           provider?: string | null
           status: string
           subject: string
+          user_id?: string | null
         }
         Update: {
           body?: string
@@ -222,6 +227,7 @@ export type Database = {
           provider?: string | null
           status?: string
           subject?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -332,37 +338,52 @@ export type Database = {
       google_oauth_tokens: {
         Row: {
           access_token: string
+          client_id: string | null
+          client_secret: string | null
           created_at: string
-          expires_at: string
+          expires_at: string | null
+          expiry: string | null
           id: string
           provider: string
           refresh_token: string | null
           scope: string | null
+          scopes: string[] | null
           token_type: string | null
+          token_uri: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           access_token: string
+          client_id?: string | null
+          client_secret?: string | null
           created_at?: string
-          expires_at: string
+          expires_at?: string | null
+          expiry?: string | null
           id?: string
           provider?: string
           refresh_token?: string | null
           scope?: string | null
+          scopes?: string[] | null
           token_type?: string | null
+          token_uri?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           access_token?: string
+          client_id?: string | null
+          client_secret?: string | null
           created_at?: string
-          expires_at?: string
+          expires_at?: string | null
+          expiry?: string | null
           id?: string
           provider?: string
           refresh_token?: string | null
           scope?: string | null
+          scopes?: string[] | null
           token_type?: string | null
+          token_uri?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -523,12 +544,63 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          email_mode: string | null
+          id: string
+          is_admin: boolean
+          smtp_host: string | null
+          smtp_password_ciphertext: string | null
+          smtp_port: number | null
+          smtp_user: string | null
+          updated_at: string | null
+          vapi_assistant_id: string | null
+          vapi_phone_number_id: string | null
+          voice_provider: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          email_mode?: string | null
+          id: string
+          is_admin?: boolean
+          smtp_host?: string | null
+          smtp_password_ciphertext?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
+          updated_at?: string | null
+          vapi_assistant_id?: string | null
+          vapi_phone_number_id?: string | null
+          voice_provider?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          email_mode?: string | null
+          id?: string
+          is_admin?: boolean
+          smtp_host?: string | null
+          smtp_password_ciphertext?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
+          updated_at?: string | null
+          vapi_assistant_id?: string | null
+          vapi_phone_number_id?: string | null
+          voice_provider?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: { u: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
