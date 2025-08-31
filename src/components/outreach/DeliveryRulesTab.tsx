@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus, Trash2, Eye } from 'lucide-react';
 import { Campaign, EmailTemplate, EmailStep, DeliveryRules, useCampaigns } from '@/hooks/useCampaigns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -25,6 +26,9 @@ interface EmailStepForm {
   send_offset_minutes: number | null;
   is_active: boolean;
   when_to_send: 'exact' | 'delay';
+  // For new campaigns - inline template creation
+  subject?: string;
+  body?: string;
 }
 
 export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propEmailSteps, onUpdateEmailSteps }: DeliveryRulesTabProps) => {
@@ -135,6 +139,9 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
       send_offset_minutes: null,
       is_active: true,
       when_to_send: 'delay',
+      // For new campaigns
+      subject: campaign.id === 'new' ? '' : undefined,
+      body: campaign.id === 'new' ? '' : undefined,
     };
     
     setEmailSteps([...emailSteps, newStep]);
@@ -165,10 +172,31 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
   };
 
   const isValidStep = (step: EmailStepForm) => {
-    if (!step.template_id) return false;
+    // For new campaigns, check subject and body instead of template_id
+    if (campaign.id === 'new') {
+      if (!step.subject?.trim() || !step.body?.trim()) return false;
+    } else {
+      if (!step.template_id) return false;
+    }
     if (step.when_to_send === 'exact' && !step.send_at) return false;
     if (step.when_to_send === 'delay' && (!step.send_offset_minutes || step.send_offset_minutes <= 0)) return false;
     return true;
+  };
+
+  // Sample lead for preview
+  const sampleLead = {
+    first_name: 'John',
+    last_name: 'Smith',
+    company_name: 'TechCorp Inc.',
+    job_title: 'Marketing Director'
+  };
+
+  const replaceVariables = (text: string, lead: any) => {
+    return text
+      .replace(/{{first_name}}/g, lead.first_name || '[First Name]')
+      .replace(/{{last_name}}/g, lead.last_name || '[Last Name]')
+      .replace(/{{company_name}}/g, lead.company_name || '[Company]')
+      .replace(/{{job_title}}/g, lead.job_title || '[Job Title]');
   };
 
   return (
@@ -350,25 +378,68 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label>Template</Label>
-                      <Select
-                        value={step.template_id || ''}
-                        onValueChange={(value) => updateEmailStep(index, { template_id: value || null })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select template" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableTemplates.map((template) => (
-                            <SelectItem key={template.id} value={template.id}>
-                              {template.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                   <CardContent className="space-y-4">
+                    {campaign.id === 'new' ? (
+                      // New campaign - inline template creation
+                      <>
+                        <div>
+                          <Label>Subject Line</Label>
+                          <Input
+                            value={step.subject || ''}
+                            onChange={(e) => updateEmailStep(index, { subject: e.target.value })}
+                            placeholder="Quick question about {{company_name}}"
+                          />
+                        </div>
+                        <div>
+                          <Label>Email Body</Label>
+                          <Textarea
+                            value={step.body || ''}
+                            onChange={(e) => updateEmailStep(index, { body: e.target.value })}
+                            placeholder="Hi {{first_name}}, I noticed that {{company_name}} is..."
+                            rows={4}
+                          />
+                        </div>
+                        {step.subject && step.body && (
+                          <div className="mt-4 p-3 bg-muted rounded-md">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Eye className="h-4 w-4" />
+                              <span className="text-sm font-medium">Live Preview</span>
+                            </div>
+                            <div className="text-sm space-y-2">
+                              <div>
+                                <strong>Subject:</strong> {replaceVariables(step.subject, sampleLead)}
+                              </div>
+                              <div>
+                                <strong>Body:</strong>
+                                <div className="whitespace-pre-wrap mt-1 p-2 bg-background rounded border">
+                                  {replaceVariables(step.body, sampleLead)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      // Existing campaign - template selection
+                      <div>
+                        <Label>Template</Label>
+                        <Select
+                          value={step.template_id || ''}
+                          onValueChange={(value) => updateEmailStep(index, { template_id: value || null })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select template" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableTemplates.map((template) => (
+                              <SelectItem key={template.id} value={template.id}>
+                                {template.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     <div>
                       <Label>When to Send</Label>

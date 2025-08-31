@@ -113,15 +113,38 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
 
       // Save email steps if email is enabled and steps exist
       if (deliveryRules.use_email && emailSteps.length > 0) {
-        const stepsToSave = emailSteps.map(step => ({
-          step_number: step.step_number,
-          template_id: step.template_id,
-          send_at: step.when_to_send === 'exact' ? step.send_at : null,
-          send_offset_minutes: step.when_to_send === 'delay' ? step.send_offset_minutes : null,
-          is_active: step.is_active,
-        }));
+        const stepsToSave = [];
+        
+        for (const step of emailSteps) {
+          let templateId = step.template_id;
+          
+          // For new campaigns with inline templates, create the template first
+          if (!templateId && step.subject && step.body) {
+            const template = await createEmailTemplate({
+              user_id: null,
+              campaign_id: newCampaign.id,
+              name: `${campaignName} - Step ${step.step_number}`,
+              subject: step.subject,
+              body: step.body,
+              is_active: true
+            });
+            templateId = template.id;
+          }
+          
+          if (templateId) {
+            stepsToSave.push({
+              step_number: step.step_number,
+              template_id: templateId,
+              send_at: step.when_to_send === 'exact' ? step.send_at : null,
+              send_offset_minutes: step.when_to_send === 'delay' ? step.send_offset_minutes : null,
+              is_active: step.is_active,
+            });
+          }
+        }
 
-        await saveEmailSteps(newCampaign.id, stepsToSave);
+        if (stepsToSave.length > 0) {
+          await saveEmailSteps(newCampaign.id, stepsToSave);
+        }
       }
       
       // Reset form
