@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { getApiUrl } from '@/config/api';
+import { supabase } from '@/integrations/supabase/client';
 
 interface User {
   id: string;
@@ -43,18 +43,13 @@ export const AdminPage = () => {
     if (!user) return;
 
     try {
-      const response = await fetch(getApiUrl('/api/admin/users'), {
+      const { data, error } = await supabase.functions.invoke('admin-users', {
         headers: {
           'X-User-Id': user.id,
-          'Content-Type': 'application/json'
         }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch users');
-      }
-
-      const data = await response.json();
+      if (error) throw error;
       setUsers(data);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -74,18 +69,14 @@ export const AdminPage = () => {
 
     setCreating(true);
     try {
-      const response = await fetch(getApiUrl('/api/admin/users'), {
-        method: 'POST',
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        body: formData,
         headers: {
           'X-User-Id': user.id,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to create user');
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
@@ -110,18 +101,14 @@ export const AdminPage = () => {
     if (!user) return;
 
     try {
-      const response = await fetch(getApiUrl(`/api/admin/users/${userId}/set-admin`), {
-        method: 'POST',
+      const { data, error } = await supabase.functions.invoke(`admin-set-admin/${userId}`, {
+        body: { is_admin: isAdmin },
         headers: {
           'X-User-Id': user.id,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ is_admin: isAdmin })
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update admin status');
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
