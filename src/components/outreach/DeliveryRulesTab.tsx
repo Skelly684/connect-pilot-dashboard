@@ -14,6 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 interface DeliveryRulesTabProps {
   campaign: Campaign;
   onUpdateCampaign: (id: string, updates: Partial<Campaign>) => Promise<void>;
+  emailSteps?: EmailStepForm[];
+  onUpdateEmailSteps?: (steps: EmailStepForm[]) => void;
 }
 
 interface EmailStepForm {
@@ -25,11 +27,19 @@ interface EmailStepForm {
   when_to_send: 'exact' | 'delay';
 }
 
-export const DeliveryRulesTab = ({ campaign, onUpdateCampaign }: DeliveryRulesTabProps) => {
+export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propEmailSteps, onUpdateEmailSteps }: DeliveryRulesTabProps) => {
   const { emailTemplates, fetchEmailSteps, saveEmailSteps } = useCampaigns();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [emailSteps, setEmailSteps] = useState<EmailStepForm[]>([]);
+  const [emailSteps, setEmailStepsState] = useState<EmailStepForm[]>(propEmailSteps || []);
+
+  // Use provided email steps or manage internal state
+  const setEmailSteps = (steps: EmailStepForm[]) => {
+    setEmailStepsState(steps);
+    if (onUpdateEmailSteps) {
+      onUpdateEmailSteps(steps);
+    }
+  };
 
   // Parse delivery rules from campaign or use defaults
   const defaultRules: DeliveryRules = {
@@ -50,8 +60,13 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign }: DeliveryRulesTa
     campaign.delivery_rules ? { ...defaultRules, ...campaign.delivery_rules } : defaultRules
   );
 
-  // Load email steps on mount
+  // Load email steps on mount (only if not provided as props)
   useEffect(() => {
+    if (propEmailSteps) {
+      setEmailStepsState(propEmailSteps);
+      return;
+    }
+
     const loadEmailSteps = async () => {
       try {
         const steps = await fetchEmailSteps(campaign.id);
@@ -69,8 +84,10 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign }: DeliveryRulesTa
       }
     };
 
-    loadEmailSteps();
-  }, [campaign.id, fetchEmailSteps]);
+    if (campaign.id !== 'new') {
+      loadEmailSteps();
+    }
+  }, [campaign.id, fetchEmailSteps, propEmailSteps]);
 
   // Get available templates for campaign
   const availableTemplates = emailTemplates.filter(
@@ -86,7 +103,7 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign }: DeliveryRulesTa
       });
 
       // Save email steps if email is enabled
-      if (deliveryRules.use_email) {
+      if (deliveryRules.use_email && campaign.id !== 'new') {
         const stepsToSave = emailSteps.map(step => ({
           step_number: step.step_number,
           template_id: step.template_id,

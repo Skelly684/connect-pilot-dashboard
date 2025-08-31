@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronDown, Save, Eye, Mail, Phone } from 'lucide-react';
-import { useCampaigns } from '@/hooks/useCampaigns';
+import { useCampaigns, DeliveryRules } from '@/hooks/useCampaigns';
+import { DeliveryRulesTab } from './DeliveryRulesTab';
 
 interface NewCampaignDialogProps {
   open: boolean;
@@ -16,7 +17,7 @@ interface NewCampaignDialogProps {
 }
 
 export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps) => {
-  const { createCampaign, createEmailTemplate } = useCampaigns();
+  const { createCampaign, createEmailTemplate, saveEmailSteps } = useCampaigns();
   const [isLoading, setIsLoading] = useState(false);
   
   // Campaign basic info
@@ -31,11 +32,26 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
   // Caller script
   const [callerPrompt, setCallerPrompt] = useState('Hi, this is Scott from PSN…');
   
-  // Delivery settings
+  // Delivery rules with defaults
+  const defaultRules: DeliveryRules = {
+    use_email: true,
+    use_calls: true,
+    call: {
+      max_attempts: 3,
+      retry_minutes: 30,
+      window_start: 9,
+      window_end: 18,
+    },
+    email: {
+      send_initial: true,
+    },
+  };
+  
+  const [deliveryRules, setDeliveryRules] = useState<DeliveryRules>(defaultRules);
+  const [emailSteps, setEmailSteps] = useState<any[]>([]);
+  
+  // Legacy delivery settings for backwards compatibility
   const [emailDailyCap, setEmailDailyCap] = useState(150);
-  const [callWindowStart, setCallWindowStart] = useState(9);
-  const [callWindowEnd, setCallWindowEnd] = useState(18);
-  const [maxCallRetries, setMaxCallRetries] = useState(3);
   
   // Sample lead for preview
   const sampleLead = {
@@ -60,11 +76,6 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
       return;
     }
     
-    if (!emailSubject.trim() && !callerPrompt.trim()) {
-      alert('Please provide either an email template or caller script');
-      return;
-    }
-    
     setIsLoading(true);
     try {
       let emailTemplateId = null;
@@ -82,8 +93,8 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
         emailTemplateId = template.id;
       }
       
-      // Create campaign
-      await createCampaign({
+      // Create campaign with delivery rules
+      const newCampaign = await createCampaign({
         user_id: null,
         name: campaignName,
         from_email: fromEmail,
@@ -91,13 +102,27 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
         email_template_id: emailTemplateId,
         email_daily_cap: emailDailyCap,
         caller_prompt: callerPrompt.trim() || 'Hi, this is Scott from PSN…',
-        call_window_start: callWindowStart,
-        call_window_end: callWindowEnd,
-        max_call_retries: maxCallRetries,
-        retry_minutes: 30,
+        call_window_start: deliveryRules.call.window_start,
+        call_window_end: deliveryRules.call.window_end,
+        max_call_retries: deliveryRules.call.max_attempts,
+        retry_minutes: deliveryRules.call.retry_minutes,
         is_active: true,
-        is_default: false
+        is_default: false,
+        delivery_rules: deliveryRules
       });
+
+      // Save email steps if email is enabled and steps exist
+      if (deliveryRules.use_email && emailSteps.length > 0) {
+        const stepsToSave = emailSteps.map(step => ({
+          step_number: step.step_number,
+          template_id: step.template_id,
+          send_at: step.when_to_send === 'exact' ? step.send_at : null,
+          send_offset_minutes: step.when_to_send === 'delay' ? step.send_offset_minutes : null,
+          is_active: step.is_active,
+        }));
+
+        await saveEmailSteps(newCampaign.id, stepsToSave);
+      }
       
       // Reset form
       setCampaignName('');
@@ -107,15 +132,41 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
       setEmailBody('');
       setCallerPrompt('Hi, this is Scott from PSN…');
       setEmailDailyCap(150);
-      setCallWindowStart(9);
-      setCallWindowEnd(18);
-      setMaxCallRetries(3);
+      setDeliveryRules(defaultRules);
+      setEmailSteps([]);
       
       onOpenChange(false);
     } catch (error) {
       console.error('Error creating campaign:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Mock campaign for DeliveryRulesTab
+  const mockCampaign = {
+    id: 'new',
+    user_id: null,
+    name: campaignName,
+    from_email: fromEmail,
+    from_name: fromName,
+    email_template_id: null,
+    email_daily_cap: emailDailyCap,
+    caller_prompt: callerPrompt,
+    call_window_start: deliveryRules.call.window_start,
+    call_window_end: deliveryRules.call.window_end,
+    max_call_retries: deliveryRules.call.max_attempts,
+    retry_minutes: deliveryRules.call.retry_minutes,
+    is_active: true,
+    is_default: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    delivery_rules: deliveryRules,
+  };
+
+  const handleUpdateMockCampaign = async (id: string, updates: any) => {
+    if (updates.delivery_rules) {
+      setDeliveryRules(updates.delivery_rules);
     }
   };
 
@@ -267,51 +318,12 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
             </TabsContent>
             
             <TabsContent value="delivery" className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="email-cap">Daily Email Cap</Label>
-                  <Input
-                    id="email-cap"
-                    type="number"
-                    value={emailDailyCap}
-                    onChange={(e) => setEmailDailyCap(parseInt(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="max-retries">Max Call Retries</Label>
-                  <Input
-                    id="max-retries"
-                    type="number"
-                    value={maxCallRetries}
-                    onChange={(e) => setMaxCallRetries(parseInt(e.target.value))}
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="call-start">Call Window Start (24h)</Label>
-                  <Input
-                    id="call-start"
-                    type="number"
-                    min="0"
-                    max="23"
-                    value={callWindowStart}
-                    onChange={(e) => setCallWindowStart(parseInt(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="call-end">Call Window End (24h)</Label>
-                  <Input
-                    id="call-end"
-                    type="number"
-                    min="0"
-                    max="23"
-                    value={callWindowEnd}
-                    onChange={(e) => setCallWindowEnd(parseInt(e.target.value))}
-                  />
-                </div>
-              </div>
+              <DeliveryRulesTab
+                campaign={mockCampaign as any}
+                onUpdateCampaign={handleUpdateMockCampaign}
+                emailSteps={emailSteps}
+                onUpdateEmailSteps={setEmailSteps}
+              />
             </TabsContent>
           </Tabs>
         
