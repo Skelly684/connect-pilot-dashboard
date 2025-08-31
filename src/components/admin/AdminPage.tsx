@@ -11,8 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { getApiUrl } from '@/config/api';
-import { CheckCircle, Copy, RefreshCw, Unlink } from 'lucide-react';
+import { appConfig } from '@/lib/appConfig';
+import { CheckCircle, Copy, RefreshCw, Unlink, ExternalLink } from 'lucide-react';
 
 interface User {
   id: string;
@@ -41,12 +41,24 @@ export const AdminPage = () => {
   const [resetPassword, setResetPassword] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [refreshingGoogle, setRefreshingGoogle] = useState(false);
+  const [apiBaseUrl, setApiBaseUrl] = useState("/api");
   const [formData, setFormData] = useState<CreateUserForm>({
     email: '',
     password: '',
     name: '',
     is_admin: false
   });
+
+  useEffect(() => {
+    // Load saved API base URL from app config
+    const config = appConfig.getConfig();
+    setApiBaseUrl(config.api_base_url || "/api");
+  }, []);
+
+  const buildApiUrl = (path: string) => {
+    const baseUrl = apiBaseUrl === "/api" ? "" : apiBaseUrl;
+    return `${baseUrl}${path}`;
+  };
 
   const fetchUsers = async () => {
     if (!user) return;
@@ -74,7 +86,7 @@ export const AdminPage = () => {
       // Fetch Google status for each user
       await Promise.all(usersWithGoogle.map(async (userData) => {
         try {
-          const response = await fetch(getApiUrl(`/oauth/status?user_id=${userData.id}`), {
+          const response = await fetch(buildApiUrl(`/oauth/status?user_id=${userData.id}`), {
             headers: {
               'X-User-Id': user.id,
               'Accept': 'application/json',
@@ -254,11 +266,18 @@ export const AdminPage = () => {
     }
   };
 
+  const openConnectLink = (targetUserId: string) => {
+    if (!user) return;
+    
+    const connectUrl = buildApiUrl(`/api/google/oauth/start?user_id=${targetUserId}`);
+    window.open(connectUrl, 'google-auth', 'width=520,height=700,scrollbars=yes,resizable=yes');
+  };
+
   const copyConnectLink = async (targetUserId: string, targetEmail: string) => {
     if (!user) return;
 
     try {
-      const response = await fetch(getApiUrl(`/auth/google/start?user_id=${targetUserId}`), {
+      const response = await fetch(buildApiUrl(`/auth/google/start?user_id=${targetUserId}`), {
         headers: {
           'X-User-Id': user.id,
           'Accept': 'application/json', 
@@ -295,7 +314,7 @@ export const AdminPage = () => {
     if (!user) return;
 
     try {
-      const response = await fetch(getApiUrl(`/oauth/google/disconnect?user_id=${targetUserId}`), {
+      const response = await fetch(buildApiUrl(`/oauth/google/disconnect?user_id=${targetUserId}`), {
         method: 'POST',
         headers: {
           'X-User-Id': user.id,
@@ -333,7 +352,7 @@ export const AdminPage = () => {
     if (!user) return;
     
     try {
-      const response = await fetch(getApiUrl(`/oauth/status?user_id=${targetUserId}`), {
+      const response = await fetch(buildApiUrl(`/oauth/status?user_id=${targetUserId}`), {
         headers: {
           'X-User-Id': user.id,
           'Accept': 'application/json',
@@ -363,7 +382,7 @@ export const AdminPage = () => {
     try {
       await Promise.all(users.map(async (userData) => {
         try {
-          const response = await fetch(getApiUrl(`/oauth/status?user_id=${userData.id}`), {
+          const response = await fetch(buildApiUrl(`/oauth/status?user_id=${userData.id}`), {
             headers: {
               'X-User-Id': user.id,
               'Accept': 'application/json',
@@ -557,14 +576,24 @@ export const AdminPage = () => {
                     {userData.is_admin ? 'Admin' : 'User'}
                   </TableCell>
                   <TableCell>
-                    {userData.googleConnected ? (
-                      <Badge variant="default" className="bg-green-100 text-green-800">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Connected
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">Not Connected</Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {userData.googleConnected ? (
+                        <Badge variant="default" className="bg-green-100 text-green-800">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Connected
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">Not Connected</Badge>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => refreshSingleUserGoogleStatus(userData.id)}
+                        title="Refresh Google status for this user"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -573,6 +602,16 @@ export const AdminPage = () => {
                         onCheckedChange={(checked) => toggleAdminStatus(userData.id, checked)}
                       />
                       
+                      <Button
+                        onClick={() => openConnectLink(userData.id)}
+                        variant="outline"
+                        size="sm"
+                        title="Open Google connect for this user"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-1" />
+                        Open Connect Link
+                      </Button>
+
                       <Button
                         onClick={() => copyConnectLink(userData.id, userData.email)}
                         variant="outline"
