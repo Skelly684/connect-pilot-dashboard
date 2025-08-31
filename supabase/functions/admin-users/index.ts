@@ -81,16 +81,26 @@ serve(async (req) => {
 
       console.log('Creating user with email:', email)
 
-      // Create user in auth - this will trigger confirmation email
-      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      // Use regular signup flow to trigger confirmation email
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.signUp({
         email,
         password,
-        user_metadata: { name }
+        options: {
+          data: { name },
+          emailRedirectTo: `${Deno.env.get('SUPABASE_URL')?.replace('/supabase', '')}/auth/confirm`
+        }
       })
 
       if (authError) {
         console.error('Auth error:', authError)
         return new Response(JSON.stringify({ error: authError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (!authUser.user) {
+        return new Response(JSON.stringify({ error: 'Failed to create user' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
