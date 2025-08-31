@@ -47,8 +47,10 @@ export const AdminPage = () => {
       
       // Use the edge function to fetch users
       const { data, error } = await supabase.functions.invoke('admin-users', {
+        method: 'GET',
         headers: {
           'X-User-Id': user.id,
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         }
       });
 
@@ -86,6 +88,7 @@ export const AdminPage = () => {
         body: formData,
         headers: {
           'X-User-Id': user.id,
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         }
       });
 
