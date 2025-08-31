@@ -43,19 +43,40 @@ export const AdminPage = () => {
     if (!user) return;
 
     try {
+      // First check if current user is admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.is_admin) {
+        toast({
+          title: "Error",
+          description: "Admin access required",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // If admin, invoke the edge function
       const { data, error } = await supabase.functions.invoke('admin-users', {
         headers: {
           'X-User-Id': user.id,
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+      
       setUsers(data);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch users",
+        description: "Failed to fetch users. Please check the logs.",
         variant: "destructive"
       });
     } finally {
@@ -76,7 +97,10 @@ export const AdminPage = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -89,7 +113,7 @@ export const AdminPage = () => {
       console.error('Error creating user:', error);
       toast({
         title: "Error",
-        description: "Failed to create user",
+        description: "Failed to create user. Please check the logs.",
         variant: "destructive"
       });
     } finally {
@@ -101,14 +125,21 @@ export const AdminPage = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke(`admin-set-admin/${userId}`, {
-        body: { is_admin: isAdmin },
+      // Call the edge function with the user ID in the URL path
+      const { data, error } = await supabase.functions.invoke('admin-set-admin', {
+        body: { 
+          user_id: userId,
+          is_admin: isAdmin 
+        },
         headers: {
           'X-User-Id': user.id,
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -119,8 +150,8 @@ export const AdminPage = () => {
     } catch (error) {
       console.error('Error updating admin status:', error);
       toast({
-        title: "Error",
-        description: "Failed to update admin status",
+        title: "Error", 
+        description: "Failed to update admin status. Please check the logs.",
         variant: "destructive"
       });
     }

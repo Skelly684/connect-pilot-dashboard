@@ -47,12 +47,10 @@ serve(async (req) => {
       })
     }
 
-    const url = new URL(req.url)
-    const targetUserId = url.pathname.split('/').pop()
-    const { is_admin } = await req.json()
+    const { user_id: targetUserId, is_admin } = await req.json()
 
     if (!targetUserId) {
-      return new Response(JSON.stringify({ error: 'User ID required in URL' }), {
+      return new Response(JSON.stringify({ error: 'User ID required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })

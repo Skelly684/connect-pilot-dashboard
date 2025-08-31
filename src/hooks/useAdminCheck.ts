@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useAdminCheck = () => {
   const { user } = useAuth();
@@ -15,19 +16,18 @@ export const useAdminCheck = () => {
       }
 
       try {
-        // Call the API endpoint to check admin status
-        const response = await fetch('/api/admin/check', {
-          headers: {
-            'X-User-Id': user.id,
-            'Content-Type': 'application/json'
-          }
-        });
+        // Check admin status directly from the profiles table
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
 
-        if (response.ok) {
-          const data = await response.json();
-          setIsAdmin(data.is_admin || false);
-        } else {
+        if (error) {
+          console.error('Error checking admin status:', error);
           setIsAdmin(false);
+        } else {
+          setIsAdmin(data?.is_admin || false);
         }
       } catch (error) {
         console.error('Error checking admin status:', error);
