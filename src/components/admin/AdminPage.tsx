@@ -45,61 +45,21 @@ export const AdminPage = () => {
     try {
       console.log('Fetching users - current user:', user.id);
       
-      // First check if current user is admin
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
-
-      console.log('Current user profile:', profile, 'error:', profileError);
-
-      if (profileError) {
-        console.error('Profile error:', profileError);
-        // If no profile exists, create one for this user
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            email: user.email || '',
-            is_admin: false
-          });
-        
-        if (insertError) {
-          console.error('Failed to create profile:', insertError);
+      // Use the edge function to fetch users
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        headers: {
+          'X-User-Id': user.id,
         }
-        
-        toast({
-          title: "Info",
-          description: "Profile created. Please refresh to continue.",
-          variant: "default"
-        });
-        return;
+      });
+
+      console.log('Edge function response:', data, 'error:', error);
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
       }
-
-      if (!profile?.is_admin) {
-        toast({
-          title: "Error", 
-          description: "Admin access required",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // If admin, try to get all profiles directly first
-      console.log('User is admin, fetching all profiles...');
-      const { data: allProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, email, created_at, is_admin')
-        .order('created_at', { ascending: false });
-
-      if (profilesError) {
-        console.error('Error fetching profiles directly:', profilesError);
-        throw profilesError;
-      }
-
-      console.log('Found profiles:', allProfiles);
-      setUsers(allProfiles || []);
+      
+      setUsers(data || []);
       
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -121,39 +81,24 @@ export const AdminPage = () => {
     try {
       console.log('Creating user with data:', formData);
       
-      // Create user directly using Supabase admin
-      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        email_confirm: true
+      // Use the edge function to create the user
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        body: formData,
+        headers: {
+          'X-User-Id': user.id,
+        }
       });
 
-      console.log('Auth user created:', authUser, 'error:', authError);
+      console.log('Edge function response:', data, 'error:', error);
 
-      if (authError) {
-        console.error('Auth error:', authError);
-        throw authError;
-      }
-
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authUser.user.id,
-          email: formData.email,
-          is_admin: formData.is_admin || false
-        });
-
-      console.log('Profile creation error:', profileError);
-
-      if (profileError) {
-        console.error('Profile error:', profileError);
-        throw profileError;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
       }
 
       toast({
         title: "Success",
-        description: "User created successfully"
+        description: "User created successfully. They will receive a confirmation email."
       });
 
       setFormData({ email: '', password: '', name: '', is_admin: false });
