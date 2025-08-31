@@ -1,121 +1,88 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle, Link, Save, ExternalLink, Unlink } from "lucide-react";
+import { AlertCircle, CheckCircle, Link, Save, ExternalLink, Unlink, RefreshCw, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { appConfig } from "@/lib/appConfig";
 import { useAuth } from "@/contexts/AuthContext";
-import { getApiUrl } from "@/config/api";
 
 export const SettingsPage = () => {
-  const [apiBaseUrl, setApiBaseUrl] = useState("");
+  const [apiBaseUrl, setApiBaseUrl] = useState("/api");
   const [isValidating, setIsValidating] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'error'>('unknown');
   const [errorMessage, setErrorMessage] = useState("");
   const [testedUrl, setTestedUrl] = useState("");
-  const [googleConnected, setGoogleConnected] = useState(false);
-  const [checkingGoogle, setCheckingGoogle] = useState(false);
-  const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const [dsGoogleStatus, setDsGoogleStatus] = useState({ data: { connected: false }, loading: false });
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Data source for Google OAuth status
+  const runDsGoogleStatus = useCallback(async () => {
+    if (!user) return;
+    
+    setDsGoogleStatus(prev => ({ ...prev, loading: true }));
+    try {
+      const baseUrl = apiBaseUrl === "/api" ? "" : apiBaseUrl;
+      const response = await fetch(`${baseUrl}/oauth/status`, {
+        headers: {
+          'X-User-Id': user.id,
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDsGoogleStatus({ data: { connected: data.connected || false }, loading: false });
+      } else {
+        console.error('Failed to check Google status:', response.status);
+        setDsGoogleStatus({ data: { connected: false }, loading: false });
+      }
+    } catch (error) {
+      console.error('Error checking Google status:', error);
+      setDsGoogleStatus({ data: { connected: false }, loading: false });
+    }
+  }, [user, apiBaseUrl]);
 
   useEffect(() => {
     // Load saved API base URL from app config
     const config = appConfig.getConfig();
-    setApiBaseUrl(config.api_base_url);
+    setApiBaseUrl(config.api_base_url || "/api");
     
-    // Check Google OAuth status on load
+    // Run data source on page load
     if (user) {
-      checkGoogleStatus();
+      runDsGoogleStatus();
     }
-  }, [user]);
+  }, [user, runDsGoogleStatus]);
 
-  const checkGoogleStatus = async () => {
+  // Handle window focus to refresh Google status after OAuth
+  useEffect(() => {
+    const handleFocus = () => {
+      runDsGoogleStatus();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [runDsGoogleStatus]);
+
+  const connectGoogle = () => {
     if (!user) return;
     
-    setCheckingGoogle(true);
-    try {
-      const response = await fetch(getApiUrl('/oauth/status'), {
-        headers: {
-          'X-User-Id': user.id,
-          'Accept': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setGoogleConnected(data.connected || false);
-      } else {
-        console.error('Failed to check Google status:', response.status);
-      }
-    } catch (error) {
-      console.error('Error checking Google status:', error);
-    } finally {
-      setCheckingGoogle(false);
-    }
-  };
-
-  const startGoogleAuth = async () => {
-    if (!user) return;
-
-    setConnectingGoogle(true);
-    try {
-      const response = await fetch(getApiUrl('/auth/google/start'), {
-        headers: {
-          'X-User-Id': user.id,
-          'Accept': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Open popup window
-        const popup = window.open(
-          data.auth_url,
-          'google-auth',
-          'width=520,height=700,scrollbars=yes,resizable=yes'
-        );
-
-        // Poll for popup closure
-        const checkClosed = setInterval(() => {
-          if (popup?.closed) {
-            clearInterval(checkClosed);
-            // Re-check status after popup closes
-            setTimeout(() => checkGoogleStatus(), 1000);
-          }
-        }, 800);
-      } else {
-        const errorData = await response.json();
-        toast({
-          title: "Error",
-          description: errorData.error || errorData.detail || errorData.message || "Failed to start Google authentication",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error starting Google auth:', error);
-      toast({
-        title: "Error", 
-        description: "Failed to connect to Google",
-        variant: "destructive"
-      });
-    } finally {
-      setConnectingGoogle(false);
-    }
+    const baseUrl = apiBaseUrl === "/api" ? "" : apiBaseUrl;
+    const authUrl = `${baseUrl}/api/google/oauth/start?user_id=${user.id}`;
+    window.open(authUrl, 'google-auth', 'width=520,height=700,scrollbars=yes,resizable=yes');
   };
 
   const disconnectGoogle = async () => {
     if (!user) return;
 
     try {
-      const response = await fetch(getApiUrl('/oauth/google/disconnect'), {
+      const baseUrl = apiBaseUrl === "/api" ? "" : apiBaseUrl;
+      const response = await fetch(`${baseUrl}/oauth/google/disconnect`, {
         method: 'POST',
         headers: {
           'X-User-Id': user.id,
@@ -125,7 +92,7 @@ export const SettingsPage = () => {
       });
 
       if (response.ok) {
-        setGoogleConnected(false);
+        runDsGoogleStatus();
         toast({
           title: "Success",
           description: "Google account disconnected successfully"
@@ -143,6 +110,42 @@ export const SettingsPage = () => {
       toast({
         title: "Error",
         description: "Failed to disconnect Google account", 
+        variant: "destructive"
+      });
+    }
+  };
+
+  const testCalendar = async () => {
+    if (!user) return;
+
+    try {
+      const baseUrl = apiBaseUrl === "/api" ? "" : apiBaseUrl;
+      const response = await fetch(`${baseUrl}/api/calendar/list`, {
+        headers: {
+          'X-User-Id': user.id,
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        }
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Calendar connection test successful"
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || errorData.detail || errorData.message || "Calendar test failed",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error testing calendar:', error);
+      toast({
+        title: "Error",
+        description: "Failed to test calendar connection", 
         variant: "destructive"
       });
     }
@@ -282,9 +285,9 @@ export const SettingsPage = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span>Google Status:</span>
-              {checkingGoogle ? (
+              {dsGoogleStatus.loading ? (
                 <Badge variant="secondary">Checking...</Badge>
-              ) : googleConnected ? (
+              ) : dsGoogleStatus.data.connected ? (
                 <Badge variant="default" className="bg-green-100 text-green-800">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Connected
@@ -292,25 +295,41 @@ export const SettingsPage = () => {
               ) : (
                 <Badge variant="secondary">Not Connected</Badge>
               )}
+              <Button 
+                size="sm"
+                variant="ghost"
+                onClick={runDsGoogleStatus}
+                disabled={dsGoogleStatus.loading}
+              >
+                <RefreshCw className="h-3 w-3" />
+              </Button>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
             <Button 
-              onClick={startGoogleAuth}
-              disabled={connectingGoogle || googleConnected}
+              onClick={connectGoogle}
+              disabled={dsGoogleStatus.data.connected}
               variant="default"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
-              {connectingGoogle ? 'Connecting...' : 'Connect Google'}
+              Connect Google
             </Button>
             <Button 
               onClick={disconnectGoogle}
-              disabled={!googleConnected}
+              disabled={!dsGoogleStatus.data.connected}
               variant="secondary"
             >
               <Unlink className="h-4 w-4 mr-2" />
               Disconnect
+            </Button>
+            <Button 
+              onClick={testCalendar}
+              disabled={!dsGoogleStatus.data.connected}
+              variant="outline"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Test Calendar
             </Button>
           </div>
         </CardContent>
