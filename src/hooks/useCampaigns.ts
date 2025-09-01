@@ -235,11 +235,11 @@ export const useCampaigns = () => {
     }
   };
 
-  const setDefaultCampaign = async (id: string) => {
+  const setDefaultCampaign = async (id: string, isDefault: boolean = true) => {
     try {
       const { error } = await supabase
         .from('campaigns')
-        .update({ is_default: true })
+        .update({ is_default: isDefault })
         .eq('id', id);
 
       if (error) throw error;
@@ -247,13 +247,13 @@ export const useCampaigns = () => {
       await fetchCampaigns();
       toast({
         title: "Success",
-        description: "Default campaign updated successfully",
+        description: isDefault ? "Default campaign set successfully" : "Default campaign unset successfully",
       });
     } catch (error) {
-      console.error('Error setting default campaign:', error);
+      console.error('Error updating default campaign:', error);
       toast({
         title: "Error",
-        description: "Failed to set default campaign",
+        description: "Failed to update default campaign",
         variant: "destructive",
       });
       throw error;

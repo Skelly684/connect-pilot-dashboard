@@ -43,9 +43,10 @@ export const OutreachCenter = () => {
     }
   };
 
-  const handleSetDefault = async (campaignId: string) => {
+  const handleSetDefault = async (campaignId: string, isCurrentlyDefault: boolean) => {
     try {
-      await setDefaultCampaign(campaignId);
+      // Toggle the default state
+      await setDefaultCampaign(campaignId, !isCurrentlyDefault);
     } catch (error) {
       console.error('Error setting default campaign:', error);
     }
@@ -189,9 +190,9 @@ export const OutreachCenter = () => {
                               variant={campaign.is_default ? "default" : "outline"}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleSetDefault(campaign.id);
+                                handleSetDefault(campaign.id, campaign.is_default);
                               }}
-                              disabled={campaign.is_default}
+                              title={campaign.is_default ? "Unset as default" : "Set as default"}
                             >
                               {campaign.is_default ? (
                                 <Star className="h-3 w-3 fill-current" />
