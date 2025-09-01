@@ -57,25 +57,36 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
   };
 
   const validateForm = () => {
-    if (!formData.first_name?.trim()) {
+    // Validate email is required
+    if (!formData.email_address?.trim() || formData.email_address === 'N/A') {
       toast({
         title: "Validation Error",
-        description: "First name is required",
+        description: "Email address is required",
         variant: "destructive"
       });
       return false;
     }
 
-    if (formData.email_address && formData.email_address !== 'N/A') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email_address)) {
-        toast({
-          title: "Validation Error", 
-          description: "Please enter a valid email address",
-          variant: "destructive"
-        });
-        return false;
-      }
+    // Validate either first_name OR company_name is provided
+    if ((!formData.first_name?.trim() || formData.first_name === 'N/A') && 
+        (!formData.company_name?.trim() || formData.company_name === 'N/A')) {
+      toast({
+        title: "Validation Error",
+        description: "Either first name or company name is required",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email_address)) {
+      toast({
+        title: "Validation Error", 
+        description: "Please enter a valid email address",
+        variant: "destructive"
+      });
+      return false;
     }
 
     return true;
@@ -191,48 +202,78 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
 
       if (saveError) throw saveError;
 
-      // Get campaign email template if selected
-      const selectedCampaign = campaigns.find(c => c.id === formData.campaign_id);
-      const emailTemplateId = selectedCampaign?.email_template_id || null;
-
-      // Send to FastAPI backend for processing
+      // Call the accept_leads data source
+      const apiBase = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
       const payload = {
         leads: [{
-          id: leadObject.id,
-          first_name: leadObject.first_name || '',
-          last_name: leadObject.last_name || '',
-          company_name: leadObject.company_name || '',
-          phone: leadObject.contact_phone_numbers ? 
-            JSON.parse(leadObject.contact_phone_numbers)[0]?.rawNumber || '' : '',
-          email_address: leadObject.email_address || '',
-          campaign_id: leadObject.campaign_id || undefined
-        }],
-        emailTemplateId: emailTemplateId
+          first_name: formData.first_name || '',
+          last_name: formData.last_name || '',
+          email_address: formData.email_address || '',
+          company_name: formData.company_name || '',
+          job_title: formData.job_title || '',
+          contact_phone_numbers: formData.contact_phone_numbers.filter((p: any) => p.rawNumber?.trim())
+            .map((p: any) => ({ rawNumber: p.rawNumber })),
+          city_name: formData.city_name || '',
+          state_name: formData.state_name || '',
+          country_name: formData.country_name || '',
+          campaign_id: formData.campaign_id || null
+        }]
       };
 
-      console.log("Sending self-generated lead to FastAPI backend with contact:", `${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, payload);
-
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, {
+      const response = await fetch(`${apiBase}/accepted-leads`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-User-Id': user?.id || 'dev-user'
         },
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) {
-        throw new Error(`FastAPI backend returned ${response.status}: ${response.statusText}`);
+      if (response.ok) {
+        try {
+          const responseData = await response.json();
+          console.log("API response:", responseData);
+          
+          toast({
+            title: "Success",
+            description: "Lead saved & outreach queued."
+          });
+          
+          onReset();
+          // Optionally navigate to outreach center
+          // window.location.href = "/outreach-center";
+        } catch (parseError) {
+          // Handle non-JSON response
+          const responseText = await response.text();
+          toast({
+            title: "Warning",
+            description: `Server returned non-JSON: ${responseText.slice(0, 200)}`,
+            variant: "destructive"
+          });
+          console.error(`HTTP Status: ${response.status}`);
+        }
+      } else {
+        // Handle error response
+        try {
+          const errorData = await response.json();
+          if (errorData.ok === false && errorData.error) {
+            toast({
+              title: "Error",
+              description: errorData.error,
+              variant: "destructive"
+            });
+          } else {
+            throw new Error("Unknown API error");
+          }
+        } catch (parseError) {
+          toast({
+            title: "Error",
+            description: "Failed to accept lead. See console for details.",
+            variant: "destructive"
+          });
+          console.error(`HTTP Status: ${response.status}`, parseError);
+        }
       }
-
-      const responseData = await response.json();
-      console.log("FastAPI backend response:", responseData);
-
-      toast({
-        title: "Success",
-        description: "Lead saved, accepted and sent for contact"
-      });
-
-      onReset();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -241,6 +282,29 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       });
     } finally {
       setIsContacting(false);
+    }
+  };
+
+  const handlePingAPI = async () => {
+    const apiBase = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+    
+    try {
+      const response = await fetch(`${apiBase}/health`);
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "API Status",
+          description: `API OK at ${data.time}`
+        });
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
+    } catch (error: any) {
+      toast({
+        title: "API Error",
+        description: `API unreachable (${error.message}). Check ngrok or CORS.`,
+        variant: "destructive"
+      });
     }
   };
 
@@ -254,7 +318,7 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="first_name">First Name *</Label>
+              <Label htmlFor="first_name">First Name</Label>
               <Input
                 id="first_name"
                 value={formData.first_name}
@@ -283,23 +347,14 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
           </div>
 
           <div>
-            <Label htmlFor="email_address">Email Address</Label>
-            <div className="flex gap-2">
-              <Input
-                id="email_address"
-                type="email"
-                value={formData.email_address}
-                onChange={(e) => handleInputChange('email_address', e.target.value)}
-                placeholder="Enter email address"
-              />
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={() => handleInputChange('email_address', 'N/A')}
-              >
-                N/A
-              </Button>
-            </div>
+            <Label htmlFor="email_address">Email Address *</Label>
+            <Input
+              id="email_address"
+              type="email"
+              value={formData.email_address}
+              onChange={(e) => handleInputChange('email_address', e.target.value)}
+              placeholder="Enter email address"
+            />
           </div>
 
           <div>
@@ -590,13 +645,23 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={onReset}
-              disabled={isSaving || isContacting}
-            >
-              Reset
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={onReset}
+                disabled={isSaving || isContacting}
+              >
+                Reset
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={handlePingAPI}
+                disabled={isSaving || isContacting}
+              >
+                Ping API
+              </Button>
+            </div>
 
             <div className="flex gap-3">
               <Button
