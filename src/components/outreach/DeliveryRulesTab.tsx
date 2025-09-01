@@ -64,6 +64,12 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
     campaign.delivery_rules ? { ...defaultRules, ...campaign.delivery_rules } : defaultRules
   );
 
+  // Update delivery rules when campaign changes
+  useEffect(() => {
+    const rules = campaign.delivery_rules ? { ...defaultRules, ...campaign.delivery_rules } : defaultRules;
+    setDeliveryRules(rules);
+  }, [campaign.delivery_rules]);
+
   // Load email steps on mount (only if not provided as props)
   useEffect(() => {
     if (propEmailSteps) {
