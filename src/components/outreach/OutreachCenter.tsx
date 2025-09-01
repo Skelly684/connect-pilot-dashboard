@@ -1,18 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Phone, Send, Play, Pause, Settings, Plus, Star, StarOff } from "lucide-react";
+import { Mail, Phone, Send, Play, Pause, Settings, Plus, Star, StarOff, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { NewCampaignDialog } from "@/components/outreach/NewCampaignDialog";
 import { CampaignSettingsDialog } from "@/components/outreach/CampaignSettingsDialog";
+import { CampaignEditor } from "@/components/outreach/CampaignEditor";
 
 export const OutreachCenter = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null);
   const [showNewCampaign, setShowNewCampaign] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { campaigns, isLoading, updateCampaign, setDefaultCampaign, deleteCampaign } = useCampaigns();
+
+  // Get campaign from URL parameters
+  const campaignIdParam = searchParams.get('campaign');
+  const editingCampaign = campaignIdParam ? campaigns.find(c => c.id === campaignIdParam) : null;
+
+  // Clear campaign parameter when going back
+  const handleBackToList = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('campaign');
+    setSearchParams(newParams);
+  };
 
   const activeCampaigns = campaigns.filter(c => c.is_active);
   const inactiveCampaigns = campaigns.filter(c => !c.is_active);
@@ -52,6 +66,29 @@ export const OutreachCenter = () => {
           <div className="animate-spin h-8 w-8 border-b-2 border-primary rounded-full mx-auto mb-4"></div>
           <p>Loading campaigns...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Show campaign editor if editing a specific campaign
+  if (editingCampaign) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            onClick={handleBackToList}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Campaigns
+          </Button>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Edit Campaign</h2>
+            <p className="text-gray-600">{editingCampaign.name}</p>
+          </div>
+        </div>
+        <CampaignEditor campaign={editingCampaign} />
       </div>
     );
   }
