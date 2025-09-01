@@ -285,29 +285,6 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
     }
   };
 
-  const handlePingAPI = async () => {
-    const apiBase = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
-    
-    try {
-      const response = await fetch(`${apiBase}/health`);
-      if (response.ok) {
-        const data = await response.json();
-        toast({
-          title: "API Status",
-          description: `API OK at ${data.time}`
-        });
-      } else {
-        throw new Error(`HTTP ${response.status}`);
-      }
-    } catch (error: any) {
-      toast({
-        title: "API Error",
-        description: `API unreachable (${error.message}). Check ngrok or CORS.`,
-        variant: "destructive"
-      });
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Contact Information */}
@@ -645,23 +622,13 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={onReset}
-                disabled={isSaving || isContacting}
-              >
-                Reset
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={handlePingAPI}
-                disabled={isSaving || isContacting}
-              >
-                Ping API
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              onClick={onReset}
+              disabled={isSaving || isContacting}
+            >
+              Reset
+            </Button>
 
             <div className="flex gap-3">
               <Button
