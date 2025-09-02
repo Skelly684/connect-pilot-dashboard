@@ -61,6 +61,34 @@ export const SettingsPage = () => {
     const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
     const authUrl = `${backendUrl}/google/oauth/start?user_id=${user.id}`;
     window.open(authUrl, 'google-auth', 'width=520,height=700,scrollbars=yes,resizable=yes');
+    
+    // Poll for connection status after opening OAuth window
+    pollForConnection();
+  };
+
+  const pollForConnection = async () => {
+    const maxAttempts = 40; // 2 minutes total
+    let attempts = 0;
+    
+    const poll = async () => {
+      attempts++;
+      await runDsGoogleStatus();
+      
+      if (dsGoogleStatus.data.connected) {
+        toast({
+          title: "Success",
+          description: "Google account connected successfully!",
+        });
+        return;
+      }
+      
+      if (attempts < maxAttempts) {
+        setTimeout(poll, 3000); // Poll every 3 seconds
+      }
+    };
+    
+    // Start polling after a short delay
+    setTimeout(poll, 2000);
   };
 
   const disconnectGoogle = async () => {
@@ -163,7 +191,7 @@ export const SettingsPage = () => {
               {dsGoogleStatus.loading ? (
                 <Badge variant="secondary">Checking...</Badge>
               ) : dsGoogleStatus.data.connected ? (
-                <Badge variant="default" className="bg-green-100 text-green-800">
+                <Badge variant="success">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Connected
                 </Badge>
