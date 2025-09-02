@@ -31,6 +31,7 @@ export interface Campaign {
   retry_minutes: number;
   is_active: boolean;
   is_default: boolean;
+  send_first_immediately: boolean;
   created_at: string;
   updated_at: string;
   delivery_rules?: any; // Use any for JSON compatibility with Supabase
