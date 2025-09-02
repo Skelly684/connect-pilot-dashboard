@@ -62,8 +62,8 @@ export const SettingsPage = () => {
   const connectGoogle = () => {
     if (!user) return;
     
-    const baseUrl = apiBaseUrl === "/api" ? "" : apiBaseUrl;
-    const authUrl = `${baseUrl}/api/google/oauth/start?user_id=${user.id}`;
+    const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+    const authUrl = `${backendUrl}/google/oauth/start?user_id=${user.id}`;
     window.open(authUrl, 'google-auth', 'width=520,height=700,scrollbars=yes,resizable=yes');
   };
 
