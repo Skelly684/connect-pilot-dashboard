@@ -11,15 +11,17 @@ export const SettingsPage = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Data source for Google OAuth status
+  // Data source for Google OAuth status - using calendar endpoint since /oauth/status doesn't exist
   const runDsGoogleStatus = useCallback(async () => {
     if (!user) return;
     
     setDsGoogleStatus(prev => ({ ...prev, loading: true }));
     try {
+      // Since /oauth/status doesn't exist, test connection by trying calendar API
       const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
-      const response = await fetch(`${backendUrl}/oauth/status?user_id=${user.id}`, {
+      const response = await fetch(`${backendUrl}/calendar/list`, {
         headers: {
+          'X-User-Id': user.id,
           'Accept': 'application/json',
           'ngrok-skip-browser-warning': 'true',
         }
@@ -27,7 +29,8 @@ export const SettingsPage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setDsGoogleStatus({ data: { connected: data.connected === true }, loading: false });
+        // If calendar API works, Google is connected
+        setDsGoogleStatus({ data: { connected: true }, loading: false });
       } else {
         console.error('Failed to check Google status:', response.status);
         setDsGoogleStatus({ data: { connected: false }, loading: false });
