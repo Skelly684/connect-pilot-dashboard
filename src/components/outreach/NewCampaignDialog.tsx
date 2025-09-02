@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +29,6 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
   // Email template
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
-  const [sendFirstImmediately, setSendFirstImmediately] = useState(true);
   
   // Caller script
   const [callerPrompt, setCallerPrompt] = useState('Hi, this is Scott from PSN…');
@@ -118,7 +116,6 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
         retry_minutes: deliveryRules.call.retry_minutes,
         is_active: true,
         is_default: false,
-        send_first_immediately: sendFirstImmediately,
         delivery_rules: deliveryRules
       });
 
@@ -164,7 +161,6 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
       setFromName('Scott | PSN');
       setEmailSubject('');
       setEmailBody('');
-      setSendFirstImmediately(true);
       setCallerPrompt('Hi, this is Scott from PSN…');
       setEmailDailyCap(150);
       setDeliveryRules(defaultRules);
@@ -194,7 +190,6 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
     retry_minutes: deliveryRules.call.retry_minutes,
     is_active: true,
     is_default: false,
-    send_first_immediately: sendFirstImmediately,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     delivery_rules: deliveryRules,
@@ -283,22 +278,6 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
                           rows={6}
                         />
                       </div>
-                      
-                      {/* Send First Email Immediately Toggle */}
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label htmlFor="send-first-immediately">Send first email immediately</Label>
-                          <div className="text-sm text-muted-foreground">
-                            When enabled, uses the above email configuration as the first email step and sends it immediately when a lead is added
-                          </div>
-                        </div>
-                        <Switch
-                          id="send-first-immediately"
-                          checked={sendFirstImmediately}
-                          onCheckedChange={setSendFirstImmediately}
-                        />
-                      </div>
-                      
                       {emailSubject && emailBody && (
                         <div className="mt-4 p-3 bg-muted rounded-md">
                           <div className="flex items-center gap-2 mb-2">

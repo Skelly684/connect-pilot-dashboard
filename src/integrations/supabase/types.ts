@@ -130,36 +130,30 @@ export type Database = {
       campaign_email_steps: {
         Row: {
           campaign_id: string
-          created_at: string | null
           id: string
           is_active: boolean
           send_at: string | null
           send_offset_minutes: number | null
           step_number: number
           template_id: string | null
-          updated_at: string | null
         }
         Insert: {
           campaign_id: string
-          created_at?: string | null
           id?: string
           is_active?: boolean
           send_at?: string | null
           send_offset_minutes?: number | null
           step_number: number
           template_id?: string | null
-          updated_at?: string | null
         }
         Update: {
           campaign_id?: string
-          created_at?: string | null
           id?: string
           is_active?: boolean
           send_at?: string | null
           send_offset_minutes?: number | null
           step_number?: number
           template_id?: string | null
-          updated_at?: string | null
         }
         Relationships: [
           {
@@ -195,7 +189,6 @@ export type Database = {
           max_call_retries: number
           name: string
           retry_minutes: number
-          send_first_immediately: boolean | null
           updated_at: string
           user_id: string | null
         }
@@ -215,7 +208,6 @@ export type Database = {
           max_call_retries?: number
           name: string
           retry_minutes?: number
-          send_first_immediately?: boolean | null
           updated_at?: string
           user_id?: string | null
         }
@@ -235,7 +227,6 @@ export type Database = {
           max_call_retries?: number
           name?: string
           retry_minutes?: number
-          send_first_immediately?: boolean | null
           updated_at?: string
           user_id?: string | null
         }
