@@ -1,74 +1,96 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, ExternalLink, Unlink, RefreshCw, Calendar, Loader2 } from "lucide-react";
+import { CheckCircle, ExternalLink, Unlink, RefreshCw, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiBase } from "@/utils/apiBase";
 
 export const SettingsPage = () => {
-  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
-  const [checking, setChecking] = useState(false);
+  const [dsGoogleStatus, setDsGoogleStatus] = useState({ data: { connected: false }, loading: false });
   const { toast } = useToast();
   const { user } = useAuth();
 
-  async function fetchStatus() {
+  // Data source for Google OAuth status
+  const runDsGoogleStatus = useCallback(async () => {
     if (!user) return;
     
-    setChecking(true);
+    setDsGoogleStatus(prev => ({ ...prev, loading: true }));
     try {
-      const base = apiBase();
-      const url = `${base}/oauth/status?user_id=${user.id}`;
-      const res = await fetch(url);
-      const j = await res.json();
-      console.log("status url", url, j);
-      setGoogleConnected(!!j.connected);
-    } catch (e) {
-      console.error("status error", e);
-      setGoogleConnected(false);
-    } finally {
-      setChecking(false);
-    }
-  }
+      const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      const response = await fetch(`${backendUrl}/oauth/status?user_id=${user.id}`, {
+        headers: {
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        }
+      });
 
-  async function pollUntilConnected(timeoutMs = 120000, intervalMs = 1500) {
-    const started = Date.now();
-    while (Date.now() - started < timeoutMs) {
-      await fetchStatus();
-      if (googleConnected === true) return;
-      await new Promise(r => setTimeout(r, intervalMs));
+      if (response.ok) {
+        const data = await response.json();
+        setDsGoogleStatus({ data: { connected: data.connected === true }, loading: false });
+      } else {
+        console.error('Failed to check Google status:', response.status);
+        setDsGoogleStatus({ data: { connected: false }, loading: false });
+      }
+    } catch (error) {
+      console.error('Error checking Google status:', error);
+      setDsGoogleStatus({ data: { connected: false }, loading: false });
     }
-  }
-
-  useEffect(() => { 
-    fetchStatus(); 
   }, [user]);
 
-  async function handleConnectGoogle() {
+  useEffect(() => {
+    // Run data source on page load
+    if (user) {
+      runDsGoogleStatus();
+    }
+  }, [user, runDsGoogleStatus]);
+
+  // Handle window focus to refresh Google status after OAuth
+  useEffect(() => {
+    const handleFocus = () => {
+      runDsGoogleStatus();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [runDsGoogleStatus]);
+
+  const connectGoogle = () => {
     if (!user) return;
     
-    try {
-      const base = apiBase();
-      const url = `${base}/api/google/oauth/start?user_id=${user.id}`; // 307 -> Google
-      window.open(url, "_blank", "noopener,noreferrer,width=480,height=720");
-      // After popup, poll the backend until it sees tokens
-      await pollUntilConnected();
-    } catch (e) {
-      console.error("connect error", e);
-    }
-  }
+    const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+    const authUrl = `${backendUrl}/google/oauth/start?user_id=${user.id}`;
+    window.open(authUrl, 'google-auth', 'width=520,height=700,scrollbars=yes,resizable=yes');
+  };
 
-  async function handleDisconnect() {
+  const disconnectGoogle = async () => {
     if (!user) return;
 
     try {
-      const base = apiBase();
-      await fetch(`${base}/oauth/google/disconnect?user_id=${user.id}`, { method: "POST" });
-      toast({
-        title: "Success",
-        description: "Google account disconnected successfully"
+      const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      const response = await fetch(`${backendUrl}/oauth/google/disconnect`, {
+        method: 'POST',
+        headers: {
+          'X-User-Id': user.id,
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        }
       });
+
+      if (response.ok) {
+        runDsGoogleStatus();
+        toast({
+          title: "Success",
+          description: "Google account disconnected successfully"
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || errorData.detail || errorData.message || "Failed to disconnect Google account",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       console.error('Error disconnecting Google:', error);
       toast({
@@ -76,17 +98,21 @@ export const SettingsPage = () => {
         description: "Failed to disconnect Google account", 
         variant: "destructive"
       });
-    } finally {
-      fetchStatus();
     }
-  }
+  };
 
   const testCalendar = async () => {
     if (!user) return;
 
     try {
-      const base = apiBase();
-      const response = await fetch(`${base}/calendar/list?user_id=${user.id}`);
+      const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      const response = await fetch(`${backendUrl}/calendar/list`, {
+        headers: {
+          'X-User-Id': user.id,
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        }
+      });
 
       if (response.ok) {
         toast({
@@ -134,12 +160,9 @@ export const SettingsPage = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span>Google Status:</span>
-              {googleConnected === null || checking ? (
-                <Badge variant="secondary">
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  Checking...
-                </Badge>
-              ) : googleConnected === true ? (
+              {dsGoogleStatus.loading ? (
+                <Badge variant="secondary">Checking...</Badge>
+              ) : dsGoogleStatus.data.connected ? (
                 <Badge variant="default" className="bg-green-100 text-green-800">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Connected
@@ -150,8 +173,8 @@ export const SettingsPage = () => {
               <Button 
                 size="sm"
                 variant="ghost"
-                onClick={fetchStatus}
-                disabled={checking}
+                onClick={runDsGoogleStatus}
+                disabled={dsGoogleStatus.loading}
               >
                 <RefreshCw className="h-3 w-3" />
               </Button>
@@ -160,16 +183,16 @@ export const SettingsPage = () => {
           
           <div className="flex items-center gap-2">
             <Button 
-              onClick={handleConnectGoogle}
-              disabled={googleConnected === true}
+              onClick={connectGoogle}
+              disabled={dsGoogleStatus.data.connected}
               variant="default"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Connect Google
             </Button>
             <Button 
-              onClick={handleDisconnect}
-              disabled={googleConnected !== true}
+              onClick={disconnectGoogle}
+              disabled={!dsGoogleStatus.data.connected}
               variant="secondary"
             >
               <Unlink className="h-4 w-4 mr-2" />
@@ -177,7 +200,7 @@ export const SettingsPage = () => {
             </Button>
             <Button 
               onClick={testCalendar}
-              disabled={googleConnected !== true}
+              disabled={!dsGoogleStatus.data.connected}
               variant="outline"
             >
               <Calendar className="h-4 w-4 mr-2" />
