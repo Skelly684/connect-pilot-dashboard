@@ -27,7 +27,7 @@ export const SettingsPage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setDsGoogleStatus({ data: { connected: data.connected || false }, loading: false });
+        setDsGoogleStatus({ data: { connected: data.connected === true }, loading: false });
       } else {
         console.error('Failed to check Google status:', response.status);
         setDsGoogleStatus({ data: { connected: false }, loading: false });
@@ -106,7 +106,7 @@ export const SettingsPage = () => {
 
     try {
       const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
-      const response = await fetch(`${backendUrl}/api/calendar/list`, {
+      const response = await fetch(`${backendUrl}/calendar/list`, {
         headers: {
           'X-User-Id': user.id,
           'Accept': 'application/json',
