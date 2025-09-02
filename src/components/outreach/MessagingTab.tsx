@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -29,14 +29,6 @@ export const MessagingTab = ({
   const [emailBody, setEmailBody] = useState(campaign.email_template?.body || '');
   const [selectedTemplateId, setSelectedTemplateId] = useState(campaign.email_template_id || 'new');
   const [isLoading, setIsLoading] = useState(false);
-
-  // Update state when campaign data changes
-  useEffect(() => {
-    setCallerPrompt(campaign.caller_prompt);
-    setEmailSubject(campaign.email_template?.subject || '');
-    setEmailBody(campaign.email_template?.body || '');
-    setSelectedTemplateId(campaign.email_template_id || 'new');
-  }, [campaign]);
 
   const handleSaveMessaging = async () => {
     setIsLoading(true);

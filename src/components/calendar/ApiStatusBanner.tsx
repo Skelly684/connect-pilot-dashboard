@@ -64,8 +64,10 @@ export const ApiStatusBanner = () => {
     <div className="flex items-center justify-between bg-muted/50 border border-border rounded-lg p-3 mb-4">
       <div className="flex items-center gap-3">
         <div className="text-sm">
-          <span className="text-muted-foreground">API:</span>
-          <span className="ml-1">{isHealthy ? 'Connected' : 'Disconnected'}</span>
+          <span className="text-muted-foreground">API Base:</span>
+          <code className="ml-1 px-1.5 py-0.5 bg-background border rounded text-xs font-mono">
+            {apiBaseUrl}
+          </code>
         </div>
         {getStatusBadge()}
       </div>
