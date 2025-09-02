@@ -63,9 +63,9 @@ export const BasicInfoTab = ({ campaign, onUpdateCampaign }: BasicInfoTabProps) 
         is_active: isActive,
       });
 
-      // Handle default campaign setting separately if it changed
-      if (isDefault !== campaign.is_default) {
-        await setDefaultCampaign(campaign.id, isDefault);
+      // Handle default campaign setting separately
+      if (isDefault && !campaign.is_default) {
+        await setDefaultCampaign(campaign.id);
       }
 
       toast({
@@ -90,7 +90,7 @@ export const BasicInfoTab = ({ campaign, onUpdateCampaign }: BasicInfoTabProps) 
     fromName !== campaign.from_name ||
     emailDailyCap !== campaign.email_daily_cap ||
     isActive !== campaign.is_active ||
-    isDefault !== campaign.is_default; // Check if default status changed
+    (isDefault && !campaign.is_default); // Only consider it a change if setting to default
 
   return (
     <div className="space-y-6">

@@ -243,53 +243,38 @@ export type Database = {
       email_logs: {
         Row: {
           body: string
-          campaign_id: string | null
           created_at: string
+          email_to: string
           error: string | null
           id: string
-          idem_key: string | null
-          lead_id: string | null
-          notes: string | null
+          lead_id: string
           provider: string | null
           status: string
-          step_number: number | null
           subject: string
-          template_id: string | null
-          to_email: string | null
           user_id: string | null
         }
         Insert: {
           body: string
-          campaign_id?: string | null
           created_at?: string
+          email_to: string
           error?: string | null
           id?: string
-          idem_key?: string | null
-          lead_id?: string | null
-          notes?: string | null
+          lead_id: string
           provider?: string | null
           status: string
-          step_number?: number | null
           subject: string
-          template_id?: string | null
-          to_email?: string | null
           user_id?: string | null
         }
         Update: {
           body?: string
-          campaign_id?: string | null
           created_at?: string
+          email_to?: string
           error?: string | null
           id?: string
-          idem_key?: string | null
-          lead_id?: string | null
-          notes?: string | null
+          lead_id?: string
           provider?: string | null
           status?: string
-          step_number?: number | null
           subject?: string
-          template_id?: string | null
-          to_email?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -502,27 +487,6 @@ export type Database = {
           token_type?: string | null
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      lead_email_sends: {
-        Row: {
-          id: string
-          lead_id: string
-          sent_at: string
-          step_id: string
-        }
-        Insert: {
-          id?: string
-          lead_id: string
-          sent_at?: string
-          step_id: string
-        }
-        Update: {
-          id?: string
-          lead_id?: string
-          sent_at?: string
-          step_id?: string
         }
         Relationships: []
       }
