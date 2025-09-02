@@ -10,9 +10,6 @@ export const SettingsPage = () => {
   const [dsGoogleStatus, setDsGoogleStatus] = useState({ data: { connected: false }, loading: false });
   const { toast } = useToast();
   const { user } = useAuth();
-  
-  // Get API base URL from config for API calls
-  const apiBaseUrl = "/api"; // Default for settings page calls
 
   // Data source for Google OAuth status
   const runDsGoogleStatus = useCallback(async () => {
@@ -20,10 +17,9 @@ export const SettingsPage = () => {
     
     setDsGoogleStatus(prev => ({ ...prev, loading: true }));
     try {
-      const baseUrl = apiBaseUrl === "/api" ? "" : apiBaseUrl;
-      const response = await fetch(`${baseUrl}/oauth/status`, {
+      const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      const response = await fetch(`${backendUrl}/oauth/status?user_id=${user.id}`, {
         headers: {
-          'X-User-Id': user.id,
           'Accept': 'application/json',
           'ngrok-skip-browser-warning': 'true',
         }
@@ -40,7 +36,7 @@ export const SettingsPage = () => {
       console.error('Error checking Google status:', error);
       setDsGoogleStatus({ data: { connected: false }, loading: false });
     }
-  }, [user, apiBaseUrl]);
+  }, [user]);
 
   useEffect(() => {
     // Run data source on page load
@@ -71,8 +67,8 @@ export const SettingsPage = () => {
     if (!user) return;
 
     try {
-      const baseUrl = apiBaseUrl === "/api" ? "" : apiBaseUrl;
-      const response = await fetch(`${baseUrl}/oauth/google/disconnect`, {
+      const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      const response = await fetch(`${backendUrl}/oauth/google/disconnect`, {
         method: 'POST',
         headers: {
           'X-User-Id': user.id,
@@ -109,8 +105,8 @@ export const SettingsPage = () => {
     if (!user) return;
 
     try {
-      const baseUrl = apiBaseUrl === "/api" ? "" : apiBaseUrl;
-      const response = await fetch(`${baseUrl}/api/calendar/list`, {
+      const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      const response = await fetch(`${backendUrl}/api/calendar/list`, {
         headers: {
           'X-User-Id': user.id,
           'Accept': 'application/json',
