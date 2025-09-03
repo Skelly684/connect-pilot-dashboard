@@ -67,13 +67,25 @@ export function Activity({ leadId }: Props) {
   // Call events
   for (const c of state.calls) {
     const when = c.created_at || c.started_at || "";
-    const st = (c.call_status || "").replace(/_/g, " ");
-    rows.push({
-      kind: "call",
-      when,
-      title: `Call ${st || ""}`.trim(),
-      sub: c.notes || ""
-    });
+    const status = c.call_status || "";
+    
+    if (status === 'note') {
+      // Handle manual notes differently
+      rows.push({
+        kind: "call",
+        when,
+        title: "Note added",
+        sub: c.notes || ""
+      });
+    } else {
+      const st = status.replace(/_/g, " ");
+      rows.push({
+        kind: "call",
+        when,
+        title: `Call ${st || ""}`.trim(),
+        sub: c.notes || ""
+      });
+    }
   }
 
   // Sort newest first
@@ -86,7 +98,7 @@ export function Activity({ leadId }: Props) {
       {rows.map((r, i) => (
         <div key={i} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg">
           <div className="text-lg flex-shrink-0 mt-0.5">
-            {r.kind === "reply" ? "↩️" : r.kind === "email" ? "✉️" : "📞"}
+            {r.kind === "reply" ? "↩️" : r.kind === "email" ? "✉️" : r.title === "Note added" ? "📝" : "📞"}
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm">{r.title}</div>

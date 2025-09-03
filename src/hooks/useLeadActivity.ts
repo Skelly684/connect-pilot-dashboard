@@ -6,10 +6,11 @@ import { supabase } from '@/integrations/supabase/client';
 export interface CallActivity {
   id: string;
   attempt_number: number;
-  status: 'completed' | 'no-answer' | 'busy' | 'failed';
+  status: 'completed' | 'no-answer' | 'busy' | 'failed' | 'note';
   duration?: number;
   timestamp: string;
   recording_url?: string;
+  notes?: string;
 }
 
 export interface EmailActivity {
@@ -128,6 +129,7 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
               duration: newRecord.duration_seconds,
               timestamp: newRecord.created_at,
               recording_url: newRecord.recording_url,
+              notes: newRecord.notes,
             };
             
             // Insert at beginning for newest first ordering

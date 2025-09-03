@@ -23,6 +23,8 @@ const getCallStatusColor = (status?: CallActivity['status']): string => {
       return 'bg-orange-100 text-orange-800';
     case 'failed':
       return 'bg-red-100 text-red-800';
+    case 'note':
+      return 'bg-blue-100 text-blue-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
@@ -222,7 +224,7 @@ export const LeadActivityPanel = ({ leadId, leadName, enabled = true }: LeadActi
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2">
                       <Badge className={getCallStatusColor(call.status)}>
-                        {call.status?.replace('-', ' ') || 'Unknown'}
+                        {call.status === 'note' ? 'Note' : (call.status?.replace('-', ' ') || 'Unknown')}
                       </Badge>
                       {call.duration && (
                         <span className="text-sm text-muted-foreground">
@@ -233,6 +235,11 @@ export const LeadActivityPanel = ({ leadId, leadName, enabled = true }: LeadActi
                     <p className="text-sm text-muted-foreground mt-1">
                       {formatRelativeTime(call.timestamp).exact}
                     </p>
+                    {call.notes && call.status === 'note' && (
+                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                        {call.notes}
+                      </div>
+                    )}
                     {call.recording_url && (
                       <Button
                         variant="link"
