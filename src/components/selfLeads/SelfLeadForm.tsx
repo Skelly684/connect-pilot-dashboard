@@ -125,6 +125,23 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
     try {
       const leadObject = buildLeadObject();
       
+      // Check for existing lead with same email
+      const { data: existingLead } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('email_address', leadObject.email_address)
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (existingLead) {
+        toast({
+          title: "Duplicate Lead",
+          description: "A lead with this email address already exists",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       const { error } = await supabase
         .from('leads')
         .insert([leadObject]);
@@ -206,6 +223,23 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
     setIsContacting(true);
     try {
       const leadObject = buildLeadObject();
+      
+      // Check for existing lead with same email
+      const { data: existingLead } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('email_address', leadObject.email_address)
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (existingLead) {
+        toast({
+          title: "Duplicate Lead",
+          description: "A lead with this email address already exists",
+          variant: "destructive"
+        });
+        return;
+      }
       
       // Save to database first
       const { error: saveError } = await supabase
