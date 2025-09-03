@@ -130,30 +130,36 @@ export type Database = {
       campaign_email_steps: {
         Row: {
           campaign_id: string
+          created_at: string | null
           id: string
           is_active: boolean
           send_at: string | null
           send_offset_minutes: number | null
           step_number: number
           template_id: string | null
+          updated_at: string | null
         }
         Insert: {
           campaign_id: string
+          created_at?: string | null
           id?: string
           is_active?: boolean
           send_at?: string | null
           send_offset_minutes?: number | null
           step_number: number
           template_id?: string | null
+          updated_at?: string | null
         }
         Update: {
           campaign_id?: string
+          created_at?: string | null
           id?: string
           is_active?: boolean
           send_at?: string | null
           send_offset_minutes?: number | null
           step_number?: number
           template_id?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -174,6 +180,7 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          body: string | null
           call_window_end: number
           call_window_start: number
           caller_prompt: string
@@ -184,15 +191,19 @@ export type Database = {
           from_email: string
           from_name: string
           id: string
+          initial_template_id: string | null
           is_active: boolean
           is_default: boolean | null
           max_call_retries: number
           name: string
           retry_minutes: number
+          send_first_immediately: boolean | null
+          subject: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          body?: string | null
           call_window_end?: number
           call_window_start?: number
           caller_prompt?: string
@@ -203,15 +214,19 @@ export type Database = {
           from_email: string
           from_name?: string
           id?: string
+          initial_template_id?: string | null
           is_active?: boolean
           is_default?: boolean | null
           max_call_retries?: number
           name: string
           retry_minutes?: number
+          send_first_immediately?: boolean | null
+          subject?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          body?: string | null
           call_window_end?: number
           call_window_start?: number
           caller_prompt?: string
@@ -222,11 +237,14 @@ export type Database = {
           from_email?: string
           from_name?: string
           id?: string
+          initial_template_id?: string | null
           is_active?: boolean
           is_default?: boolean | null
           max_call_retries?: number
           name?: string
           retry_minutes?: number
+          send_first_immediately?: boolean | null
+          subject?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -238,6 +256,13 @@ export type Database = {
             referencedRelation: "email_templates"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "campaigns_initial_template_id_fkey"
+            columns: ["initial_template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
         ]
       }
       email_logs: {
@@ -245,12 +270,15 @@ export type Database = {
           body: string
           campaign_id: string | null
           created_at: string
+          direction: string | null
           error: string | null
+          from_email: string | null
           id: string
           idem_key: string | null
           lead_id: string | null
           notes: string | null
           provider: string | null
+          snippet: string | null
           status: string
           step_number: number | null
           subject: string
@@ -262,12 +290,15 @@ export type Database = {
           body: string
           campaign_id?: string | null
           created_at?: string
+          direction?: string | null
           error?: string | null
+          from_email?: string | null
           id?: string
           idem_key?: string | null
           lead_id?: string | null
           notes?: string | null
           provider?: string | null
+          snippet?: string | null
           status: string
           step_number?: number | null
           subject: string
@@ -279,12 +310,15 @@ export type Database = {
           body?: string
           campaign_id?: string | null
           created_at?: string
+          direction?: string | null
           error?: string | null
+          from_email?: string | null
           id?: string
           idem_key?: string | null
           lead_id?: string | null
           notes?: string | null
           provider?: string | null
+          snippet?: string | null
           status?: string
           step_number?: number | null
           subject?: string
@@ -549,6 +583,10 @@ export type Database = {
           last_email_reply_at: string | null
           last_email_status: string | null
           last_name: string | null
+          last_reply_at: string | null
+          last_reply_from: string | null
+          last_reply_snippet: string | null
+          last_reply_subject: string | null
           location: string | null
           name: string | null
           next_call_at: string | null
@@ -587,6 +625,10 @@ export type Database = {
           last_email_reply_at?: string | null
           last_email_status?: string | null
           last_name?: string | null
+          last_reply_at?: string | null
+          last_reply_from?: string | null
+          last_reply_snippet?: string | null
+          last_reply_subject?: string | null
           location?: string | null
           name?: string | null
           next_call_at?: string | null
@@ -625,6 +667,10 @@ export type Database = {
           last_email_reply_at?: string | null
           last_email_status?: string | null
           last_name?: string | null
+          last_reply_at?: string | null
+          last_reply_from?: string | null
+          last_reply_snippet?: string | null
+          last_reply_subject?: string | null
           location?: string | null
           name?: string | null
           next_call_at?: string | null
