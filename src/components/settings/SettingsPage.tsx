@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, ExternalLink, Unlink, RefreshCw, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export const SettingsPage = () => {
   const [dsGoogleStatus, setDsGoogleStatus] = useState({ data: { connected: false }, loading: false });
@@ -98,26 +99,23 @@ export const SettingsPage = () => {
     if (!user) return;
 
     try {
-      const response = await fetch('/api/functions/v1/google-oauth-disconnect', {
+      const { data, error } = await supabase.functions.invoke('google-oauth-disconnect', {
         method: 'POST',
         headers: {
           'X-User-Id': user.id,
-          'Accept': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
         }
       });
 
-      if (response.ok) {
+      if (!error) {
         runDsGoogleStatus();
         toast({
           title: "Success",
           description: "Google account disconnected successfully"
         });
       } else {
-        const errorData = await response.json();
         toast({
           title: "Error",
-          description: errorData.error || errorData.detail || errorData.message || "Failed to disconnect Google account",
+          description: error.message || "Failed to disconnect Google account",
           variant: "destructive"
         });
       }
