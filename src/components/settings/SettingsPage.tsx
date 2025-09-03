@@ -99,26 +99,36 @@ export const SettingsPage = () => {
     if (!user) return;
 
     try {
+      console.log('Disconnecting Google account for user:', user.id);
+      
       const { data, error } = await supabase.functions.invoke('google-oauth-disconnect', {
-        method: 'POST',
+        body: {},
         headers: {
           'X-User-Id': user.id,
         }
       });
 
-      if (!error) {
-        runDsGoogleStatus();
-        toast({
-          title: "Success",
-          description: "Google account disconnected successfully"
-        });
-      } else {
+      console.log('Disconnect response:', { data, error });
+
+      if (error) {
+        console.error('Disconnect error:', error);
         toast({
           title: "Error",
           description: error.message || "Failed to disconnect Google account",
           variant: "destructive"
         });
+        return;
       }
+
+      // Wait a moment before checking status to allow backend to update
+      setTimeout(() => {
+        runDsGoogleStatus();
+      }, 1000);
+      
+      toast({
+        title: "Success",
+        description: "Google account disconnected successfully"
+      });
     } catch (error) {
       console.error('Error disconnecting Google:', error);
       toast({
