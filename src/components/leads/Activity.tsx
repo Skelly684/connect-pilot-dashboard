@@ -27,7 +27,7 @@ export function Activity({ leadId }: Props) {
   }, [leadId]);
 
   if (state.loading) return <div className="text-muted-foreground">Loading activity…</div>;
-  if (state.error) return <div className="text-muted-foreground">Unable to load recent activity – {state.error}</div>;
+  if (state.error) return <div className="text-muted-foreground">Unable to load recent activity</div>;
 
   const rows: { kind: "email" | "call" | "reply"; when: string; title: string; sub?: string; body?: string }[] = [];
 
