@@ -98,8 +98,7 @@ export const SettingsPage = () => {
     if (!user) return;
 
     try {
-      const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
-      const response = await fetch(`${backendUrl}/oauth/google/disconnect`, {
+      const response = await fetch('/api/functions/v1/google-oauth-disconnect', {
         method: 'POST',
         headers: {
           'X-User-Id': user.id,
