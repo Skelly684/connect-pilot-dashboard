@@ -101,37 +101,41 @@ export const SettingsPage = () => {
     try {
       console.log('Disconnecting Google account for user:', user.id);
       
-      const { data, error } = await supabase.functions.invoke('google-oauth-disconnect', {
-        body: { user_id: user.id },
+      // Call the external API disconnect endpoint instead of Supabase function
+      const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      const response = await fetch(`${backendUrl}/google/oauth/disconnect`, {
+        method: 'POST',
         headers: {
-          'x-user-id': user.id,
-        }
+          'X-User-Id': user.id,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify({ user_id: user.id })
       });
 
-      console.log('Disconnect response:', { data, error });
+      console.log('Disconnect response status:', response.status);
 
-      if (error) {
-        console.error('Disconnect error:', error);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Disconnect response data:', data);
+        
+        // Update status immediately to show disconnected state
+        setDsGoogleStatus({ data: { connected: false }, loading: false });
+        
+        toast({
+          title: "Success",
+          description: "Google account disconnected successfully"
+        });
+      } else {
+        const errorData = await response.json();
+        console.error('Disconnect error:', errorData);
         toast({
           title: "Error",
-          description: error.message || "Failed to disconnect Google account",
+          description: errorData.error || errorData.message || "Failed to disconnect Google account",
           variant: "destructive"
         });
-        return;
       }
-
-      // Update status immediately to show disconnected state
-      setDsGoogleStatus({ data: { connected: false }, loading: false });
-      
-      // Also refresh status from server after a delay
-      setTimeout(() => {
-        runDsGoogleStatus();
-      }, 1000);
-      
-      toast({
-        title: "Success",
-        description: "Google account disconnected successfully"
-      });
     } catch (error) {
       console.error('Error disconnecting Google:', error);
       toast({
