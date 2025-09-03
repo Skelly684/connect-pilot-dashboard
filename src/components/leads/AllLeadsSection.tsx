@@ -786,28 +786,35 @@ export const AllLeadsSection = ({
                            </TableCell>
                            <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
                            <TableCell>
-                             <div className="flex flex-col gap-1">
-                               <Badge className={getStatusColor(status)}>
-                                 {status?.replace('_', ' ') || 'new'}
-                               </Badge>
-                               {replySnippets.has(leadId) && (
-                                 <div className="mt-1 p-2 bg-emerald-50 border border-emerald-200 rounded-md">
-                                   <div className="flex items-center space-x-1 mb-1">
-                                     <Reply className="h-3 w-3 text-emerald-600" />
-                                     <span className="text-xs font-medium text-emerald-700">Latest Reply</span>
-                                   </div>
-                                   <div className="text-xs text-emerald-800 line-clamp-2">
-                                     {replySnippets.get(leadId)}
-                                   </div>
-                                 </div>
-                               )}
-                               <EnhancedCallStatusBadge 
-                                 leadId={leadId} 
-                                 lastCallStatus={lead.last_call_status}
-                                 nextCallAt={lead.next_call_at}
-                                 callAttempts={lead.call_attempts}
-                               />
-                             </div>
+                              <div className="flex flex-col gap-1">
+                                <Badge className={getStatusColor(status)}>
+                                  {status?.replace('_', ' ') || 'new'}
+                                </Badge>
+                                {/* Show Replied badge if lead has replied status or last_email_status is reply */}
+                                {(status?.toLowerCase() === 'replied' || (lead as any).last_email_status?.toLowerCase() === 'reply') && (
+                                  <Badge className="bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                                    <Reply className="h-3 w-3" />
+                                    Replied
+                                  </Badge>
+                                )}
+                                {replySnippets.has(leadId) && (
+                                  <div className="mt-1 p-2 bg-emerald-50 border border-emerald-200 rounded-md">
+                                    <div className="flex items-center space-x-1 mb-1">
+                                      <Reply className="h-3 w-3 text-emerald-600" />
+                                      <span className="text-xs font-medium text-emerald-700">Latest Reply</span>
+                                    </div>
+                                    <div className="text-xs text-emerald-800 line-clamp-2">
+                                      {replySnippets.get(leadId)}
+                                    </div>
+                                  </div>
+                                )}
+                                <EnhancedCallStatusBadge 
+                                  leadId={leadId} 
+                                  lastCallStatus={lead.last_call_status}
+                                  nextCallAt={lead.next_call_at}
+                                  callAttempts={lead.call_attempts}
+                                />
+                              </div>
                            </TableCell>
                            <TableCell className="text-sm text-gray-500">
                              {phone || 'N/A'}

@@ -29,20 +29,23 @@ export function Activity({ leadId }: Props) {
   if (state.loading) return <div className="text-muted-foreground">Loading activity…</div>;
   if (state.error) return <div className="text-muted-foreground">Unable to load recent activity – {state.error}</div>;
 
-  const rows: { kind: "email" | "call"; when: string; title: string; sub?: string }[] = [];
+  const rows: { kind: "email" | "call" | "reply"; when: string; title: string; sub?: string }[] = [];
 
   // Email events (both sent & replies)
   for (const e of state.emails) {
     const when = e.created_at || e.inserted_at || "";
     if ((e.status || "").toLowerCase() === "reply") {
-      // Prefer subject/body if present (our backend supplies these on inbound webhook)
-      const subject = (e.subject || "").trim();
-      const snippet = (e.body || e.notes || "").replace(/^.*snippet=/, "").slice(0, 300);
+      // Parse sender from notes (format: "from=email@domain.com ...")
+      const notes = e.notes || "";
+      const fromMatch = notes.match(/from=([^\s]+)/);
+      const sender = fromMatch ? fromMatch[1] : "";
+      
+      const subject = (e.subject || "").trim() || notes.trim();
       rows.push({
-        kind: "email",
+        kind: "reply",
         when,
-        title: subject ? `Email reply: ${subject}` : "Email reply",
-        sub: snippet
+        title: subject || "Email reply",
+        sub: sender ? `from ${sender}` : ""
       });
     } else {
       rows.push({
@@ -76,7 +79,7 @@ export function Activity({ leadId }: Props) {
       {rows.map((r, i) => (
         <div key={i} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg">
           <div className="text-lg flex-shrink-0 mt-0.5">
-            {r.kind === "email" ? "✉️" : "📞"}
+            {r.kind === "reply" ? "↩️" : r.kind === "email" ? "✉️" : "📞"}
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm">{r.title}</div>
