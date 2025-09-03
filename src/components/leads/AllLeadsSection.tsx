@@ -276,6 +276,7 @@ export const AllLeadsSection = ({
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [isUpdating, setIsUpdating] = useState(false);
+  const [replySnippets, setReplySnippets] = useState<Map<string, string>>(new Map());
   const { toast } = useToast();
 
   // Filter leads based on search and status
@@ -308,6 +309,67 @@ export const AllLeadsSection = ({
   const totalPages = Math.ceil(filteredLeads.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedLeads = filteredLeads.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Fetch reply snippets for leads with potential replies
+  useEffect(() => {
+    const fetchReplySnippets = async () => {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const sinceParam = thirtyDaysAgo.toISOString();
+
+      const snippetPromises = paginatedLeads.map(async (lead) => {
+        const leadId = String(lead.id || `lead-${leads.indexOf(lead)}`);
+        try {
+          const response = await fetch(`/api/lead-activity/${leadId}?since=${sinceParam}`);
+          
+          // Handle non-JSON responses gracefully
+          if (!response.ok) return null;
+          
+          let data;
+          try {
+            data = await response.json();
+          } catch {
+            // Silent fallback for non-JSON responses
+            return null;
+          }
+
+          if (data && Array.isArray(data)) {
+            // Find the most recent reply
+            const replies = data.filter((activity: any) => activity.status === 'reply');
+            if (replies.length > 0) {
+              const mostRecentReply = replies.sort((a: any, b: any) => 
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              )[0];
+              
+              if (mostRecentReply?.notes) {
+                const truncatedNotes = mostRecentReply.notes.length > 120 
+                  ? `${mostRecentReply.notes.substring(0, 120)}...`
+                  : mostRecentReply.notes;
+                return { leadId, snippet: truncatedNotes };
+              }
+            }
+          }
+          return null;
+        } catch {
+          // Silent fallback for any errors
+          return null;
+        }
+      });
+
+      const results = await Promise.all(snippetPromises);
+      const newSnippets = new Map();
+      results.forEach((result) => {
+        if (result) {
+          newSnippets.set(result.leadId, result.snippet);
+        }
+      });
+      setReplySnippets(newSnippets);
+    };
+
+    if (paginatedLeads.length > 0) {
+      fetchReplySnippets();
+    }
+  }, [paginatedLeads, leads]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -723,19 +785,30 @@ export const AllLeadsSection = ({
                              <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
                            </TableCell>
                            <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <Badge className={getStatusColor(status)}>
-                                {status?.replace('_', ' ') || 'new'}
-                              </Badge>
-                              <EnhancedCallStatusBadge 
-                                leadId={leadId} 
-                                lastCallStatus={lead.last_call_status}
-                                nextCallAt={lead.next_call_at}
-                                callAttempts={lead.call_attempts}
-                              />
-                            </div>
-                          </TableCell>
+                           <TableCell>
+                             <div className="flex flex-col gap-1">
+                               <Badge className={getStatusColor(status)}>
+                                 {status?.replace('_', ' ') || 'new'}
+                               </Badge>
+                               {replySnippets.has(leadId) && (
+                                 <div className="mt-1 p-2 bg-emerald-50 border border-emerald-200 rounded-md">
+                                   <div className="flex items-center space-x-1 mb-1">
+                                     <Reply className="h-3 w-3 text-emerald-600" />
+                                     <span className="text-xs font-medium text-emerald-700">Latest Reply</span>
+                                   </div>
+                                   <div className="text-xs text-emerald-800 line-clamp-2">
+                                     {replySnippets.get(leadId)}
+                                   </div>
+                                 </div>
+                               )}
+                               <EnhancedCallStatusBadge 
+                                 leadId={leadId} 
+                                 lastCallStatus={lead.last_call_status}
+                                 nextCallAt={lead.next_call_at}
+                                 callAttempts={lead.call_attempts}
+                               />
+                             </div>
+                           </TableCell>
                            <TableCell className="text-sm text-gray-500">
                              {phone || 'N/A'}
                            </TableCell>
