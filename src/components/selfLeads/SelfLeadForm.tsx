@@ -146,7 +146,18 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
         .from('leads')
         .insert([leadObject]);
 
-      if (error) throw error;
+      if (error) {
+        // Handle duplicate email constraint violation
+        if (error.code === '23505' && error.message?.includes('leads_user_email_unique')) {
+          toast({
+            title: "Duplicate Lead",
+            description: "A lead with this email address already exists",
+            variant: "destructive"
+          });
+          return;
+        }
+        throw error;
+      }
 
       // Send to FastAPI backend since this is an accepted lead
       try {
@@ -246,7 +257,18 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
         .from('leads')
         .insert([leadObject]);
 
-      if (saveError) throw saveError;
+      if (saveError) {
+        // Handle duplicate email constraint violation
+        if (saveError.code === '23505' && saveError.message?.includes('leads_user_email_unique')) {
+          toast({
+            title: "Duplicate Lead",
+            description: "A lead with this email address already exists",
+            variant: "destructive"
+          });
+          return;
+        }
+        throw saveError;
+      }
 
       // Get campaign details to include emailTemplateId
       let emailTemplateId: string | undefined = undefined;
