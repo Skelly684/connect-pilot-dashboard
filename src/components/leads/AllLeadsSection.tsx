@@ -6,7 +6,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Phone, Eye, MoreHorizontal, Search, Filter, Download, Trash2, Archive, FileSpreadsheet, ExternalLink, Loader2, Reply } from "lucide-react";
+import { Mail, Phone, Eye, MoreHorizontal, Search, Filter, Download, Trash2, Archive, FileSpreadsheet, ExternalLink, Loader2, Reply, FileText, Settings } from "lucide-react";
+import { AddNoteDialog } from "./AddNoteDialog";
+import { ChangeStatusDialog } from "./ChangeStatusDialog";
 import { formatRelativeTime } from "@/utils/timeUtils";
 import { EnhancedCallStatusBadge } from "./EnhancedCallStatusBadge";
 import { Activity } from "./Activity";
@@ -277,6 +279,9 @@ export const AllLeadsSection = ({
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [isUpdating, setIsUpdating] = useState(false);
   const [replySnippets, setReplySnippets] = useState<Map<string, string>>(new Map());
+  const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false);
+  const [changeStatusDialogOpen, setChangeStatusDialogOpen] = useState(false);
+  const [selectedLeadForAction, setSelectedLeadForAction] = useState<{ id: string; name: string; status: string } | null>(null);
   const { toast } = useToast();
 
   // Filter leads based on search and status
@@ -785,37 +790,33 @@ export const AllLeadsSection = ({
                              <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
                            </TableCell>
                            <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
-                           <TableCell>
-                              <div className="flex flex-col gap-1">
-                                <Badge className={getStatusColor(status)}>
-                                  {status?.replace('_', ' ') || 'new'}
-                                </Badge>
-                                {/* Show Replied badge if lead has replied status or last_email_status is reply */}
-                                {(status?.toLowerCase() === 'replied' || (lead as any).last_email_status?.toLowerCase() === 'reply') && (
-                                  <Badge className="bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                                    <Reply className="h-3 w-3" />
-                                    Replied
-                                  </Badge>
-                                )}
-                                {replySnippets.has(leadId) && (
-                                  <div className="mt-1 p-2 bg-emerald-50 border border-emerald-200 rounded-md">
-                                    <div className="flex items-center space-x-1 mb-1">
-                                      <Reply className="h-3 w-3 text-emerald-600" />
-                                      <span className="text-xs font-medium text-emerald-700">Latest Reply</span>
-                                    </div>
-                                    <div className="text-xs text-emerald-800 line-clamp-2">
-                                      {replySnippets.get(leadId)}
-                                    </div>
-                                  </div>
-                                )}
-                                <EnhancedCallStatusBadge 
-                                  leadId={leadId} 
-                                  lastCallStatus={lead.last_call_status}
-                                  nextCallAt={lead.next_call_at}
-                                  callAttempts={lead.call_attempts}
-                                />
-                              </div>
-                           </TableCell>
+                            <TableCell>
+                               <div className="flex flex-col gap-1">
+                                 {/* Only show status if it's not "no-tz" */}
+                                 {status !== 'no-tz' && (
+                                   <Badge className={getStatusColor(status)}>
+                                     {status?.replace('_', ' ') || 'new'}
+                                   </Badge>
+                                 )}
+                                 {replySnippets.has(leadId) && (
+                                   <div className="mt-1 p-2 bg-emerald-50 border border-emerald-200 rounded-md">
+                                     <div className="flex items-center space-x-1 mb-1">
+                                       <Reply className="h-3 w-3 text-emerald-600" />
+                                       <span className="text-xs font-medium text-emerald-700">Latest Reply</span>
+                                     </div>
+                                     <div className="text-xs text-emerald-800 line-clamp-2">
+                                       {replySnippets.get(leadId)}
+                                     </div>
+                                   </div>
+                                 )}
+                                 <EnhancedCallStatusBadge 
+                                   leadId={leadId} 
+                                   lastCallStatus={lead.last_call_status}
+                                   nextCallAt={lead.next_call_at}
+                                   callAttempts={lead.call_attempts}
+                                 />
+                               </div>
+                            </TableCell>
                            <TableCell className="text-sm text-gray-500">
                              {phone || 'N/A'}
                            </TableCell>
@@ -842,19 +843,35 @@ export const AllLeadsSection = ({
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                               <DropdownMenu>
-                                 <DropdownMenuTrigger asChild>
-                                   <Button variant="ghost" size="sm">
-                                     <MoreHorizontal className="h-4 w-4" />
-                                   </Button>
-                                 </DropdownMenuTrigger>
-                                 <DropdownMenuContent align="end" className="bg-white">
-                                   <DropdownMenuItem>Add to Campaign</DropdownMenuItem>
-                                   <DropdownMenuItem>Update Status</DropdownMenuItem>
-                                   <DropdownMenuItem>Add Note</DropdownMenuItem>
-                                   <DropdownMenuItem>Export Contact</DropdownMenuItem>
-                                 </DropdownMenuContent>
-                               </DropdownMenu>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="bg-white z-50">
+                                    <DropdownMenuItem 
+                                      onClick={() => {
+                                        setSelectedLeadForAction({ id: leadId, name: fullName, status: status });
+                                        setChangeStatusDialogOpen(true);
+                                      }}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <Settings className="h-4 w-4" />
+                                      Change Status
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => {
+                                        setSelectedLeadForAction({ id: leadId, name: fullName, status: status });
+                                        setAddNoteDialogOpen(true);
+                                      }}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                      Add Note
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                              </div>
                            </TableCell>
                           </TableRow>
@@ -917,6 +934,37 @@ export const AllLeadsSection = ({
           </>
         )}
       </CardContent>
+
+      {/* Dialogs */}
+      {selectedLeadForAction && (
+        <>
+          <AddNoteDialog
+            leadId={selectedLeadForAction.id}
+            leadName={selectedLeadForAction.name}
+            open={addNoteDialogOpen}
+            onOpenChange={setAddNoteDialogOpen}
+            onNoteAdded={() => {
+              onRefresh();
+              setSelectedLeadForAction(null);
+            }}
+          />
+          <ChangeStatusDialog
+            leadId={selectedLeadForAction.id}
+            leadName={selectedLeadForAction.name}
+            currentStatus={selectedLeadForAction.status}
+            open={changeStatusDialogOpen}
+            onOpenChange={setChangeStatusDialogOpen}
+            onStatusChanged={async (leadId: string, newStatus: string) => {
+              const success = await onUpdateLeadStatus([leadId], newStatus);
+              if (success) {
+                onRefresh();
+                setSelectedLeadForAction(null);
+              }
+              return success;
+            }}
+          />
+        </>
+      )}
     </Card>
   );
 };

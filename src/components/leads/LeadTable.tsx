@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, Phone, Eye, MoreHorizontal, Search, Loader2, Trash2, Download, FileSpreadsheet, ExternalLink } from "lucide-react";
+import { Mail, Phone, Eye, MoreHorizontal, Search, Loader2, Trash2, Download, FileSpreadsheet, ExternalLink, FileText, Settings } from "lucide-react";
+import { AddNoteDialog } from "./AddNoteDialog";
+import { ChangeStatusDialog } from "./ChangeStatusDialog";
 import { EnhancedCallStatusBadge } from "./EnhancedCallStatusBadge";
 import { EnhancedCallActivity } from "./EnhancedCallActivity";
 import { LeadActivityPanel } from "./LeadActivityPanel";
@@ -87,6 +89,8 @@ interface LeadTableProps {
   isLoading: boolean;
   onDeleteLeads: (leadIds: string[]) => Promise<boolean>;
   onDeleteAllLeads: () => Promise<boolean>;
+  onUpdateLeadStatus?: (leadIds: string[], newStatus: string) => Promise<boolean>;
+  onRefresh?: () => void;
 }
 
 const ITEMS_PER_PAGE = 25;
@@ -243,12 +247,15 @@ const CompanyCell = ({ company }: { company: any }) => {
   );
 };
 
-export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLeads }: LeadTableProps) => {
+export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLeads, onUpdateLeadStatus, onRefresh }: LeadTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false);
+  const [changeStatusDialogOpen, setChangeStatusDialogOpen] = useState(false);
+  const [selectedLeadForAction, setSelectedLeadForAction] = useState<{ id: string; name: string; status: string } | null>(null);
   const { toast } = useToast();
 
   console.log("LeadTable received leads:", leads);
@@ -616,19 +623,22 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                              <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
                            </TableCell>
                            <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <Badge className={getStatusColor(status)}>
-                                {status?.replace('_', ' ') || 'new'}
-                              </Badge>
-                              <EnhancedCallStatusBadge 
-                                leadId={leadId} 
-                                lastCallStatus={lead.last_call_status}
-                                nextCallAt={lead.next_call_at}
-                                callAttempts={lead.call_attempts}
-                              />
-                            </div>
-                          </TableCell>
+                           <TableCell>
+                             <div className="flex flex-col gap-1">
+                               {/* Only show status if it's not "no-tz" */}
+                               {status !== 'no-tz' && (
+                                 <Badge className={getStatusColor(status)}>
+                                   {status?.replace('_', ' ') || 'new'}
+                                 </Badge>
+                               )}
+                               <EnhancedCallStatusBadge 
+                                 leadId={leadId} 
+                                 lastCallStatus={lead.last_call_status}
+                                 nextCallAt={lead.next_call_at}
+                                 callAttempts={lead.call_attempts}
+                               />
+                             </div>
+                           </TableCell>
                            <TableCell className="text-sm text-gray-500">
                              {phone || 'N/A'}
                            </TableCell>
@@ -655,19 +665,37 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                               <DropdownMenu>
-                                 <DropdownMenuTrigger asChild>
-                                   <Button variant="ghost" size="sm">
-                                     <MoreHorizontal className="h-4 w-4" />
-                                   </Button>
-                                 </DropdownMenuTrigger>
-                                 <DropdownMenuContent align="end" className="bg-white">
-                                   <DropdownMenuItem>Add to Campaign</DropdownMenuItem>
-                                   <DropdownMenuItem>Update Status</DropdownMenuItem>
-                                   <DropdownMenuItem>Add Note</DropdownMenuItem>
-                                   <DropdownMenuItem>Export Contact</DropdownMenuItem>
-                                 </DropdownMenuContent>
-                               </DropdownMenu>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="bg-white z-50">
+                                    {onUpdateLeadStatus && (
+                                      <DropdownMenuItem 
+                                        onClick={() => {
+                                          setSelectedLeadForAction({ id: leadId, name: fullName, status: status });
+                                          setChangeStatusDialogOpen(true);
+                                        }}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Settings className="h-4 w-4" />
+                                        Change Status
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem 
+                                      onClick={() => {
+                                        setSelectedLeadForAction({ id: leadId, name: fullName, status: status });
+                                        setAddNoteDialogOpen(true);
+                                      }}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                      Add Note
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                              </div>
                            </TableCell>
                            </TableRow>
@@ -733,6 +761,39 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
           </>
         )}
       </CardContent>
+
+      {/* Dialogs */}
+      {selectedLeadForAction && (
+        <>
+          <AddNoteDialog
+            leadId={selectedLeadForAction.id}
+            leadName={selectedLeadForAction.name}
+            open={addNoteDialogOpen}
+            onOpenChange={setAddNoteDialogOpen}
+            onNoteAdded={() => {
+              onRefresh?.();
+              setSelectedLeadForAction(null);
+            }}
+          />
+          {onUpdateLeadStatus && (
+            <ChangeStatusDialog
+              leadId={selectedLeadForAction.id}
+              leadName={selectedLeadForAction.name}
+              currentStatus={selectedLeadForAction.status}
+              open={changeStatusDialogOpen}
+              onOpenChange={setChangeStatusDialogOpen}
+              onStatusChanged={async (leadId: string, newStatus: string) => {
+                const success = await onUpdateLeadStatus([leadId], newStatus);
+                if (success) {
+                  onRefresh?.();
+                  setSelectedLeadForAction(null);
+                }
+                return success;
+              }}
+            />
+          )}
+        </>
+      )}
     </Card>
   );
 };
