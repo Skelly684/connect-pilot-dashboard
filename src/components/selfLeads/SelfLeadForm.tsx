@@ -133,17 +133,29 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
 
       // Send to FastAPI backend since this is an accepted lead
       try {
+        // Get campaign details to include emailTemplateId
+        let emailTemplateId: string | undefined = undefined;
+        
+        if (leadObject.campaign_id) {
+          const { data: campaign } = await supabase
+            .from('campaigns')
+            .select('email_template_id')
+            .eq('id', leadObject.campaign_id)
+            .single();
+          
+          emailTemplateId = campaign?.email_template_id || undefined;
+        }
+
         const payload = {
           leads: [{
             id: leadObject.id,
             first_name: leadObject.first_name || '',
             last_name: leadObject.last_name || '',
             company_name: leadObject.company_name || '',
-            phone: leadObject.contact_phone_numbers ? 
-              JSON.parse(leadObject.contact_phone_numbers)[0]?.rawNumber || '' : '',
             email_address: leadObject.email_address || '',
             campaign_id: leadObject.campaign_id || undefined
-          }]
+          }],
+          emailTemplateId: emailTemplateId
         };
 
         console.log("Sending self-generated lead to FastAPI backend:", `${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, payload);
@@ -202,6 +214,19 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
 
       if (saveError) throw saveError;
 
+      // Get campaign details to include emailTemplateId
+      let emailTemplateId: string | undefined = undefined;
+      
+      if (formData.campaign_id) {
+        const { data: campaign } = await supabase
+          .from('campaigns')
+          .select('email_template_id')
+          .eq('id', formData.campaign_id)
+          .single();
+        
+        emailTemplateId = campaign?.email_template_id || undefined;
+      }
+
       // Call the accept_leads data source
       const apiBase = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
       const payload = {
@@ -210,14 +235,9 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
           last_name: formData.last_name || '',
           email_address: formData.email_address || '',
           company_name: formData.company_name || '',
-          job_title: formData.job_title || '',
-          contact_phone_numbers: formData.contact_phone_numbers.filter((p: any) => p.rawNumber?.trim())
-            .map((p: any) => ({ rawNumber: p.rawNumber })),
-          city_name: formData.city_name || '',
-          state_name: formData.state_name || '',
-          country_name: formData.country_name || '',
           campaign_id: formData.campaign_id || null
-        }]
+        }],
+        emailTemplateId: emailTemplateId
       };
 
       const response = await fetch(`${apiBase}/accepted-leads`, {

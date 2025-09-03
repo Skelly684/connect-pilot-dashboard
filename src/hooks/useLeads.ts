@@ -95,22 +95,33 @@ export const useLeads = () => {
       // Automatically send accepted leads to FastAPI backend
       if (newStatus === 'accepted' && currentLeads) {
         try {
+          // Get campaign details to include emailTemplateId
+          let emailTemplateId: string | undefined = undefined;
+          const leadWithCampaign = currentLeads.find(lead => lead.campaign_id);
+          
+          if (leadWithCampaign?.campaign_id) {
+            const { data: campaign } = await supabase
+              .from('campaigns')
+              .select('email_template_id')
+              .eq('id', leadWithCampaign.campaign_id)
+              .single();
+            
+            emailTemplateId = campaign?.email_template_id || undefined;
+          }
+
           // Format leads for FastAPI backend
           const formattedLeads = currentLeads.map(lead => ({
             id: lead.id,
             first_name: lead.first_name || '',
             last_name: lead.last_name || '',
             company_name: lead.company_name || lead.company || '',
-            phone: lead.phone || (lead.contact_phone_numbers ? 
-              JSON.parse(lead.contact_phone_numbers as string)[0]?.rawNumber || 
-              JSON.parse(lead.contact_phone_numbers as string)[0]?.sanitizedNumber : ''),
             email_address: lead.email_address || lead.email || '',
             campaign_id: lead.campaign_id || undefined
           }));
 
           const payload = {
             leads: formattedLeads,
-            emailTemplateId: undefined // optional
+            emailTemplateId: emailTemplateId
           };
 
           console.log("Sending to FastAPI backend:", `${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, payload);
