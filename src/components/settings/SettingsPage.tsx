@@ -102,9 +102,9 @@ export const SettingsPage = () => {
       console.log('Disconnecting Google account for user:', user.id);
       
       const { data, error } = await supabase.functions.invoke('google-oauth-disconnect', {
-        body: {},
+        body: { user_id: user.id },
         headers: {
-          'X-User-Id': user.id,
+          'x-user-id': user.id,
         }
       });
 
@@ -120,7 +120,10 @@ export const SettingsPage = () => {
         return;
       }
 
-      // Wait a moment before checking status to allow backend to update
+      // Update status immediately to show disconnected state
+      setDsGoogleStatus({ data: { connected: false }, loading: false });
+      
+      // Also refresh status from server after a delay
       setTimeout(() => {
         runDsGoogleStatus();
       }, 1000);
