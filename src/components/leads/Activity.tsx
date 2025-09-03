@@ -29,23 +29,30 @@ export function Activity({ leadId }: Props) {
   if (state.loading) return <div className="text-muted-foreground">Loading activity…</div>;
   if (state.error) return <div className="text-muted-foreground">Unable to load recent activity – {state.error}</div>;
 
-  const rows: { kind: "email" | "call" | "reply"; when: string; title: string; sub?: string }[] = [];
+  const rows: { kind: "email" | "call" | "reply"; when: string; title: string; sub?: string; body?: string }[] = [];
 
   // Email events (both sent & replies)
   for (const e of state.emails) {
-    const when = e.created_at || e.inserted_at || "";
+    const when = e.created_at || e.updated_at || e.inserted_at || "";
     if ((e.status || "").toLowerCase() === "reply") {
       // Parse sender from notes (format: "from=email@domain.com ...")
       const notes = e.notes || "";
       const fromMatch = notes.match(/from=([^\s]+)/);
       const sender = fromMatch ? fromMatch[1] : "";
       
-      const subject = (e.subject || "").trim() || notes.trim();
+      // Extract snippet from notes (format: "...snippet=content...")
+      const snippetMatch = notes.match(/snippet=(.+?)(?:\s|$)/);
+      const snippet = snippetMatch ? snippetMatch[1] : "";
+      
+      const subject = (e.subject || "").trim();
+      const body = e.body || snippet || "";
+      
       rows.push({
         kind: "reply",
         when,
-        title: subject || "Email reply",
-        sub: sender ? `from ${sender}` : ""
+        title: `Email reply: ${subject || "(no subject)"}`,
+        sub: sender ? `from ${sender}` : (e.to_email || ""),
+        body: body
       });
     } else {
       rows.push({
@@ -86,6 +93,11 @@ export function Activity({ leadId }: Props) {
             {r.sub && (
               <div className="text-sm text-muted-foreground mt-1 break-words">
                 {r.sub}
+              </div>
+            )}
+            {r.body && (
+              <div className="text-sm text-foreground/80 mt-2 break-words line-clamp-3">
+                {r.body}
               </div>
             )}
           </div>
