@@ -37,15 +37,24 @@ export const useNotifications = () => {
   }, [notifications]);
 
   const addNotification = (leadName: string, leadId: string, oldStatus: string, newStatus: string) => {
-    // Only notify when status changes FROM "accepted" to something else
-    if (oldStatus !== 'accepted') {
+    // Notify when status changes FROM "accepted" to something else OR when status changes TO "replied"
+    if (oldStatus !== 'accepted' && newStatus !== 'replied') {
       return;
+    }
+
+    let title = 'Lead Status Changed';
+    let message = `${leadName || 'Lead'} status changed from ${oldStatus.replace('_', ' ')} to ${newStatus.replace('_', ' ')}`;
+    
+    // Special handling for replied status
+    if (newStatus === 'replied') {
+      title = 'Lead Replied';
+      message = `${leadName || 'Lead'} has replied to your outreach`;
     }
 
     const notification: Notification = {
       id: `${leadId}-${Date.now()}`,
-      title: 'Lead Status Changed',
-      message: `${leadName || 'Lead'} status changed from ${oldStatus.replace('_', ' ')} to ${newStatus.replace('_', ' ')}`,
+      title,
+      message,
       timestamp: new Date(),
       read: false,
       leadId,
