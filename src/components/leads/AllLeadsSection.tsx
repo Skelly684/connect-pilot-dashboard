@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Mail, Phone, Eye, MoreHorizontal, Search, Filter, Download, Trash2, Archive, FileSpreadsheet, ExternalLink, Loader2, Reply } from "lucide-react";
 import { formatRelativeTime } from "@/utils/timeUtils";
 import { EnhancedCallStatusBadge } from "./EnhancedCallStatusBadge";
-import { LeadActivityPanel } from "./LeadActivityPanel";
+import { Activity } from "./Activity";
 import {
   Table,
   TableBody,
@@ -854,13 +854,9 @@ export const AllLeadsSection = ({
                           {expandedRows.has(leadId) && (
                             <TableRow>
                               <TableCell colSpan={8} className="p-0 border-t-0">
-                                 <div className="px-4 pb-4">
-                                   <LeadActivityPanel 
-                                     leadId={leadId} 
-                                     leadName={fullName} 
-                                     enabled={expandedRows.has(leadId)} 
-                                   />
-                                 </div>
+                                <div className="px-4 pb-4">
+                                  <Activity leadId={leadId} />
+                                </div>
                               </TableCell>
                             </TableRow>
                           )}

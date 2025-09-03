@@ -117,3 +117,31 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
     );
   }
 }
+
+export async function fetchLeadActivity(leadId: string) {
+  const url = `/api/lead-activity/${encodeURIComponent(leadId)}`;
+  const resp = await fetch(apiUrl(url), { 
+    headers: { 
+      "Accept": "application/json",
+      "ngrok-skip-browser-warning": "true"
+    } 
+  });
+  
+  const ctype = resp.headers.get("content-type") || "";
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(`Activity HTTP ${resp.status}: ${text.slice(0,200)}`);
+  }
+  
+  if (!ctype.includes("application/json")) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(`Activity returned non-JSON: ${text.slice(0,200)}`);
+  }
+  
+  const data = await resp.json();
+  return {
+    lead: data.lead ?? null,
+    calls: Array.isArray(data.calls) ? data.calls : [],
+    emails: Array.isArray(data.emails) ? data.emails : []
+  };
+}
