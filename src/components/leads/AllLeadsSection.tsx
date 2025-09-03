@@ -6,7 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Phone, Eye, MoreHorizontal, Search, Filter, Download, Trash2, Archive, FileSpreadsheet, ExternalLink, Loader2 } from "lucide-react";
+import { Mail, Phone, Eye, MoreHorizontal, Search, Filter, Download, Trash2, Archive, FileSpreadsheet, ExternalLink, Loader2, Reply } from "lucide-react";
+import { formatRelativeTime } from "@/utils/timeUtils";
 import { EnhancedCallStatusBadge } from "./EnhancedCallStatusBadge";
 import { LeadActivityPanel } from "./LeadActivityPanel";
 import {
@@ -84,6 +85,10 @@ interface Lead {
   last_call_status?: string;
   next_call_at?: string | null;
   call_attempts?: number;
+  last_reply_at?: string;
+  last_reply_from?: string;
+  last_reply_subject?: string;
+  last_reply_snippet?: string;
 }
 
 interface AllLeadsSectionProps {
@@ -685,10 +690,30 @@ export const AllLeadsSection = ({
                                    {fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'N'}
                                  </AvatarFallback>
                                </Avatar>
-                               <div>
-                                 <div className="font-medium text-gray-900">{fullName}</div>
-                                 <div className="text-sm text-gray-500">{email || 'No email'}</div>
-                               </div>
+                                <div>
+                                  <div className="font-medium text-gray-900">{fullName}</div>
+                                  <div className="text-sm text-gray-500">{email || 'No email'}</div>
+                                  {lead.status === 'replied' && lead.last_reply_snippet && (
+                                    <div className="mt-2 border-l-2 border-emerald-200 pl-2">
+                                      <div className="flex items-center space-x-1">
+                                        <Reply className="h-3 w-3 text-emerald-600" />
+                                        <span className="text-xs font-medium text-emerald-700">Reply:</span>
+                                        <span className="text-xs text-gray-700">
+                                          {lead.last_reply_subject || '(no subject)'}
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-600 mt-1 line-clamp-2">
+                                        {lead.last_reply_snippet.length > 140 
+                                          ? `${lead.last_reply_snippet.substring(0, 140)}...`
+                                          : lead.last_reply_snippet
+                                        }
+                                      </div>
+                                      <div className="text-xs text-gray-400 mt-1">
+                                        from {lead.last_reply_from} • {lead.last_reply_at ? formatRelativeTime(lead.last_reply_at).relative : 'unknown time'}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                              </div>
                            </TableCell>
                            <TableCell className="font-medium">

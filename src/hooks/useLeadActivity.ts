@@ -20,6 +20,14 @@ export interface EmailActivity {
   to: string;
 }
 
+export interface ReplyActivity {
+  id: string;
+  timestamp: string;
+  subject: string;
+  body: string;
+  from: string;
+}
+
 export interface LeadActivityData {
   lead: {
     id: string;
@@ -30,6 +38,7 @@ export interface LeadActivityData {
   };
   calls: CallActivity[];
   emails: EmailActivity[];
+  replies?: ReplyActivity[];
 }
 
 export const useLeadActivity = (leadId: string | null, enabled: boolean = true) => {
@@ -60,7 +69,16 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
         throw new Error(`Failed to fetch lead activity: ${response.statusText}`);
       }
       
-      const data = await response.json();
+      // Add resilient JSON handling
+      let data;
+      try {
+        const responseText = await response.text();
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse activity response as JSON:', parseError);
+        throw new Error('Unable to load recent activity - server response was not valid JSON');
+      }
+      
       setActivity(data);
     } catch (error) {
       console.error('Error fetching lead activity:', error);

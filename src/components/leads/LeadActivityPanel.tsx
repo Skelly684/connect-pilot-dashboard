@@ -1,8 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, Clock, ExternalLink, PlayCircle } from "lucide-react";
-import { useLeadActivity, CallActivity, EmailActivity } from "@/hooks/useLeadActivity";
+import { Mail, Phone, Clock, ExternalLink, PlayCircle, Reply } from "lucide-react";
+import { useLeadActivity, CallActivity, EmailActivity, ReplyActivity } from "@/hooks/useLeadActivity";
 import { formatRelativeTime } from "@/utils/timeUtils";
 
 interface LeadActivityPanelProps {
@@ -86,7 +86,7 @@ export const LeadActivityPanel = ({ leadId, leadName, enabled = true }: LeadActi
         <CardContent>
           <div className="text-center py-8">
             <p className="text-muted-foreground">
-              {error || 'No activity data available'}
+              {error || 'Unable to load recent activity'}
             </p>
           </div>
         </CardContent>
@@ -96,6 +96,7 @@ export const LeadActivityPanel = ({ leadId, leadName, enabled = true }: LeadActi
 
   const latestCall = activity.calls[0];
   const latestEmail = activity.emails[0];
+  const latestReply = activity.replies?.[0];
 
   return (
     <div className="space-y-6">
@@ -111,7 +112,7 @@ export const LeadActivityPanel = ({ leadId, leadName, enabled = true }: LeadActi
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Latest Call Status */}
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
@@ -157,6 +158,38 @@ export const LeadActivityPanel = ({ leadId, leadName, enabled = true }: LeadActi
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No emails yet</p>
+              )}
+            </div>
+
+            {/* Latest Reply Status */}
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Reply className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">Latest Reply</span>
+              </div>
+              {latestReply ? (
+                <div className="space-y-1">
+                  <Badge className="bg-emerald-100 text-emerald-800">
+                    Reply
+                  </Badge>
+                  <p className="text-sm text-muted-foreground">
+                    {formatRelativeTime(latestReply.timestamp).relative}
+                  </p>
+                  <p className="text-sm font-medium truncate">
+                    {latestReply.subject || '(no subject)'}
+                  </p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {latestReply.body?.length > 400 
+                      ? `${latestReply.body.substring(0, 400)}...`
+                      : latestReply.body
+                    }
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    from {latestReply.from}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No replies yet</p>
               )}
             </div>
           </div>

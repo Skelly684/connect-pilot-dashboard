@@ -41,7 +41,7 @@ export const useLeads = () => {
     try {
       const { data, error } = await supabase
         .from('leads')
-        .select('*')
+        .select('*, last_reply_at, last_reply_from, last_reply_subject, last_reply_snippet')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
