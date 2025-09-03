@@ -2,6 +2,21 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 
+export interface CallerConfig {
+  opening_script: string;
+  goal: 'qualify' | 'book_meeting' | 'live_transfer';
+  tone: 'friendly' | 'professional' | 'casual' | 'high_energy';
+  disclose_ai: boolean;
+  max_duration_sec: number;
+  qualify_questions: string[];
+  objections: Array<{ objection: string; response: string }>;
+  booking_link?: string;
+  transfer_number?: string;
+  voicemail_script?: string;
+  not_interested_policy: 'mark_do_not_contact' | 'send_followup_email' | 'none';
+  disclaimer?: string;
+}
+
 export interface DeliveryRules {
   use_email: boolean;
   use_calls: boolean;
@@ -14,6 +29,7 @@ export interface DeliveryRules {
   email: {
     send_initial: boolean;
   };
+  caller?: CallerConfig;
 }
 
 export interface Campaign {

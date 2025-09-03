@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChevronDown, Save, Eye, Mail, Phone } from 'lucide-react';
 import { useCampaigns, DeliveryRules } from '@/hooks/useCampaigns';
 import { DeliveryRulesTab } from './DeliveryRulesTab';
+import { CallerConfigSection, CallerConfig } from './CallerConfigSection';
 import { supabase } from '@/integrations/supabase/client';
 
 interface NewCampaignDialogProps {
@@ -30,8 +31,18 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   
-  // Caller script
-  const [callerPrompt, setCallerPrompt] = useState('Hi, this is Scott from PSN…');
+  // Caller configuration
+  const defaultCallerConfig: CallerConfig = {
+    opening_script: 'Hi, this is Scott from PSN…',
+    goal: 'qualify',
+    tone: 'professional',
+    disclose_ai: false,
+    max_duration_sec: 180,
+    qualify_questions: [],
+    objections: [],
+    not_interested_policy: 'send_followup_email'
+  };
+  const [callerConfig, setCallerConfig] = useState<CallerConfig>(defaultCallerConfig);
   
   // Delivery rules with defaults
   const defaultRules: DeliveryRules = {
@@ -109,14 +120,17 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
         from_name: fromName,
         email_template_id: emailTemplateId,
         email_daily_cap: emailDailyCap,
-        caller_prompt: callerPrompt.trim() || 'Hi, this is Scott from PSN…',
+        caller_prompt: callerConfig.opening_script.trim() || 'Hi, this is Scott from PSN…',
         call_window_start: deliveryRules.call.window_start,
         call_window_end: deliveryRules.call.window_end,
         max_call_retries: deliveryRules.call.max_attempts,
         retry_minutes: deliveryRules.call.retry_minutes,
         is_active: true,
         is_default: false,
-        delivery_rules: deliveryRules
+        delivery_rules: {
+          ...deliveryRules,
+          caller: callerConfig
+        }
       });
 
       // Save email steps if email is enabled and steps exist
@@ -161,7 +175,7 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
       setFromName('Scott | PSN');
       setEmailSubject('');
       setEmailBody('');
-      setCallerPrompt('Hi, this is Scott from PSN…');
+      setCallerConfig(defaultCallerConfig);
       setEmailDailyCap(150);
       setDeliveryRules(defaultRules);
       setEmailSteps([]);
@@ -183,7 +197,7 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
     from_name: fromName,
     email_template_id: null,
     email_daily_cap: emailDailyCap,
-    caller_prompt: callerPrompt,
+    caller_prompt: callerConfig.opening_script,
     call_window_start: deliveryRules.call.window_start,
     call_window_end: deliveryRules.call.window_end,
     max_call_retries: deliveryRules.call.max_attempts,
@@ -192,7 +206,10 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
     is_default: false,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    delivery_rules: deliveryRules,
+    delivery_rules: {
+      ...deliveryRules,
+      caller: callerConfig
+    },
   };
 
   const handleUpdateMockCampaign = async (id: string, updates: any) => {
@@ -302,13 +319,13 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
                 </CollapsibleContent>
               </Collapsible>
               
-              {/* Caller Script Section */}
+              {/* Caller Configuration Section */}
               <Collapsible defaultOpen>
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" className="w-full justify-between p-0 h-auto">
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-green-600" />
-                      <span className="font-medium">Caller Script</span>
+                      <span className="font-medium">Call Script Configuration</span>
                     </div>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
@@ -316,32 +333,16 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
                 <CollapsibleContent className="space-y-4 mt-4">
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm">Call Script Configuration</CardTitle>
+                      <CardTitle className="text-sm">AI Caller Setup</CardTitle>
+                      <CardDescription className="text-xs">
+                        Configure your AI caller's behavior, goals, and responses
+                      </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="caller-prompt">Opening Script</Label>
-                        <Textarea
-                          id="caller-prompt"
-                          value={callerPrompt}
-                          onChange={(e) => setCallerPrompt(e.target.value)}
-                          placeholder="Hi {{first_name}}, this is Scott from PSN. I noticed {{company_name}} is..."
-                          rows={4}
-                        />
-                      </div>
-                      {callerPrompt && (
-                        <div className="mt-4 p-3 bg-muted rounded-md">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Eye className="h-4 w-4" />
-                            <span className="text-sm font-medium">Live Preview</span>
-                          </div>
-                          <div className="text-sm">
-                            <div className="whitespace-pre-wrap p-2 bg-background rounded border">
-                              {replaceVariables(callerPrompt, sampleLead)}
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                    <CardContent>
+                      <CallerConfigSection
+                        config={callerConfig}
+                        onChange={setCallerConfig}
+                      />
                     </CardContent>
                   </Card>
                 </CollapsibleContent>
