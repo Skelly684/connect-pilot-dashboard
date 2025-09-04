@@ -181,7 +181,12 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
             last_name: leadObject.last_name || '',
             company_name: leadObject.company_name || '',
             email_address: leadObject.email_address || '',
-            campaign_id: leadObject.campaign_id || undefined
+            campaign_id: leadObject.campaign_id || undefined,
+            // Add phone information for Vapi calls
+            ...(formData.contact_phone_numbers?.length > 0 && {
+              contact_phone_numbers: formData.contact_phone_numbers.filter((p: any) => p.rawNumber?.trim())
+            }),
+            ...(formData.phone && { phone: formData.phone })
           }],
           emailTemplateId: emailTemplateId
         };
@@ -291,7 +296,12 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
           last_name: formData.last_name || '',
           email_address: formData.email_address || '',
           company_name: formData.company_name || '',
-          campaign_id: formData.campaign_id || null
+          campaign_id: formData.campaign_id || null,
+          // Add phone information for Vapi calls
+          ...(formData.contact_phone_numbers?.length > 0 && {
+            contact_phone_numbers: formData.contact_phone_numbers.filter((p: any) => p.rawNumber?.trim())
+          }),
+          ...(formData.phone && { phone: formData.phone })
         }],
         emailTemplateId: emailTemplateId
       };
