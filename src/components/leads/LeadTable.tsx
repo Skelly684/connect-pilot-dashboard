@@ -642,14 +642,54 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                            <TableCell className="text-sm text-gray-500">
                              {phone || 'N/A'}
                            </TableCell>
-                           <TableCell className="text-right">
-                             <div className="flex items-center justify-end space-x-2">
-                               <Button variant="ghost" size="sm" disabled={!email}>
-                                 <Mail className="h-4 w-4" />
-                               </Button>
-                                <Button variant="ghost" size="sm" disabled={!phone}>
-                                  <Phone className="h-4 w-4" />
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end space-x-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  disabled={!email}
+                                  onClick={() => {
+                                    if (email) {
+                                      navigator.clipboard.writeText(email).then(() => {
+                                        toast({
+                                          title: "Copied!",
+                                          description: "Email copied to clipboard",
+                                        });
+                                      }).catch(() => {
+                                        toast({
+                                          title: "Error",
+                                          description: "Failed to copy email",
+                                          variant: "destructive",
+                                        });
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <Mail className="h-4 w-4" />
                                 </Button>
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm" 
+                                   disabled={!phone}
+                                   onClick={() => {
+                                     if (phone) {
+                                       navigator.clipboard.writeText(phone).then(() => {
+                                         toast({
+                                           title: "Copied!",
+                                           description: "Phone number copied to clipboard",
+                                         });
+                                       }).catch(() => {
+                                         toast({
+                                           title: "Error",
+                                           description: "Failed to copy phone number",
+                                           variant: "destructive",
+                                         });
+                                       });
+                                     }
+                                   }}
+                                 >
+                                   <Phone className="h-4 w-4" />
+                                 </Button>
                                 <Button 
                                   variant="ghost" 
                                   size="sm"

@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   Table,
   TableBody,
@@ -33,6 +35,7 @@ export function SelfLeadsRecentTable() {
   const [recentLeads, setRecentLeads] = useState<RecentLead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchRecentLeads();
@@ -95,6 +98,37 @@ export function SelfLeadsRecentTable() {
 
   const hasEmail = (lead: RecentLead) => {
     return lead.email_address && lead.email_address.trim() && lead.email_address !== 'N/A';
+  };
+
+  const getPhoneNumber = (lead: RecentLead) => {
+    if (!lead.contact_phone_numbers) return '';
+    try {
+      const phones = typeof lead.contact_phone_numbers === 'string' 
+        ? JSON.parse(lead.contact_phone_numbers)
+        : lead.contact_phone_numbers;
+      if (Array.isArray(phones) && phones.length > 0 && phones[0].rawNumber?.trim()) {
+        return phones[0].rawNumber.trim();
+      }
+    } catch {
+      return '';
+    }
+    return '';
+  };
+
+  const copyToClipboard = async (text: string, type: 'email' | 'phone') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: `${type === 'email' ? 'Email' : 'Phone number'} copied to clipboard`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -198,20 +232,45 @@ export function SelfLeadsRecentTable() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-center gap-2">
-                    <Phone 
-                      className={`h-4 w-4 ${
-                        hasPhone(lead) 
-                          ? 'text-blue-600' 
-                          : 'text-gray-300'
-                      }`} 
-                    />
-                    <Mail 
-                      className={`h-4 w-4 ${
-                        hasEmail(lead) 
-                          ? 'text-blue-600' 
-                          : 'text-gray-300'
-                      }`} 
-                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      disabled={!hasPhone(lead)}
+                      onClick={() => {
+                        const phoneNumber = getPhoneNumber(lead);
+                        if (phoneNumber) {
+                          copyToClipboard(phoneNumber, 'phone');
+                        }
+                      }}
+                    >
+                      <Phone 
+                        className={`h-4 w-4 ${
+                          hasPhone(lead) 
+                            ? 'text-blue-600' 
+                            : 'text-gray-300'
+                        }`} 
+                      />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      disabled={!hasEmail(lead)}
+                      onClick={() => {
+                        if (hasEmail(lead)) {
+                          copyToClipboard(lead.email_address, 'email');
+                        }
+                      }}
+                    >
+                      <Mail 
+                        className={`h-4 w-4 ${
+                          hasEmail(lead) 
+                            ? 'text-blue-600' 
+                            : 'text-gray-300'
+                        }`} 
+                      />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
