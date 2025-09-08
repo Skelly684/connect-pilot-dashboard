@@ -31,31 +31,25 @@ export const apiUrl = (path: string): string => {
   return `${base}${normalizedPath}`;
 };
 
-export async function apiFetch(path: string, options: ApiFetchOptions = {}): Promise<any> {
-  // Build full URL using apiUrl helper
-  const fullUrl = apiUrl(path);
-  
+export async function apiFetch(path: string, init: RequestInit = {}): Promise<any> {
   // Get current user ID from Supabase auth
   const { data: { user } } = await supabase.auth.getUser();
-  const userId = user?.id || '';
+  const uid = user?.id || '';
   
-  const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'ngrok-skip-browser-warning': 'true',
-  };
+  // Create headers object
+  const headers = new Headers(init.headers || {});
+  headers.set('X-User-Id', uid);
+  headers.set('Content-Type', headers.get('Content-Type') || 'application/json');
+  headers.set('Accept', 'application/json');
+  headers.set('ngrok-skip-browser-warning', 'true');
 
-  // Add user ID header
-  defaultHeaders['X-User-Id'] = userId;
+  // Build full URL using apiUrl helper
+  const fullUrl = apiUrl(path);
 
   const requestOptions: RequestInit = {
-    ...options,
-    mode: 'cors',
+    ...init,
+    headers,
     credentials: 'omit',
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
   };
 
   try {
@@ -123,33 +117,11 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
 export async function fetchLeadActivity(leadId: string) {
   const url = `/api/lead-activity/${encodeURIComponent(leadId)}`;
   
-  // Get current user ID from Supabase auth
-  const { data: { user } } = await supabase.auth.getUser();
-  const userId = user?.id || '';
+  const resp = await apiFetch(url);
   
-  const resp = await fetch(apiUrl(url), { 
-    headers: { 
-      "Accept": "application/json",
-      "ngrok-skip-browser-warning": "true",
-      "X-User-Id": userId
-    } 
-  });
-  
-  const ctype = resp.headers.get("content-type") || "";
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => "");
-    throw new Error(`Activity HTTP ${resp.status}: ${text.slice(0,200)}`);
-  }
-  
-  if (!ctype.includes("application/json")) {
-    const text = await resp.text().catch(() => "");
-    throw new Error(`Activity returned non-JSON: ${text.slice(0,200)}`);
-  }
-  
-  const data = await resp.json();
   return {
-    lead: data.lead ?? null,
-    calls: Array.isArray(data.calls) ? data.calls : [],
-    emails: Array.isArray(data.emails) ? data.emails : []
+    lead: resp.lead ?? null,
+    calls: Array.isArray(resp.calls) ? resp.calls : [],
+    emails: Array.isArray(resp.emails) ? resp.emails : []
   };
 }

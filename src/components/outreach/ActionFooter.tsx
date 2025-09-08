@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { apiFetch } from '@/lib/apiFetch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -145,20 +146,13 @@ export const ActionFooter = ({ campaign }: ActionFooterProps) => {
       }
 
       // Call the accepted-leads API
-      const response = await fetch('https://zcgutkfkohonpqvwfukk.supabase.co/functions/v1/accepted-leads', {
+      await apiFetch('/api/accepted-leads', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           leads,
           campaignId: campaign.id
         }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to start campaign');
-      }
 
       toast({
         title: "Campaign Started",

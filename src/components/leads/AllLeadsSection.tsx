@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiFetch } from '@/lib/apiFetch';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -325,18 +326,7 @@ export const AllLeadsSection = ({
       const snippetPromises = paginatedLeads.map(async (lead) => {
         const leadId = String(lead.id || `lead-${leads.indexOf(lead)}`);
         try {
-          const response = await fetch(`/api/lead-activity/${leadId}?since=${sinceParam}`);
-          
-          // Handle non-JSON responses gracefully
-          if (!response.ok) return null;
-          
-          let data;
-          try {
-            data = await response.json();
-          } catch {
-            // Silent fallback for non-JSON responses
-            return null;
-          }
+          const data = await apiFetch(`/api/lead-activity/${leadId}?since=${sinceParam}`);
 
           if (data && Array.isArray(data)) {
             // Find the most recent reply
