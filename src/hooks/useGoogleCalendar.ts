@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { appConfig } from '@/lib/appConfig';
-import { apiFetch, apiUrl } from '@/lib/apiFetch';
+import { apiFetch, ApiError, apiUrl } from '@/lib/apiFetch';
 
 export interface CalendarEvent {
   id: string;
@@ -63,9 +63,10 @@ export const useGoogleCalendar = () => {
       }
     } catch (error) {
       console.error('Check connection error:', error);
+      const apiError = error as ApiError;
       setIsConnected(false);
       setEvents([]);
-      setErrorMessage(`Failed to connect: ${error instanceof Error ? error.message : 'Network error'}`);
+      setErrorMessage(`Failed to connect: ${apiError?.message || 'Network error'}`);
       return false;
     } finally {
       setLoading(false);
@@ -257,12 +258,13 @@ export const useGoogleCalendar = () => {
 
     } catch (error) {
       console.error('Google auth error:', error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to connect to Google Calendar";
+      const apiError = error as ApiError;
+      const errorMessage = apiError?.message || (error instanceof Error ? error.message : "Failed to connect to Google Calendar");
       
       setErrorMessage(`Connection failed: ${errorMessage}`);
       toast({
         title: "Connection Failed", 
-        description: errorMessage,
+        description: `${errorMessage} (${apiError?.url || 'Unknown URL'})`,
         variant: "destructive",
       });
       setLoading(false);
@@ -300,9 +302,10 @@ export const useGoogleCalendar = () => {
       return data;
     } catch (error) {
       console.error('Create event error:', error);
+      const apiError = error as ApiError;
       toast({
         title: "Error",
-        description: `Failed to create event: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to create event at ${apiError.url}: ${apiError.message}`,
         variant: "destructive",
       });
       throw error;
