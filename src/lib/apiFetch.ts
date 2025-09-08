@@ -1,124 +1,40 @@
-import { appConfig } from './appConfig';
 import { supabase } from '@/integrations/supabase/client';
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-    public url: string,
-    public responseText?: string
-  ) {
-    super(message);
-    this.name = 'ApiError';
+// Central API helper
+const API_BASE = 'https://psn-backend.fly.dev';
+
+export async function apiFetch(path: string, options: RequestInit = {}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.id) throw new Error('No auth user — cannot call backend');
+
+  const headers = new Headers(options.headers || {});
+  headers.set('Content-Type', 'application/json');
+  headers.set('X-User-Id', user.id); // 👈 REQUIRED
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: options.method ?? 'POST',
+    headers,
+    body: options.body,
+    // credentials are NOT needed here (no cookies with backend)
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Backend ${res.status}: ${text || 'Request failed'}`);
   }
+  return res.json();
 }
 
-export interface ApiFetchOptions extends Omit<RequestInit, 'credentials'> {
-  headers?: Record<string, string>;
-}
-
-// Helper to build proper API URLs
+// Helper to build proper API URLs (backwards compatibility)
 export const apiUrl = (path: string): string => {
   // If already absolute URL, return as-is
   if (/^https?:\/\//i.test(path)) {
     return path;
   }
   
-  const baseUrl = appConfig.getApiBaseUrl();
-  const base = baseUrl.replace(/\/+$/, ''); // Remove trailing slashes
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  
-  return `${base}${normalizedPath}`;
+  return `${API_BASE}${normalizedPath}`;
 };
-
-export async function apiFetch(path: string, options: ApiFetchOptions = {}): Promise<any> {
-  // Build full URL using apiUrl helper
-  const fullUrl = apiUrl(path);
-  
-  // Get current user ID from Supabase auth
-  const { data: { user } } = await supabase.auth.getUser();
-  const userId = user?.id || '';
-  
-  const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'ngrok-skip-browser-warning': 'true',
-  };
-
-  // Add user ID header
-  defaultHeaders['X-User-Id'] = userId;
-
-  const requestOptions: RequestInit = {
-    ...options,
-    mode: 'cors',
-    credentials: 'omit',
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
-  };
-
-  try {
-    const response = await fetch(fullUrl, requestOptions);
-    
-    // Check content type
-    const contentType = response.headers.get('content-type');
-    let data: any;
-    
-    if (!contentType || !contentType.includes('application/json')) {
-      // Try to handle non-JSON responses that might still contain JSON
-      const responseText = await response.text();
-      
-      // Check if it looks like JSON (starts with { or [)
-      const trimmedText = responseText.trim();
-      if (trimmedText.startsWith('{') || trimmedText.startsWith('[')) {
-        try {
-          data = JSON.parse(trimmedText);
-        } catch (parseError) {
-          throw new ApiError(
-            `Response appears to be JSON but failed to parse. Response: ${responseText.substring(0, 300)}${responseText.length > 300 ? '...' : ''}`,
-            response.status,
-            fullUrl,
-            responseText
-          );
-        }
-      } else {
-        throw new ApiError(
-          `Expected JSON response but received ${contentType || 'unknown content type'}. Response: ${responseText.substring(0, 300)}${responseText.length > 300 ? '...' : ''}`,
-          response.status,
-          fullUrl,
-          responseText
-        );
-      }
-    } else {
-      // Parse JSON normally
-      data = await response.json();
-    }
-
-    // Check if response is ok
-    if (!response.ok) {
-      throw new ApiError(
-        data.message || `HTTP ${response.status}: ${response.statusText}`,
-        response.status,
-        fullUrl,
-        JSON.stringify(data)
-      );
-    }
-
-    return data;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-
-    // Network or other errors
-    throw new ApiError(
-      error instanceof Error ? error.message : 'Network error',
-      0,
-      fullUrl
-    );
-  }
-}
 
 export async function fetchLeadActivity(leadId: string) {
   const url = `/api/lead-activity/${encodeURIComponent(leadId)}`;

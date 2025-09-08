@@ -14,7 +14,7 @@ import { CalendarIcon, Clock, Users, Plus, RefreshCw, AlertCircle, Loader2 } fro
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, addDays, startOfDay } from 'date-fns';
 import { appConfig } from '@/lib/appConfig';
-import { apiFetch, ApiError } from '@/lib/apiFetch';
+import { apiFetch } from '@/lib/apiFetch';
 import { ApiStatusBanner } from '@/components/calendar/ApiStatusBanner';
 import { GoogleCalendarDiagnostics } from '@/components/integrations/GoogleCalendarDiagnostics';
 
@@ -74,8 +74,7 @@ const Calendar = () => {
       return true;
     } catch (error) {
       setBackendHealthy(false);
-      const apiError = error as ApiError;
-      setErrorMessage(`Backend unavailable. Tried: ${apiError.url} - ${apiError.message}`);
+      setErrorMessage(`Backend unavailable: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
     }
   }, []);
@@ -206,10 +205,9 @@ const Calendar = () => {
       
     } catch (error) {
       console.error('Create event error:', error);
-      const apiError = error as ApiError;
       toast({
         title: "Error",
-        description: `Failed to create event at ${apiError.url}: ${apiError.message}`,
+        description: `Failed to create event: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
