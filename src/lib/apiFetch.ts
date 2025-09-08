@@ -1,7 +1,5 @@
 import { appConfig } from './appConfig';
-
-// Constant user ID for backend authentication
-const USER_ID = "409547ac-ed07-4550-a27f-66926515e2b9";
+import { supabase } from '@/integrations/supabase/client';
 
 export class ApiError extends Error {
   constructor(
@@ -37,6 +35,10 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
   // Build full URL using apiUrl helper
   const fullUrl = apiUrl(path);
   
+  // Get current user ID from Supabase auth
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || '';
+  
   const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -44,7 +46,7 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
   };
 
   // Add user ID header
-  defaultHeaders['X-User-Id'] = USER_ID;
+  defaultHeaders['X-User-Id'] = userId;
 
   const requestOptions: RequestInit = {
     ...options,
@@ -120,10 +122,16 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
 
 export async function fetchLeadActivity(leadId: string) {
   const url = `/api/lead-activity/${encodeURIComponent(leadId)}`;
+  
+  // Get current user ID from Supabase auth
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id || '';
+  
   const resp = await fetch(apiUrl(url), { 
     headers: { 
       "Accept": "application/json",
-      "ngrok-skip-browser-warning": "true"
+      "ngrok-skip-browser-warning": "true",
+      "X-User-Id": userId
     } 
   });
   
