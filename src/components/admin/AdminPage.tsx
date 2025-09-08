@@ -42,7 +42,7 @@ export const AdminPage = () => {
   const [resetPassword, setResetPassword] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [refreshingGoogle, setRefreshingGoogle] = useState(false);
-  const [apiBaseUrl, setApiBaseUrl] = useState("/api");
+  const [apiBaseUrl, setApiBaseUrl] = useState("https://psn-backend.fly.dev");
   const [isValidating, setIsValidating] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'error'>('unknown');
   const [errorMessage, setErrorMessage] = useState("");
@@ -57,12 +57,20 @@ export const AdminPage = () => {
   useEffect(() => {
     // Load saved API base URL from app config
     const config = appConfig.getConfig();
-    setApiBaseUrl(config.api_base_url || "/api");
+    setApiBaseUrl(config.api_base_url);
   }, []);
 
   const buildApiUrl = (path: string) => {
-    const baseUrl = apiBaseUrl === "/api" ? "" : apiBaseUrl;
-    return `${baseUrl}${path}`;
+    // If already absolute URL, return as-is
+    if (/^https?:\/\//i.test(path)) {
+      return path;
+    }
+    
+    // Build URL from base
+    const base = apiBaseUrl.replace(/\/+$/, ''); // Remove trailing slashes
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    
+    return `${base}${normalizedPath}`;
   };
 
   const fetchUsers = async () => {
