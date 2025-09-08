@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/hooks/useNotifications';
 import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
-import { apiFetch } from '@/lib/apiFetch';
 
 interface Lead {
   id?: string;
@@ -127,12 +126,19 @@ export const useLeads = () => {
 
           console.log("Sending to FastAPI backend:", `${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, payload);
 
-          const response = await apiFetch(API_ENDPOINTS.ACCEPTED_LEADS, {
+          const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, {
             method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify(payload)
           });
 
-          const responseData = response;
+          if (!response.ok) {
+            throw new Error(`FastAPI backend returned ${response.status}: ${response.statusText}`);
+          }
+
+          const responseData = await response.json();
           console.log("FastAPI backend response:", responseData);
           
           toast({

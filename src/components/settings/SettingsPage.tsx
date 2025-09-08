@@ -6,7 +6,6 @@ import { CheckCircle, ExternalLink, Unlink, RefreshCw, Calendar } from "lucide-r
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { apiFetch } from "@/lib/apiFetch";
 
 export const SettingsPage = () => {
   const [dsGoogleStatus, setDsGoogleStatus] = useState({ data: { connected: false }, loading: false });
@@ -20,12 +19,21 @@ export const SettingsPage = () => {
     setDsGoogleStatus(prev => ({ ...prev, loading: true }));
     try {
       // Since /oauth/status doesn't exist, test connection by trying calendar API
-      const response = await apiFetch('/api/calendar/list');
+      const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      const response = await fetch(`${backendUrl}/calendar/list`, {
+        headers: {
+          'X-User-Id': user.id,
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        }
+      });
 
-      if (response) {
+      if (response.ok) {
+        const data = await response.json();
         // If calendar API works, Google is connected
         setDsGoogleStatus({ data: { connected: true }, loading: false });
       } else {
+        console.error('Failed to check Google status:', response.status);
         setDsGoogleStatus({ data: { connected: false }, loading: false });
       }
     } catch (error) {
@@ -133,17 +141,25 @@ export const SettingsPage = () => {
     if (!user) return;
 
     try {
-      const response = await apiFetch('/api/calendar/list');
+      const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      const response = await fetch(`${backendUrl}/calendar/list`, {
+        headers: {
+          'X-User-Id': user.id,
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        }
+      });
 
-      if (response) {
+      if (response.ok) {
         toast({
           title: "Success",
           description: "Calendar connection test successful"
         });
       } else {
+        const errorData = await response.json();
         toast({
           title: "Error",
-          description: "Calendar test failed",
+          description: errorData.error || errorData.detail || errorData.message || "Calendar test failed",
           variant: "destructive"
         });
       }
