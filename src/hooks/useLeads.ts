@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/hooks/useNotifications';
-import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
+import { apiFetch } from '@/lib/apiFetch';
 
 interface Lead {
   id?: string;
@@ -124,13 +124,10 @@ export const useLeads = () => {
             emailTemplateId: emailTemplateId
           };
 
-          console.log("Sending to FastAPI backend:", `${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, payload);
+          console.log("Sending to FastAPI backend:", payload);
 
-          const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, {
+          const response = await apiFetch('/api/accepted-leads', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
             body: JSON.stringify(payload)
           });
 
