@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useAuth } from "@/contexts/AuthContext";
-import { API_BASE_URL, API_ENDPOINTS } from "@/config/api";
+import { apiFetch } from "@/lib/apiFetch";
 
 interface SelfLeadFormProps {
   formData: any;
@@ -159,61 +159,36 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
         throw error;
       }
 
-      // Send to FastAPI backend since this is an accepted lead
+      // Send to backend API since this is an accepted lead
       try {
-        // Get campaign details to include emailTemplateId
-        let emailTemplateId: string | undefined = undefined;
-        
-        if (leadObject.campaign_id) {
-          const { data: campaign } = await supabase
-            .from('campaigns')
-            .select('email_template_id')
-            .eq('id', leadObject.campaign_id)
-            .single();
-          
-          emailTemplateId = campaign?.email_template_id || undefined;
-        }
-
         const payload = {
           leads: [{
-            id: leadObject.id,
-            first_name: leadObject.first_name || '',
-            last_name: leadObject.last_name || '',
-            company_name: leadObject.company_name || '',
-            email_address: leadObject.email_address || '',
-            campaign_id: leadObject.campaign_id || undefined,
-            // Add phone information for Vapi calls
-            ...(formData.contact_phone_numbers?.length > 0 && {
-              contact_phone_numbers: formData.contact_phone_numbers.filter((p: any) => p.rawNumber?.trim())
-            }),
-            ...(formData.phone && { phone: formData.phone })
-          }],
-          emailTemplateId: emailTemplateId
+            email_address: leadObject.email_address,
+            first_name: leadObject.first_name,
+            company_name: leadObject.company_name
+          }]
         };
 
-        console.log("Sending self-generated lead to FastAPI backend:", `${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, payload);
+        console.log("Sending self-generated lead to backend:", payload);
 
-        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, {
+        const response = await apiFetch('/api/accepted-leads', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
-          throw new Error(`FastAPI backend returned ${response.status}: ${response.statusText}`);
+          throw new Error(`Backend returned ${response.status}: ${response.statusText}`);
         }
 
         const responseData = await response.json();
-        console.log("FastAPI backend response:", responseData);
+        console.log("Backend response:", responseData);
         
         toast({
           title: "Success",
           description: "Lead accepted and sent to backend"
         });
       } catch (backendError) {
-        console.error('Error sending lead to FastAPI backend:', backendError);
+        console.error('Error sending lead to backend:', backendError);
         toast({
           title: "Warning",
           description: "Lead saved but failed to send to backend",
@@ -275,43 +250,18 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
         throw saveError;
       }
 
-      // Get campaign details to include emailTemplateId
-      let emailTemplateId: string | undefined = undefined;
-      
-      if (formData.campaign_id) {
-        const { data: campaign } = await supabase
-          .from('campaigns')
-          .select('email_template_id')
-          .eq('id', formData.campaign_id)
-          .single();
-        
-        emailTemplateId = campaign?.email_template_id || undefined;
-      }
-
-      // Call the accept_leads data source
-      const apiBase = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      // Call the accept_leads endpoint
       const payload = {
         leads: [{
           first_name: formData.first_name || '',
           last_name: formData.last_name || '',
           email_address: formData.email_address || '',
-          company_name: formData.company_name || '',
-          campaign_id: formData.campaign_id || null,
-          // Add phone information for Vapi calls
-          ...(formData.contact_phone_numbers?.length > 0 && {
-            contact_phone_numbers: formData.contact_phone_numbers.filter((p: any) => p.rawNumber?.trim())
-          }),
-          ...(formData.phone && { phone: formData.phone })
-        }],
-        emailTemplateId: emailTemplateId
+          company_name: formData.company_name || ''
+        }]
       };
 
-      const response = await fetch(`${apiBase}/accepted-leads`, {
+      const response = await apiFetch('/api/accepted-leads', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Id': user?.id || 'dev-user'
-        },
         body: JSON.stringify(payload)
       });
 
@@ -326,8 +276,6 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
           });
           
           onReset();
-          // Optionally navigate to outreach center
-          // window.location.href = "/outreach-center";
         } catch (parseError) {
           // Handle non-JSON response
           const responseText = await response.text();
