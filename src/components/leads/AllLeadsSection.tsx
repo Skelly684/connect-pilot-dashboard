@@ -46,6 +46,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/apiFetch";
 import * as XLSX from 'xlsx';
 
 interface Lead {
@@ -325,18 +326,12 @@ export const AllLeadsSection = ({
       const snippetPromises = paginatedLeads.map(async (lead) => {
         const leadId = String(lead.id || `lead-${leads.indexOf(lead)}`);
         try {
-          const response = await fetch(`/api/lead-activity/${leadId}?since=${sinceParam}`);
+          const response = await apiFetch(`/api/lead-activity/${leadId}?since=${sinceParam}`);
           
           // Handle non-JSON responses gracefully
-          if (!response.ok) return null;
+          if (!response) return null;
           
-          let data;
-          try {
-            data = await response.json();
-          } catch {
-            // Silent fallback for non-JSON responses
-            return null;
-          }
+          let data = response;
 
           if (data && Array.isArray(data)) {
             // Find the most recent reply

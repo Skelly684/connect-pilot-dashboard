@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_BASE_URL, API_ENDPOINTS } from "@/config/api";
+import { apiFetch } from "@/lib/apiFetch";
 
 interface SelfLeadFormProps {
   formData: any;
@@ -193,19 +194,11 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
 
         console.log("Sending self-generated lead to FastAPI backend:", `${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, payload);
 
-        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, {
+        const responseData = await apiFetch(API_ENDPOINTS.ACCEPTED_LEADS, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify(payload)
         });
 
-        if (!response.ok) {
-          throw new Error(`FastAPI backend returned ${response.status}: ${response.statusText}`);
-        }
-
-        const responseData = await response.json();
         console.log("FastAPI backend response:", responseData);
         
         toast({
@@ -289,7 +282,6 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       }
 
       // Call the accept_leads data source
-      const apiBase = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
       const payload = {
         leads: [{
           first_name: formData.first_name || '',
@@ -306,59 +298,24 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
         emailTemplateId: emailTemplateId
       };
 
-      const response = await fetch(`${apiBase}/accepted-leads`, {
+      const responseData = await apiFetch('/api/accepted-leads', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Id': user?.id || 'dev-user'
-        },
         body: JSON.stringify(payload)
       });
 
-      if (response.ok) {
-        try {
-          const responseData = await response.json();
-          console.log("API response:", responseData);
-          
-          toast({
-            title: "Success",
-            description: "Lead saved & outreach queued."
-          });
-          
-          onReset();
-          // Optionally navigate to outreach center
-          // window.location.href = "/outreach-center";
-        } catch (parseError) {
-          // Handle non-JSON response
-          const responseText = await response.text();
-          toast({
-            title: "Warning",
-            description: `Server returned non-JSON: ${responseText.slice(0, 200)}`,
-            variant: "destructive"
-          });
-          console.error(`HTTP Status: ${response.status}`);
-        }
+      if (responseData) {
+        console.log("API response:", responseData);
+        
+        toast({
+          title: "Success",
+          description: "Lead saved & outreach queued."
+        });
+        
+        onReset();
+        // Optionally navigate to outreach center
+        // window.location.href = "/outreach-center";
       } else {
-        // Handle error response
-        try {
-          const errorData = await response.json();
-          if (errorData.ok === false && errorData.error) {
-            toast({
-              title: "Error",
-              description: errorData.error,
-              variant: "destructive"
-            });
-          } else {
-            throw new Error("Unknown API error");
-          }
-        } catch (parseError) {
-          toast({
-            title: "Error",
-            description: "Failed to accept lead. See console for details.",
-            variant: "destructive"
-          });
-          console.error(`HTTP Status: ${response.status}`, parseError);
-        }
+        throw new Error("No response data received");
       }
     } catch (error: any) {
       toast({

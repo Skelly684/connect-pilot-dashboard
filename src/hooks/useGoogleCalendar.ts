@@ -4,9 +4,6 @@ import { useToast } from '@/hooks/use-toast';
 import { appConfig } from '@/lib/appConfig';
 import { apiFetch, ApiError, apiUrl } from '@/lib/apiFetch';
 
-// Constant user ID for backend authentication
-const USER_ID = "409547ac-ed07-4550-a27f-66926515e2b9";
-
 export interface CalendarEvent {
   id: string;
   summary: string;
@@ -52,37 +49,17 @@ export const useGoogleCalendar = () => {
       setLoading(true);
       setErrorMessage('');
       
-      const response = await fetch(apiUrl('/api/calendar/list'), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
-          'X-User-Id': USER_ID,
-        },
-      });
+      const data = await apiFetch('/api/calendar/list');
 
-      if (response.ok) {
-        const data = await response.json();
+      if (data) {
         setEvents(data.items || data.events || []);
         setIsConnected(true);
         return true;
-      } else if (response.status === 401) {
+      } else {
         setIsConnected(false);
         setEvents([]);
+        setErrorMessage('Unable to connect to Google Calendar');
         return false;
-      } else if (response.status === 403) {
-        const errorData = await response.json().catch(() => ({}));
-        const insufficientPermissions = errorData.detail && 
-          (errorData.detail.includes('insufficient') || errorData.detail.includes('forbidden'));
-        
-        if (insufficientPermissions) {
-          setIsConnected(false);
-          setEvents([]);
-          setErrorMessage('Google permissions are too narrow. Click Reconnect to grant Calendar access.');
-        }
-        return false;
-      } else {
-        throw new Error(`HTTP ${response.status}`);
       }
     } catch (error) {
       console.error('Check connection error:', error);
@@ -182,14 +159,7 @@ export const useGoogleCalendar = () => {
       
       const fetchAndRenderOnce = async () => {
         try {
-          const response = await fetch(apiUrl('/api/calendar/list'), {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'ngrok-skip-browser-warning': 'true',
-              'X-User-Id': USER_ID,
-            },
-          });
+          const data = await apiFetch('/api/calendar/list');
           
           if (response.ok) {
             const data = await response.json();
@@ -246,14 +216,7 @@ export const useGoogleCalendar = () => {
 
         try {
           // Poll calendar list endpoint for success
-          const response = await fetch(apiUrl('/api/calendar/list'), {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'ngrok-skip-browser-warning': 'true',
-              'X-User-Id': USER_ID,
-            },
-          });
+          const data = await apiFetch('/api/calendar/list');
           
           if (response.ok) {
             const data = await response.json();

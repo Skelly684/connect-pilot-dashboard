@@ -144,21 +144,18 @@ export const ActionFooter = ({ campaign }: ActionFooterProps) => {
         }
       }
 
-      // Call the accepted-leads API
-      const response = await fetch('https://zcgutkfkohonpqvwfukk.supabase.co/functions/v1/accepted-leads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Call the accepted-leads API using Supabase function
+      const { data, error } = await supabase.functions.invoke('accepted-leads', {
+        body: {
           leads,
           campaignId: campaign.id
-        }),
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to start campaign');
+      if (error) {
+        throw error;
       }
+
 
       toast({
         title: "Campaign Started",
