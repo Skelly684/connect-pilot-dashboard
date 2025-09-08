@@ -58,8 +58,11 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
     },
   };
 
+  console.log('apiFetch: Making request to:', fullUrl, 'with options:', requestOptions);
+  
   try {
     const response = await fetch(fullUrl, requestOptions);
+    console.log('apiFetch: Response received:', response.status, response.statusText);
     
     // Check content type
     const contentType = response.headers.get('content-type');
