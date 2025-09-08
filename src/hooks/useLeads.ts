@@ -93,7 +93,7 @@ export const useLeads = () => {
         });
       }
 
-      // Automatically send accepted leads to FastAPI backend
+      // Automatically send accepted leads to Supabase edge function
       if (newStatus === 'accepted' && currentLeads) {
         try {
           // Get campaign details to include emailTemplateId
@@ -110,7 +110,7 @@ export const useLeads = () => {
             emailTemplateId = campaign?.email_template_id || undefined;
           }
 
-          // Format leads for FastAPI backend
+          // Format leads for Supabase edge function
           const formattedLeads = currentLeads.map(lead => ({
             id: lead.id,
             first_name: lead.first_name || '',
@@ -125,22 +125,22 @@ export const useLeads = () => {
             emailTemplateId: emailTemplateId
           };
 
-          console.log("Sending to FastAPI backend:", `${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, payload);
+          console.log("Sending to Supabase edge function:", payload);
 
-          const response = await apiFetch(API_ENDPOINTS.ACCEPTED_LEADS, {
-            method: 'POST',
-            body: JSON.stringify(payload)
+          const { data, error } = await supabase.functions.invoke('process-leads', {
+            body: payload
           });
 
-          const responseData = response;
-          console.log("FastAPI backend response:", responseData);
+          if (error) throw error;
+
+          console.log("Supabase edge function response:", data);
           
           toast({
             title: "Success",
             description: `Accepted ${leadIds.length} lead(s) and sent to backend`,
           });
         } catch (backendError) {
-          console.error('Error sending leads to FastAPI backend:', backendError);
+          console.error('Error sending leads to Supabase edge function:', backendError);
           toast({
             title: "Warning",
             description: "Leads accepted but failed to send to backend",
