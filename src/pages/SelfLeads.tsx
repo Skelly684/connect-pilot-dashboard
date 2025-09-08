@@ -5,7 +5,6 @@ import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { SelfLeadForm } from "@/components/selfLeads/SelfLeadForm";
 import { SelfLeadPreview } from "@/components/selfLeads/SelfLeadPreview";
 import { SelfLeadsRecentTable } from "@/components/selfLeads/SelfLeadsRecentTable";
-import { HealthCheckButton } from "@/components/common/HealthCheckButton";
 
 export default function SelfLeads() {
   const navigate = useNavigate();
@@ -79,10 +78,7 @@ export default function SelfLeads() {
                     Manually add a lead. Choose Accept to save only, or Accept & Contact to start calls/emails.
                   </p>
                 </div>
-                <div className="flex items-center gap-4">
-                  <HealthCheckButton />
-                  <SidebarTrigger className="md:hidden" />
-                </div>
+                <SidebarTrigger className="md:hidden" />
               </div>
             </header>
 

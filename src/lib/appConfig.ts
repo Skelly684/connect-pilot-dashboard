@@ -6,7 +6,7 @@ export interface AppConfig {
 const CONFIG_KEY = 'psn.app_config';
 
 const DEFAULT_CONFIG: AppConfig = {
-  api_base_url: 'https://psn-backend.fly.dev'
+  api_base_url: '/api'
 };
 
 export class AppConfigStore {
