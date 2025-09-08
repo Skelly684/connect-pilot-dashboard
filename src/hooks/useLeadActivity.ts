@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '@/config/api';
-import { apiFetch } from '@/lib/apiFetch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -61,7 +60,25 @@ export const useLeadActivity = (leadId: string | null, enabled: boolean = true) 
       since.setDate(since.getDate() - 7);
       const sinceParam = since.toISOString();
       
-      const data = await apiFetch(`/api/lead-activity/${leadId}?since=${sinceParam}`);
+      const response = await fetch(`${API_BASE_URL}/api/lead-activity/${leadId}?since=${sinceParam}`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch lead activity: ${response.statusText}`);
+      }
+      
+      // Add resilient JSON handling
+      let data;
+      try {
+        const responseText = await response.text();
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse activity response as JSON:', parseError);
+        throw new Error('Unable to load recent activity - server response was not valid JSON');
+      }
       
       setActivity(data);
     } catch (error) {
