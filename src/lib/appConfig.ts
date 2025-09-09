@@ -6,7 +6,7 @@ export interface AppConfig {
 const CONFIG_KEY = 'psn.app_config';
 
 const DEFAULT_CONFIG: AppConfig = {
-  api_base_url: '/api'
+  api_base_url: 'https://leads-automation-apel.onrender.com/api'
 };
 
 export class AppConfigStore {
