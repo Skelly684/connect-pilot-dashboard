@@ -25,6 +25,9 @@ verify_jwt = false
 [functions.dev-stop-sequence]
 verify_jwt = false
 
+[functions.crm-sync]
+verify_jwt = true
+
 [db]
 enabled = true
 port = 54322

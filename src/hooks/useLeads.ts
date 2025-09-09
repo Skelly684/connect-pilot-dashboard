@@ -35,6 +35,17 @@ export const useLeads = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  
+  // Auto-sync functionality for CRM integrations
+  const triggerAutoSync = async () => {
+    try {
+      const { useCRMIntegrations } = await import('@/hooks/useCRMIntegrations');
+      const { autoSyncRepliedLeads } = useCRMIntegrations();
+      await autoSyncRepliedLeads();
+    } catch (error) {
+      console.error('Auto-sync failed:', error);
+    }
+  };
 
   const fetchLeads = async () => {
     setIsLoading(true);
@@ -90,6 +101,15 @@ export const useLeads = () => {
           const leadName = lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown Lead';
           addNotification(leadName, lead.id, lead.status || 'unknown', newStatus);
         });
+      }
+
+      // Trigger auto-sync to CRM when leads change to "replied" status
+      if (newStatus === 'replied') {
+        try {
+          await triggerAutoSync();
+        } catch (error) {
+          console.error('Failed to trigger auto-sync for replied leads:', error);
+        }
       }
 
       // Automatically send accepted leads to FastAPI backend

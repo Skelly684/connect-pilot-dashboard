@@ -265,6 +265,78 @@ export type Database = {
           },
         ]
       }
+      crm_integrations: {
+        Row: {
+          api_key_encrypted: string
+          auto_sync: boolean
+          created_at: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          provider: string
+          sync_settings: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key_encrypted: string
+          auto_sync?: boolean
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          provider: string
+          sync_settings?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key_encrypted?: string
+          auto_sync?: boolean
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          provider?: string
+          sync_settings?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      crm_sync_logs: {
+        Row: {
+          error_message: string | null
+          external_id: string | null
+          id: string
+          integration_id: string
+          lead_id: string | null
+          status: string
+          sync_type: string
+          synced_at: string
+        }
+        Insert: {
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          integration_id: string
+          lead_id?: string | null
+          status: string
+          sync_type: string
+          synced_at?: string
+        }
+        Update: {
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          integration_id?: string
+          lead_id?: string | null
+          status?: string
+          sync_type?: string
+          synced_at?: string
+        }
+        Relationships: []
+      }
       email_logs: {
         Row: {
           body: string
