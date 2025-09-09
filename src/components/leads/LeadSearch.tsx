@@ -55,10 +55,10 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
         count: filters.numberOfLeads[0],
       };
 
-      console.log("Sending API request to:", "http://localhost:8000/api/scrape-leads");
+      console.log("Sending API request to:", "https://leads-automation-apel.onrender.com/api/scrape-leads");
       console.log("Request body:", requestBody);
 
-      const response = await fetch("http://localhost:8000/api/scrape-leads", {
+      const response = await fetch("https://leads-automation-apel.onrender.com/api/scrape-leads", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
