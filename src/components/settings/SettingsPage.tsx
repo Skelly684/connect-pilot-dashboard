@@ -19,7 +19,7 @@ export const SettingsPage = () => {
     setDsGoogleStatus(prev => ({ ...prev, loading: true }));
     try {
       // Since /oauth/status doesn't exist, test connection by trying calendar API
-      const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      const backendUrl = import.meta.env.VITE_API_BASE || 'https://leads-automation-apel.onrender.com/api';
       const response = await fetch(`${backendUrl}/calendar/list`, {
         headers: {
           'X-User-Id': user.id,
@@ -62,7 +62,7 @@ export const SettingsPage = () => {
   const connectGoogle = () => {
     if (!user) return;
     
-    const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+    const backendUrl = import.meta.env.VITE_API_BASE || 'https://leads-automation-apel.onrender.com/api';
     const authUrl = `${backendUrl}/google/oauth/start?user_id=${user.id}`;
     window.open(authUrl, 'google-auth', 'width=520,height=700,scrollbars=yes,resizable=yes');
     
@@ -141,7 +141,7 @@ export const SettingsPage = () => {
     if (!user) return;
 
     try {
-      const backendUrl = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      const backendUrl = import.meta.env.VITE_API_BASE || 'https://leads-automation-apel.onrender.com/api';
       const response = await fetch(`${backendUrl}/calendar/list`, {
         headers: {
           'X-User-Id': user.id,

@@ -289,7 +289,7 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       }
 
       // Call the accept_leads data source
-      const apiBase = import.meta.env.VITE_API_BASE || 'https://dafed33295c9.ngrok-free.app/api';
+      const apiBase = import.meta.env.VITE_API_BASE || 'https://leads-automation-apel.onrender.com/api';
       const payload = {
         leads: [{
           first_name: formData.first_name || '',
