@@ -577,14 +577,6 @@ export const ReviewNewLeadsSection = ({
                   {acceptedLeads.length} leads ready to be sent for outreach
                 </CardDescription>
               </div>
-              <Button 
-                onClick={handleSendToBackend} 
-                disabled={isProcessing}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Send to Backend ({acceptedLeads.length})
-              </Button>
             </div>
           </CardHeader>
           
