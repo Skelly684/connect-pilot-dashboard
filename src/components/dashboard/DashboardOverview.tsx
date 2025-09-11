@@ -92,7 +92,21 @@ export const DashboardOverview = () => {
               ) : (
                 leads.slice(0, 4).map((lead, index) => {
                   const displayName = lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown';
-                  const displayCompany = lead.company || lead.company_name || 'Unknown Company';
+                  
+                  let displayCompany = 'Unknown Company';
+                  try {
+                    if (typeof lead.company === 'string' && lead.company.startsWith('{')) {
+                      const companyData = JSON.parse(lead.company);
+                      displayCompany = companyData.companyName || companyData.name || 'Unknown Company';
+                    } else if (typeof lead.company === 'object' && lead.company?.companyName) {
+                      displayCompany = lead.company.companyName;
+                    } else {
+                      displayCompany = lead.company || lead.company_name || 'Unknown Company';
+                    }
+                  } catch (e) {
+                    displayCompany = lead.company_name || 'Unknown Company';
+                  }
+                  
                   return (
                     <div key={lead.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
