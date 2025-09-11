@@ -81,14 +81,12 @@ serve(async (req) => {
 
       console.log('Creating user with email:', email)
 
-      // Use regular signup flow to trigger confirmation email
-      const { data: authUser, error: authError } = await supabaseAdmin.auth.signUp({
+      // Use admin createUser to bypass signup restrictions
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
-        options: {
-          data: { name },
-          emailRedirectTo: `${Deno.env.get('SUPABASE_URL')?.replace('/supabase', '')}/auth/confirm`
-        }
+        email_confirm: true, // Auto-confirm email since it's admin created
+        user_metadata: { name }
       })
 
       if (authError) {
