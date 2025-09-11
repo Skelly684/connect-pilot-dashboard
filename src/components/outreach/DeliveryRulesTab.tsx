@@ -115,9 +115,13 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
   const handleSaveRules = async () => {
     setIsLoading(true);
     try {
-      // Update campaign with delivery rules
+      // Update campaign with delivery rules and legacy fields for backward compatibility
       await onUpdateCampaign(campaign.id, {
         delivery_rules: deliveryRules,
+        call_window_start: deliveryRules.call.window_start,
+        call_window_end: deliveryRules.call.window_end,
+        max_call_retries: deliveryRules.call.max_attempts,
+        retry_minutes: deliveryRules.call.retry_minutes,
       });
 
       // Save email steps if email is enabled

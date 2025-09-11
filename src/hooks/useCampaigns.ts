@@ -222,9 +222,25 @@ export const useCampaigns = () => {
 
   const updateCampaign = async (id: string, updates: Partial<Campaign>) => {
     try {
+      // If delivery_rules are being updated, also update legacy fields for backward compatibility
+      const campaignUpdates = { ...updates };
+      if (updates.delivery_rules) {
+        const rules = updates.delivery_rules as DeliveryRules;
+        if (rules.call) {
+          campaignUpdates.call_window_start = rules.call.window_start;
+          campaignUpdates.call_window_end = rules.call.window_end;
+          campaignUpdates.max_call_retries = rules.call.max_attempts;
+          campaignUpdates.retry_minutes = rules.call.retry_minutes;
+        }
+        // Update caller prompt from caller config if present
+        if (rules.caller?.opening_script) {
+          campaignUpdates.caller_prompt = rules.caller.opening_script;
+        }
+      }
+
       const { error } = await supabase
         .from('campaigns')
-        .update(updates)
+        .update(campaignUpdates)
         .eq('id', id);
 
       if (error) throw error;
