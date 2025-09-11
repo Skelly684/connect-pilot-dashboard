@@ -267,21 +267,20 @@ export const useLeads = () => {
 
       console.log('User authenticated:', user.id);
 
-      // Get existing emails for this user to avoid duplicates
+      // Get existing email_address values for this user to avoid duplicates
       const { data: existingLeads } = await supabase
         .from('leads')
-        .select('email, email_address')
+        .select('email_address')
         .eq('user_id', user.id);
 
-      const existingEmails = new Set([
-        ...(existingLeads?.map(lead => lead.email).filter(Boolean) || []),
-        ...(existingLeads?.map(lead => lead.email_address).filter(Boolean) || [])
-      ]);
+      const existingEmailAddresses = new Set(
+        existingLeads?.map(lead => lead.email_address).filter(Boolean) || []
+      );
 
-      // Filter out leads with duplicate emails
+      // Filter out leads with duplicate email_address values
       const uniqueLeads = newLeads.filter(lead => {
-        const email = lead.email || lead.emailAddress;
-        return email && !existingEmails.has(email);
+        const emailAddress = lead.emailAddress || lead.email;
+        return emailAddress && !existingEmailAddresses.has(emailAddress);
       });
 
       if (uniqueLeads.length === 0) {
