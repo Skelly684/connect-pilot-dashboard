@@ -4,9 +4,6 @@ import { useToast } from '@/hooks/use-toast';
 import { appConfig } from '@/lib/appConfig';
 import { apiFetch, ApiError, apiUrl } from '@/lib/apiFetch';
 
-// Constant user ID for backend authentication
-const USER_ID = "409547ac-ed07-4550-a27f-66926515e2b9";
-
 export interface CalendarEvent {
   id: string;
   summary: string;
@@ -48,6 +45,8 @@ export const useGoogleCalendar = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const checkConnectionStatus = useCallback(async () => {
+    if (!user) return false;
+    
     try {
       setLoading(true);
       setErrorMessage('');
@@ -57,7 +56,7 @@ export const useGoogleCalendar = () => {
         headers: {
           'Accept': 'application/json',
           'ngrok-skip-browser-warning': 'true',
-          'X-User-Id': USER_ID,
+          'X-User-Id': user.id,
         },
       });
 
@@ -94,7 +93,7 @@ export const useGoogleCalendar = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, user]);
 
   const fetchEvents = useCallback(async () => {
     return await checkConnectionStatus();
@@ -111,7 +110,7 @@ export const useGoogleCalendar = () => {
       
       const authResponse = await fetch(`${supabaseUrl}/functions/v1/google-oauth-start?return=/calendar`, {
         headers: {
-          'X-User-Id': USER_ID,
+          'X-User-Id': user?.id || '',
           'Authorization': `Bearer ${supabaseAnonKey}`
         }
       });
@@ -187,7 +186,7 @@ export const useGoogleCalendar = () => {
             headers: {
               'Accept': 'application/json',
               'ngrok-skip-browser-warning': 'true',
-              'X-User-Id': USER_ID,
+              'X-User-Id': user?.id || '',
             },
           });
           
@@ -251,7 +250,7 @@ export const useGoogleCalendar = () => {
             headers: {
               'Accept': 'application/json',
               'ngrok-skip-browser-warning': 'true',
-              'X-User-Id': USER_ID,
+              'X-User-Id': user?.id || '',
             },
           });
           
@@ -359,7 +358,7 @@ export const useGoogleCalendar = () => {
       setLoading(false);
       setIsConnected(false);
     }
-  }, [toast]);
+  }, [toast, user]);
 
   // Listen for API config changes
   useEffect(() => {

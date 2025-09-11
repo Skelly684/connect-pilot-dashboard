@@ -18,8 +18,6 @@ import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { ApiStatusBanner } from '@/components/calendar/ApiStatusBanner';
 import { GoogleCalendarDiagnostics } from '@/components/integrations/GoogleCalendarDiagnostics';
 
-// Constant user ID for backend authentication
-const USER_ID = "409547ac-ed07-4550-a27f-66926515e2b9";
 
 export interface CalendarEvent {
   id: string;
