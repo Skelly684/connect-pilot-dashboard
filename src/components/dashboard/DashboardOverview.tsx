@@ -85,17 +85,27 @@ export const DashboardOverview = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {leads.slice(0, 4).map((lead, index) => (
-                <div key={lead.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-gray-900">{lead.first_name} {lead.last_name}</p>
-                    <p className="text-sm text-gray-600">{lead.company_name} - {lead.status}</p>
-                  </div>
-                  <span className="text-xs text-gray-500">
-                    {new Date(lead.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-              ))}
+              {isLoading ? (
+                <div className="text-sm text-gray-500">Loading recent activity...</div>
+              ) : leads.length === 0 ? (
+                <div className="text-sm text-gray-500">No recent activity</div>
+              ) : (
+                leads.slice(0, 4).map((lead, index) => {
+                  const displayName = lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown';
+                  const displayCompany = lead.company || lead.company_name || 'Unknown Company';
+                  return (
+                    <div key={lead.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-900">{displayName}</p>
+                        <p className="text-sm text-gray-600">{displayCompany} - {lead.status || 'new'}</p>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {new Date(lead.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </CardContent>
         </Card>
