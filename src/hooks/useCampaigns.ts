@@ -84,12 +84,20 @@ export const useCampaigns = () => {
 
   const fetchCampaigns = async () => {
     try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('Error getting user:', userError);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('campaigns')
         .select(`
           *,
           email_templates!campaigns_email_template_id_fkey(*)
         `)
+        .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
@@ -174,9 +182,21 @@ export const useCampaigns = () => {
 
   const createCampaign = async (campaignData: Omit<Campaign, 'id' | 'created_at' | 'updated_at' | 'email_template'>) => {
     try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Ensure user_id is set to current user
+      const campaignWithUser = {
+        ...campaignData,
+        user_id: user.id
+      };
+
       const { data, error } = await supabase
         .from('campaigns')
-        .insert(campaignData)
+        .insert(campaignWithUser)
         .select()
         .single();
 
