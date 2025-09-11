@@ -252,8 +252,11 @@ export const useLeads = () => {
 
   const saveLeads = async (newLeads: Lead[]) => {
     try {
+      console.log('Starting saveLeads with:', newLeads.length, 'leads');
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        console.error('No authenticated user found');
         toast({
           title: "Authentication Required",
           description: "Please log in to save leads",
@@ -262,32 +265,42 @@ export const useLeads = () => {
         return false;
       }
 
+      console.log('User authenticated:', user.id);
+
       const leadsToInsert = newLeads.map(lead => ({
         user_id: user.id,
-        name: lead.name,
-        first_name: lead.firstName,
-        last_name: lead.lastName,
-        job_title: lead.jobTitle || lead.job_title,
-        headline: lead.headline,
-        company: lead.company || lead.companyName,
-        company_name: lead.companyName,
-        email: lead.email || lead.emailAddress,
-        email_address: lead.emailAddress,
-        phone: lead.phone,
-        location: lead.location || lead.rawAddress,
-        raw_address: lead.rawAddress,
-        state_name: lead.stateName,
-        city_name: lead.cityName,
-        country_name: lead.countryName,
-        status: 'pending_review', // Set new leads to pending_review instead of new
+        name: lead.name || `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || null,
+        first_name: lead.firstName || null,
+        last_name: lead.lastName || null,
+        job_title: lead.jobTitle || lead.job_title || lead.headline || null,
+        headline: lead.headline || null,
+        company: lead.company || lead.companyName || null,
+        company_name: lead.companyName || lead.company || null,
+        email: lead.email || lead.emailAddress || null,
+        email_address: lead.emailAddress || lead.email || null,
+        phone: lead.phone || null,
+        location: lead.location || lead.rawAddress || null,
+        raw_address: lead.rawAddress || lead.location || null,
+        state_name: lead.stateName || null,
+        city_name: lead.cityName || null,
+        country_name: lead.countryName || null,
+        status: 'pending_review',
         contact_phone_numbers: lead.contactPhoneNumbers || null,
       }));
 
-      const { error } = await supabase
-        .from('leads')
-        .insert(leadsToInsert);
+      console.log('Prepared leads for insert:', leadsToInsert);
 
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('leads')
+        .insert(leadsToInsert)
+        .select();
+
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
+      }
+
+      console.log('Successfully inserted leads:', data);
 
       toast({
         title: "Success",
@@ -300,7 +313,7 @@ export const useLeads = () => {
       console.error('Error saving leads:', error);
       toast({
         title: "Error",
-        description: "Failed to save leads to database",
+        description: `Failed to save leads to database: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
       return false;
