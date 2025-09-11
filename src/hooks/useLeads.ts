@@ -267,7 +267,33 @@ export const useLeads = () => {
 
       console.log('User authenticated:', user.id);
 
-      const leadsToInsert = newLeads.map(lead => ({
+      // Get existing emails for this user to avoid duplicates
+      const { data: existingLeads } = await supabase
+        .from('leads')
+        .select('email, email_address')
+        .eq('user_id', user.id);
+
+      const existingEmails = new Set([
+        ...(existingLeads?.map(lead => lead.email).filter(Boolean) || []),
+        ...(existingLeads?.map(lead => lead.email_address).filter(Boolean) || [])
+      ]);
+
+      // Filter out leads with duplicate emails
+      const uniqueLeads = newLeads.filter(lead => {
+        const email = lead.email || lead.emailAddress;
+        return email && !existingEmails.has(email);
+      });
+
+      if (uniqueLeads.length === 0) {
+        toast({
+          title: "No New Leads",
+          description: "All leads already exist in your database",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const leadsToInsert = uniqueLeads.map(lead => ({
         user_id: user.id,
         name: lead.name || `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || null,
         first_name: lead.firstName || null,
@@ -302,9 +328,15 @@ export const useLeads = () => {
 
       console.log('Successfully inserted leads:', data);
 
+      const skippedCount = newLeads.length - uniqueLeads.length;
+      let description = `Saved ${uniqueLeads.length} new leads to database for review`;
+      if (skippedCount > 0) {
+        description += `. Skipped ${skippedCount} duplicate leads.`;
+      }
+
       toast({
         title: "Success",
-        description: `Saved ${newLeads.length} leads to database for review`,
+        description,
       });
 
       await fetchLeads(); // Refresh the list
