@@ -280,7 +280,7 @@ export const useLeads = () => {
         city_name: lead.cityName,
         country_name: lead.countryName,
         status: 'pending_review', // Set new leads to pending_review instead of new
-        contact_phone_numbers: lead.contactPhoneNumbers ? JSON.stringify(lead.contactPhoneNumbers) : null,
+        contact_phone_numbers: lead.contactPhoneNumbers || null,
       }));
 
       const { error } = await supabase
