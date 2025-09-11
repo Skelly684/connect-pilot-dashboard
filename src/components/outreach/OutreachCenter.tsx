@@ -159,26 +159,28 @@ export const OutreachCenter = () => {
                         <div className="grid grid-cols-3 gap-4 text-sm">
                           <div>
                             <p className="text-gray-500">Email Cap</p>
-                            <p className="font-medium">{campaign.email_daily_cap}</p>
+                            <p className="font-medium">{campaign.email_daily_cap || 'Not set'}</p>
                           </div>
                           <div>
                             <p className="text-gray-500">Call Window</p>
-                            <p className="font-medium">{campaign.call_window_start}:00 - {campaign.call_window_end}:00</p>
+                            <p className="font-medium">
+                              {campaign.delivery_rules?.call?.window_start || campaign.call_window_start}:00 - {campaign.delivery_rules?.call?.window_end || campaign.call_window_end}:00
+                            </p>
                           </div>
                           <div>
                             <p className="text-gray-500">Max Retries</p>
-                            <p className="font-medium">{campaign.max_call_retries}</p>
+                            <p className="font-medium">{campaign.delivery_rules?.call?.max_attempts || campaign.max_call_retries}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-center justify-between mt-3 pt-3 border-t">
                           <div className="flex gap-2">
-                            {campaign.email_template_id && (
+                            {(campaign.delivery_rules?.use_email !== false && campaign.email_template_id) && (
                               <Badge variant="outline" className="text-xs">
                                 Emails enabled
                               </Badge>
                             )}
-                            {campaign.caller_prompt && (
+                            {(campaign.delivery_rules?.use_calls !== false && (campaign.caller_prompt || campaign.delivery_rules?.caller)) && (
                               <Badge variant="outline" className="text-xs">
                                 Calls enabled
                               </Badge>
