@@ -11,8 +11,8 @@ import { Plus, Trash2, Eye } from 'lucide-react';
 
 export interface CallerConfig {
   opening_script: string;
-  goal: 'qualify' | 'book_meeting' | 'live_transfer';
-  tone: 'friendly' | 'professional' | 'casual' | 'high_energy';
+  goal: 'qualify' | 'book_meeting' | 'warm_transfer';
+  tone: 'professional' | 'friendly' | 'concise' | 'warm';
   disclose_ai: boolean;
   max_duration_sec: number;
   qualify_questions: string[];
@@ -20,7 +20,7 @@ export interface CallerConfig {
   booking_link?: string;
   transfer_number?: string;
   voicemail_script?: string;
-  not_interested_policy: 'mark_do_not_contact' | 'send_followup_email' | 'none';
+  not_interested_policy: 'none' | 'send_followup_email' | 'mark_do_not_contact';
   disclaimer?: string;
 }
 
@@ -51,8 +51,8 @@ export const CallerConfigSection = ({ config, onChange }: CallerConfigSectionPro
   const validateConfig = (newConfig: CallerConfig) => {
     const newErrors: Record<string, string> = {};
 
-    if (newConfig.max_duration_sec < 30 || newConfig.max_duration_sec > 900) {
-      newErrors.max_duration_sec = 'Duration must be between 30 and 900 seconds';
+    if (newConfig.max_duration_sec < 45 || newConfig.max_duration_sec > 600) {
+      newErrors.max_duration_sec = 'Duration must be between 45 and 600 seconds';
     }
 
     if (newConfig.transfer_number && !/^\+\d{7,15}$/.test(newConfig.transfer_number)) {
@@ -140,7 +140,7 @@ export const CallerConfigSection = ({ config, onChange }: CallerConfigSectionPro
             <SelectContent>
               <SelectItem value="qualify">Qualify Lead</SelectItem>
               <SelectItem value="book_meeting">Book Meeting</SelectItem>
-              <SelectItem value="live_transfer">Live Transfer</SelectItem>
+              <SelectItem value="warm_transfer">Warm Transfer</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -153,10 +153,10 @@ export const CallerConfigSection = ({ config, onChange }: CallerConfigSectionPro
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="friendly">Friendly</SelectItem>
               <SelectItem value="professional">Professional</SelectItem>
-              <SelectItem value="casual">Casual</SelectItem>
-              <SelectItem value="high_energy">High Energy</SelectItem>
+              <SelectItem value="friendly">Friendly</SelectItem>
+              <SelectItem value="concise">Concise</SelectItem>
+              <SelectItem value="warm">Warm</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -182,10 +182,10 @@ export const CallerConfigSection = ({ config, onChange }: CallerConfigSectionPro
           <Input
             id="max-duration"
             type="number"
-            min="30"
-            max="900"
+            min="45"
+            max="600"
             value={config.max_duration_sec}
-            onChange={(e) => updateConfig({ max_duration_sec: parseInt(e.target.value) || 30 })}
+            onChange={(e) => updateConfig({ max_duration_sec: parseInt(e.target.value) || 45 })}
             className={errors.max_duration_sec ? 'border-destructive' : ''}
           />
           {errors.max_duration_sec && (
@@ -203,16 +203,16 @@ export const CallerConfigSection = ({ config, onChange }: CallerConfigSectionPro
               variant="outline"
               size="sm"
               onClick={addQualificationQuestion}
-              disabled={config.goal === 'live_transfer'}
+              disabled={config.goal === 'warm_transfer'}
               className="gap-1"
             >
               <Plus className="h-4 w-4" />
               Add Question
             </Button>
           </div>
-          {config.goal === 'live_transfer' && (
+          {config.goal === 'warm_transfer' && (
             <p className="text-sm text-muted-foreground">
-              Qualification questions are disabled for live transfer calls
+              Qualification questions are disabled for warm transfer calls
             </p>
           )}
         </CardHeader>
@@ -223,20 +223,20 @@ export const CallerConfigSection = ({ config, onChange }: CallerConfigSectionPro
                 value={question}
                 onChange={(e) => updateQualificationQuestion(index, e.target.value)}
                 placeholder="Are you involved in partnerships at {company_name}?"
-                disabled={config.goal === 'live_transfer'}
+                disabled={config.goal === 'warm_transfer'}
               />
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => removeQualificationQuestion(index)}
-                disabled={config.goal === 'live_transfer'}
+                disabled={config.goal === 'warm_transfer'}
                 className="text-destructive hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           ))}
-          {config.qualify_questions.length === 0 && config.goal !== 'live_transfer' && (
+          {config.qualify_questions.length === 0 && config.goal !== 'warm_transfer' && (
             <p className="text-sm text-muted-foreground text-center py-4">
               No qualification questions added yet
             </p>
@@ -317,7 +317,7 @@ export const CallerConfigSection = ({ config, onChange }: CallerConfigSectionPro
         </div>
       )}
 
-      {config.goal === 'live_transfer' && (
+      {config.goal === 'warm_transfer' && (
         <div>
           <Label htmlFor="transfer-number">Live Transfer Number (E.164 format)</Label>
           <Input
@@ -356,9 +356,9 @@ export const CallerConfigSection = ({ config, onChange }: CallerConfigSectionPro
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="mark_do_not_contact">Mark as Do Not Contact</SelectItem>
-            <SelectItem value="send_followup_email">Send Follow-up Email</SelectItem>
             <SelectItem value="none">No Action</SelectItem>
+            <SelectItem value="send_followup_email">Send Follow-up Email</SelectItem>
+            <SelectItem value="mark_do_not_contact">Mark as Do Not Contact</SelectItem>
           </SelectContent>
         </Select>
       </div>
