@@ -78,11 +78,10 @@ export function Activity({ leadId }: Props) {
         sub: c.notes || ""
       });
     } else {
-      const st = status.replace(/_/g, " ");
       rows.push({
         kind: "call",
         when,
-        title: `Call ${st || ""}`.trim(),
+        title: "Call logs",
         sub: c.notes || ""
       });
     }
