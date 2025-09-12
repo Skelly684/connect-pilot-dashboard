@@ -64,27 +64,25 @@ export function Activity({ leadId }: Props) {
     }
   }
 
-  // Call events
-  for (const c of state.calls) {
-    const when = c.created_at || c.started_at || "";
-    const status = c.call_status || "";
+  // Call events - consolidate into single entry with all call content
+  const callNotes = state.calls
+    .filter(c => c.notes && c.notes.trim())
+    .map(c => c.notes.trim())
+    .join('\n\n');
+  
+  if (callNotes) {
+    const latestCall = state.calls.reduce((latest, current) => {
+      const currentTime = current.created_at || current.started_at || "";
+      const latestTime = latest.created_at || latest.started_at || "";
+      return currentTime > latestTime ? current : latest;
+    });
     
-    if (status === 'note') {
-      // Handle manual notes differently
-      rows.push({
-        kind: "call",
-        when,
-        title: "Note added",
-        sub: c.notes || ""
-      });
-    } else {
-      rows.push({
-        kind: "call",
-        when,
-        title: "Call logs",
-        sub: c.notes || ""
-      });
-    }
+    rows.push({
+      kind: "call",
+      when: latestCall.created_at || latestCall.started_at || "",
+      title: "Call logs",
+      body: callNotes
+    });
   }
 
   // Sort newest first
