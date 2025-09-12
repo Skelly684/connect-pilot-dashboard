@@ -88,7 +88,7 @@ export const EnhancedCallActivity = ({ leadId, leadName }: EnhancedCallActivityP
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const callLogs = getCallLogsForLead(leadId);
+  const callLogs = getCallLogsForLead(leadId).filter(log => log.notes && log.notes.trim());
   const ITEMS_PER_PAGE = 10;
 
   // Filter call logs
