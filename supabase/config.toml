@@ -28,6 +28,9 @@ verify_jwt = false
 [functions.crm-sync]
 verify_jwt = true
 
+[functions.vapi-webhook]
+verify_jwt = false
+
 [db]
 enabled = true
 port = 54322
