@@ -33,6 +33,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useCampaigns } from "@/hooks/useCampaigns";
+import { LeadQuickActions } from "./LeadQuickActions";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Lead {
@@ -613,34 +614,15 @@ export const ReviewNewLeadsSection = ({
                         <TableCell className="text-sm text-gray-500">
                           {phone || 'N/A'}
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              disabled={!email}
-                              onClick={() => handleSendSingleLead(lead)}
-                              title="Send email"
-                            >
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              disabled={!phone}
-                              onClick={() => handleCallLead(lead)}
-                              title="Call now"
-                            >
-                              <Phone className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleViewActivity(leadId)}
-                              title="View activity"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                         <TableCell className="text-right">
+                           <div className="flex items-center justify-end space-x-2">
+                             <LeadQuickActions 
+                               lead={lead}
+                               onSendEmail={handleSendSingleLead}
+                               onCallLead={handleCallLead}
+                               onViewActivity={handleViewActivity}
+                               showViewActivity={true}
+                             />
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm">
@@ -743,34 +725,15 @@ export const ReviewNewLeadsSection = ({
                         <TableCell className="text-sm text-gray-500">
                           {phone || 'N/A'}
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              disabled={!email}
-                              onClick={() => handleSendSingleLead(lead)}
-                              title="Send email"
-                            >
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              disabled={!phone}
-                              onClick={() => handleCallLead(lead)}
-                              title="Call now"
-                            >
-                              <Phone className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleViewActivity(leadId)}
-                              title="View activity"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                         <TableCell className="text-right">
+                           <div className="flex items-center justify-end space-x-2">
+                             <LeadQuickActions 
+                               lead={lead}
+                               onSendEmail={handleSendSingleLead}
+                               onCallLead={handleCallLead}
+                               onViewActivity={handleViewActivity}
+                               showViewActivity={true}
+                             />
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm">
