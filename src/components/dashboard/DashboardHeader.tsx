@@ -39,7 +39,7 @@ export const DashboardHeader = () => {
       <div className="flex items-center space-x-4">
         <div className="relative">
           <img 
-            src="/lovable-uploads/7c5cb75c-bf84-4a68-9e78-2fd787db361e.png" 
+            src="/assets/psn-logo.png" 
             alt="PSN Logo" 
             className="w-9 h-9 rounded-xl shadow-sm transition-transform duration-300 hover:scale-110"
           />
