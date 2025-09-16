@@ -1,15 +1,11 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Send, CheckCircle, TrendingUp, Bell, X } from "lucide-react";
+import { Users, Send, CheckCircle, TrendingUp } from "lucide-react";
 import { useLeads } from "@/hooks/useLeads";
 import { useMemo } from "react";
-import { useNotifications } from "@/hooks/useNotifications";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 export const DashboardOverview = () => {
   const { leads, isLoading } = useLeads();
-  const { notifications, markAsRead, removeNotification } = useNotifications();
   
   const stats = useMemo(() => {
     const totalLeads = leads.length;
@@ -130,58 +126,21 @@ export const DashboardOverview = () => {
         
         <Card className="border-0 shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Latest Notifications
-            </CardTitle>
-            <CardDescription>Recent updates and alerts from your campaigns</CardDescription>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Common tasks to get you started</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {notifications.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Bell className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm">No notifications yet</p>
-                  <p className="text-xs text-gray-500">Notifications will appear here when leads interact with your campaigns</p>
-                </div>
-              ) : (
-                notifications.slice(0, 5).map((notification) => (
-                  <div key={notification.id} className={`p-3 rounded-lg border ${notification.read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'}`}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm">{notification.title}</p>
-                          {!notification.read && <Badge variant="secondary" className="text-xs">New</Badge>}
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {notification.timestamp.toLocaleDateString()} at {notification.timestamp.toLocaleTimeString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {!notification.read && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => markAsRead(notification.id)}
-                            className="text-xs p-1 h-6"
-                          >
-                            Mark read
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeNotification(notification.id)}
-                          className="text-gray-500 hover:text-gray-700 p-1 h-6 w-6"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+              <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center">
+                <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm font-medium text-gray-600">Generate New Leads</p>
+                <p className="text-xs text-gray-500">Search for prospects using our filters</p>
+              </div>
+              <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center">
+                <Send className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm font-medium text-gray-600">Start Outreach Campaign</p>
+                <p className="text-xs text-gray-500">Send personalized messages to leads</p>
+              </div>
             </div>
           </CardContent>
         </Card>

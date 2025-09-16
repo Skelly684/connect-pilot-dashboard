@@ -58,7 +58,6 @@ const Calendar = () => {
   // Quick booking form state
   const [formData, setFormData] = useState({
     summary: '',
-    description: '',
     startDateTime: '',
     endDateTime: '',
     attendeeEmail: '',
@@ -161,7 +160,7 @@ const Calendar = () => {
       const eventData = {
         calendarId: 'primary',
         title: formData.summary,
-        description: formData.description || 'Booked from Dashboard',
+        description: 'Booked from Dashboard',
         start: new Date(formData.startDateTime).toISOString(),
         end: new Date(formData.endDateTime).toISOString(),
         ...(formData.attendeeEmail && {
@@ -195,7 +194,6 @@ const Calendar = () => {
       // Reset form
       setFormData({
         summary: '',
-        description: '',
         startDateTime: '',
         endDateTime: '',
         attendeeEmail: '',
@@ -404,16 +402,6 @@ const Calendar = () => {
                             onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
                             placeholder="Meeting title"
                             required
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="description">Notes</Label>
-                          <Input
-                            id="description"
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            placeholder="Meeting notes or agenda"
                           />
                         </div>
 

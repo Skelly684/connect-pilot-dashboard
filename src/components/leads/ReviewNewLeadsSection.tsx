@@ -31,10 +31,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
-import { useCampaigns } from "@/hooks/useCampaigns";
-import { LeadQuickActions } from "./LeadQuickActions";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Lead {
   id?: number | string;
@@ -250,8 +246,6 @@ export const ReviewNewLeadsSection = ({
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const { getDefaultCampaign } = useCampaigns();
 
   // Filter for new leads that need review
   const newLeads = leads.filter(lead => lead.status === 'new' || lead.status === 'pending_review');
@@ -358,84 +352,6 @@ export const ReviewNewLeadsSection = ({
       onRefresh();
     }
     setIsProcessing(false);
-  };
-
-  const handleSendSingleLead = async (lead: Lead) => {
-    try {
-      setIsProcessing(true);
-      const leadData = [{
-        id: lead.id,
-        first_name: lead.firstName || lead.first_name,
-        last_name: lead.lastName || lead.last_name,
-        company_name: extractCompanyInfo(lead).name,
-        email_address: extractEmail(lead),
-        campaign_id: getDefaultCampaign()?.id
-      }];
-
-      const response = await fetch('/api/accepted-leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leads: leadData,
-          emailTemplateId: getDefaultCampaign()?.email_template_id
-        })
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: `Email sent to ${extractFullName(lead)}`,
-        });
-      } else {
-        throw new Error('Failed to send email');
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send email",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleCallLead = async (lead: Lead) => {
-    try {
-      setIsProcessing(true);
-      const phone = extractPhone(lead);
-      const campaignId = getDefaultCampaign()?.id;
-
-      const response = await fetch('/api/test-call', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          number: phone,
-          campaign_id: campaignId
-        })
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: `Test call initiated to ${extractFullName(lead)}`,
-        });
-      } else {
-        throw new Error('Failed to initiate call');
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to initiate call",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleViewActivity = (leadId: string) => {
-    navigate(`/lead/${leadId}`);
   };
 
   return (
@@ -614,15 +530,17 @@ export const ReviewNewLeadsSection = ({
                         <TableCell className="text-sm text-gray-500">
                           {phone || 'N/A'}
                         </TableCell>
-                         <TableCell className="text-right">
-                           <div className="flex items-center justify-end space-x-2">
-                             <LeadQuickActions 
-                               lead={lead}
-                               onSendEmail={handleSendSingleLead}
-                               onCallLead={handleCallLead}
-                               onViewActivity={handleViewActivity}
-                               showViewActivity={true}
-                             />
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <Button variant="ghost" size="sm" disabled={!email}>
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" disabled={!phone}>
+                              <Phone className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm">
@@ -725,15 +643,17 @@ export const ReviewNewLeadsSection = ({
                         <TableCell className="text-sm text-gray-500">
                           {phone || 'N/A'}
                         </TableCell>
-                         <TableCell className="text-right">
-                           <div className="flex items-center justify-end space-x-2">
-                             <LeadQuickActions 
-                               lead={lead}
-                               onSendEmail={handleSendSingleLead}
-                               onCallLead={handleCallLead}
-                               onViewActivity={handleViewActivity}
-                               showViewActivity={true}
-                             />
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <Button variant="ghost" size="sm" disabled={!email}>
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" disabled={!phone}>
+                              <Phone className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm">

@@ -199,7 +199,7 @@ export const LeadActivityPanel = ({ leadId, leadName, enabled = true }: LeadActi
       </Card>
 
       {/* Call Timeline */}
-      {activity.calls.filter(call => call.notes && call.notes.trim()).length > 0 && (
+      {activity.calls.length > 0 && (
         <Card className="border-0 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -207,12 +207,12 @@ export const LeadActivityPanel = ({ leadId, leadName, enabled = true }: LeadActi
               <span>Call Timeline</span>
             </CardTitle>
             <CardDescription>
-              {activity.calls.filter(call => call.notes && call.notes.trim()).length} call attempt{activity.calls.filter(call => call.notes && call.notes.trim()).length !== 1 ? 's' : ''}
+              {activity.calls.length} call attempt{activity.calls.length !== 1 ? 's' : ''}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {activity.calls.filter(call => call.notes && call.notes.trim()).map((call, index) => (
+              {activity.calls.map((call, index) => (
                 <div key={call.id} className="flex items-start space-x-4 pb-4 border-b last:border-b-0">
                   <div className="flex-shrink-0">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">

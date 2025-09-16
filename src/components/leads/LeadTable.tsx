@@ -46,7 +46,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { LeadQuickActions } from "./LeadQuickActions";
 import * as XLSX from 'xlsx';
 
 interface Lead {
@@ -643,12 +642,18 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                            <TableCell className="text-sm text-gray-500">
                              {phone || 'N/A'}
                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end space-x-2">
-                                <LeadQuickActions 
-                                  lead={lead}
-                                  showViewActivity={true}
-                                  onViewActivity={(leadId) => {
+                           <TableCell className="text-right">
+                             <div className="flex items-center justify-end space-x-2">
+                               <Button variant="ghost" size="sm" disabled={!email}>
+                                 <Mail className="h-4 w-4" />
+                               </Button>
+                                <Button variant="ghost" size="sm" disabled={!phone}>
+                                  <Phone className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
                                     const newExpanded = new Set(expandedRows);
                                     if (expandedRows.has(leadId)) {
                                       newExpanded.delete(leadId);
@@ -657,7 +662,9 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                                     }
                                     setExpandedRows(newExpanded);
                                   }}
-                                />
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="sm">

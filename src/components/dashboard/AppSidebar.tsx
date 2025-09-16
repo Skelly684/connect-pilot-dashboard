@@ -139,7 +139,7 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
         <div className="p-4 border-t border-sidebar-border/50">
           {!isCollapsed && (
             <div className="text-center text-xs text-sidebar-foreground/50">
-              © {new Date().getFullYear()} PSN Dashboard
+              © 2024 PSN Dashboard
             </div>
           )}
         </div>

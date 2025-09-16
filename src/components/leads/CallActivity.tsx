@@ -67,7 +67,7 @@ export const CallActivity = ({ leadId, leadName }: CallActivityProps) => {
   const [newCallNotes, setNewCallNotes] = useState('');
   const [newCallDuration, setNewCallDuration] = useState('');
 
-  const callLogs = getCallLogsForLead(leadId).filter(log => log.notes && log.notes.trim());
+  const callLogs = getCallLogsForLead(leadId);
 
   useEffect(() => {
     fetchCallLogs();
