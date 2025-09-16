@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import Outreach from "./pages/Outreach";
 import SelfLeads from "./pages/SelfLeads";
 import Calendar from "./pages/Calendar";
+import LeadDetail from "./pages/LeadDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,11 @@ const App = () => (
             <Route path="/calendar" element={
               <ProtectedRoute>
                 <Calendar />
+              </ProtectedRoute>
+            } />
+            <Route path="/lead/:id" element={
+              <ProtectedRoute>
+                <LeadDetail />
               </ProtectedRoute>
             } />
             <Route path="/settings" element={
