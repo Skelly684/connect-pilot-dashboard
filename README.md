@@ -71,3 +71,20 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Email deduping / scheduler
+
+We rely on a DB-level unique index on `email_logs.idem_key` to prevent duplicate sends
+when multiple nodes race. Apply migration `2025-ensure-idempotency-email_logs.sql`.
+
+Only one node should run the email-sequence poller:
+- Web/API: `EMAIL_SEQUENCE_SCHEDULER_ENABLED=false`
+- Worker:  `EMAIL_SEQUENCE_SCHEDULER_ENABLED=true`
+
+SMTP fallback is disabled via `ALLOW_SMTP_FALLBACK=false`.
+
+To verify setup:
+- Apply SQL migration to the database (Supabase SQL editor or CI migration step)
+- Confirm only worker has EMAIL_SEQUENCE_SCHEDULER_ENABLED=true
+- Verify startup logs show:
+  "[Scheduler] Email steps poller scheduled (every 5m)" on worker only
