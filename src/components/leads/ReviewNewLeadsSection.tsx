@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mail, Phone, CheckCircle, XCircle, Send, Eye, MoreHorizontal, ExternalLink, Loader2 } from "lucide-react";
 import {
   Table,
@@ -73,9 +74,9 @@ interface Lead {
 interface ReviewNewLeadsSectionProps {
   leads: Lead[];
   isLoading: boolean;
-  onAcceptLeads: (leadIds: string[]) => Promise<boolean>;
+  onAcceptLeads: (leadIds: string[], campaignId?: string) => Promise<boolean>;
   onRejectLeads: (leadIds: string[]) => Promise<boolean>;
-  onSendAcceptedLeads: (leads: Lead[]) => Promise<boolean>;
+  onSendAcceptedLeads: (leads: Lead[], campaignId?: string) => Promise<boolean>;
   onRefresh: () => void;
 }
 
@@ -248,10 +249,11 @@ export const ReviewNewLeadsSection = ({
   onRefresh 
 }: ReviewNewLeadsSectionProps) => {
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { getDefaultCampaign } = useCampaigns();
+  const { campaigns, getDefaultCampaign } = useCampaigns();
 
   // Filter for new leads that need review
   const newLeads = leads.filter(lead => lead.status === 'new' || lead.status === 'pending_review');
@@ -279,8 +281,18 @@ export const ReviewNewLeadsSection = ({
   const handleAcceptSelected = async () => {
     if (selectedLeads.size === 0) return;
     
+    const campaignId = selectedCampaignId || getDefaultCampaign()?.id;
+    if (!campaignId) {
+      toast({
+        title: "No Campaign Selected",
+        description: "Please select a campaign before accepting leads",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsProcessing(true);
-    const success = await onAcceptLeads(Array.from(selectedLeads));
+    const success = await onAcceptLeads(Array.from(selectedLeads), campaignId);
     if (success) {
       setSelectedLeads(new Set());
       onRefresh();
@@ -312,8 +324,18 @@ export const ReviewNewLeadsSection = ({
     const allLeadIds = newLeads.map(lead => String(lead.id || `lead-${newLeads.indexOf(lead)}`));
     if (allLeadIds.length === 0) return;
     
+    const campaignId = selectedCampaignId || getDefaultCampaign()?.id;
+    if (!campaignId) {
+      toast({
+        title: "No Campaign Selected",
+        description: "Please select a campaign before accepting leads",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsProcessing(true);
-    const success = await onAcceptLeads(allLeadIds);
+    const success = await onAcceptLeads(allLeadIds, campaignId);
     if (success) {
       setSelectedLeads(new Set());
       onRefresh();
@@ -352,8 +374,9 @@ export const ReviewNewLeadsSection = ({
       return;
     }
 
+    const campaignId = selectedCampaignId || getDefaultCampaign()?.id;
     setIsProcessing(true);
-    const success = await onSendAcceptedLeads(acceptedLeads);
+    const success = await onSendAcceptedLeads(acceptedLeads, campaignId);
     if (success) {
       onRefresh();
     }
@@ -449,6 +472,32 @@ export const ReviewNewLeadsSection = ({
               <CardDescription>
                 {newLeads.length} new leads waiting for review • {selectedLeads.size} selected
               </CardDescription>
+            </div>
+          </div>
+          
+          {/* Campaign Selection */}
+          <div className="pt-4 border-t">
+            <div className="flex items-center space-x-4">
+              <label htmlFor="campaign-select" className="text-sm font-medium text-gray-700">
+                Campaign:
+              </label>
+              <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select a campaign..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {campaigns.map((campaign) => (
+                    <SelectItem key={campaign.id} value={campaign.id}>
+                      {campaign.name} {campaign.is_default ? "(Default)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!selectedCampaignId && getDefaultCampaign() && (
+                <span className="text-sm text-gray-500">
+                  Will use default: {getDefaultCampaign()?.name}
+                </span>
+              )}
             </div>
           </div>
           

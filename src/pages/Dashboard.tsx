@@ -66,16 +66,16 @@ const Dashboard = () => {
     setIsSearching(false);
   };
 
-  const handleAcceptLeads = async (leadIds: string[]) => {
-    return await updateLeadStatus(leadIds, 'accepted');
+  const handleAcceptLeads = async (leadIds: string[], campaignId?: string) => {
+    return await updateLeadStatus(leadIds, 'accepted', campaignId);
   };
 
   const handleRejectLeads = async (leadIds: string[]) => {
     return await updateLeadStatus(leadIds, 'rejected');
   };
 
-  const handleSendAcceptedLeads = async (acceptedLeads: any[]) => {
-    return await sendAcceptedLeadsToBackend(acceptedLeads);
+  const handleSendAcceptedLeads = async (acceptedLeads: any[], campaignId?: string) => {
+    return await sendAcceptedLeadsToBackend(acceptedLeads, campaignId);
   };
 
   const renderContent = () => {

@@ -69,7 +69,7 @@ export const useLeads = () => {
     }
   };
 
-  const updateLeadStatus = async (leadIds: string[], newStatus: string) => {
+  const updateLeadStatus = async (leadIds: string[], newStatus: string, campaignId?: string) => {
     try {
       // Get current lead data to track status changes and for backend API
       const { data: currentLeads } = await supabase
@@ -82,6 +82,10 @@ export const useLeads = () => {
       if (newStatus === 'accepted') {
         updates.accepted_at = new Date().toISOString();
         updates.reviewed_at = new Date().toISOString();
+        // Set campaign_id if provided
+        if (campaignId) {
+          updates.campaign_id = campaignId;
+        }
       } else if (newStatus === 'rejected') {
         updates.reviewed_at = new Date().toISOString();
       } else if (newStatus === 'sent_for_contact') {
