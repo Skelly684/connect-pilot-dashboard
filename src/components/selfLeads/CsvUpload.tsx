@@ -36,9 +36,11 @@ export function CsvUpload() {
     if (!selectedCampaignId) {
       toast({
         title: "Campaign Required",
-        description: "Please select a campaign before uploading",
+        description: "Please select a campaign first, then upload your file again",
         variant: "destructive"
       });
+      event.target.value = "";
+      setFileName("");
       return;
     }
 
@@ -234,7 +236,7 @@ export function CsvUpload() {
               type="file"
               accept=".csv,.xlsx,.xls"
               onChange={handleFileUpload}
-              disabled={isUploading || !selectedCampaignId}
+              disabled={isUploading}
               className="cursor-pointer"
             />
             {isUploading && <Loader2 className="h-4 w-4 animate-spin" />}
