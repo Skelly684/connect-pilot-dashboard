@@ -139,11 +139,17 @@ const Dashboard = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-secondary">
+      <div className="min-h-screen flex w-full bg-gradient-secondary relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 -left-4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 -right-4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        </div>
+        
         <AppSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col relative z-10">
           <DashboardHeader />
-          <div className="flex-1 p-6 overflow-auto">
+          <div className="flex-1 p-6 lg:p-8 overflow-auto">
             <div className="max-w-7xl mx-auto animate-fade-in">
               {renderContent()}
             </div>

@@ -26,7 +26,7 @@ export const DashboardOverview = () => {
         description: `${newLeads} new leads`,
         icon: Users,
         color: "text-blue-600",
-        bg: "bg-blue-50",
+        bg: "bg-blue-50 dark:bg-blue-950/30",
       },
       {
         title: "Accepted Leads",
@@ -34,7 +34,7 @@ export const DashboardOverview = () => {
         description: `${Math.round((acceptedLeads / Math.max(totalLeads, 1)) * 100)}% acceptance rate`,
         icon: CheckCircle,
         color: "text-green-600",
-        bg: "bg-green-50",
+        bg: "bg-green-50 dark:bg-green-950/30",
       },
       {
         title: "Contacted",
@@ -42,7 +42,7 @@ export const DashboardOverview = () => {
         description: `${Math.round((contactedLeads / Math.max(totalLeads, 1)) * 100)}% contacted`,
         icon: Send,
         color: "text-purple-600",
-        bg: "bg-purple-50",
+        bg: "bg-purple-50 dark:bg-purple-950/30",
       },
       {
         title: "Response Rate",
@@ -50,49 +50,73 @@ export const DashboardOverview = () => {
         description: `${contactedLeads} leads contacted`,
         icon: TrendingUp,
         color: "text-orange-600",
-        bg: "bg-orange-50",
+        bg: "bg-orange-50 dark:bg-orange-950/30",
       },
     ];
   }, [leads]);
+  
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
-        <p className="text-gray-600">Monitor your lead generation and outreach performance</p>
-        {isLoading && <p className="text-sm text-gray-500">Loading data...</p>}
+    <div className="space-y-8 animate-fade-in">
+      <div className="space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight bg-gradient-primary bg-clip-text text-transparent">
+          Dashboard Overview
+        </h2>
+        <p className="text-muted-foreground text-lg">Monitor your lead generation and outreach performance</p>
+        {isLoading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+            Loading data...
+          </div>
+        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <Card key={stat.title} className="border-0 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+        {stats.map((stat, index) => (
+          <Card 
+            key={stat.title} 
+            className="group relative overflow-hidden border-border/50 bg-gradient-card backdrop-blur-xl shadow-elevated hover:shadow-glow transition-all duration-500 hover:scale-[1.02] animate-scale-in"
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity duration-500"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                 {stat.title}
               </CardTitle>
-              <div className={`p-2 rounded-full ${stat.bg}`}>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <div className={`relative p-3 rounded-2xl ${stat.bg} group-hover:scale-110 transition-transform duration-300`}>
+                <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 rounded-2xl blur transition-opacity duration-300"></div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-              <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+              <div className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                {stat.value}
+              </div>
+              <p className="text-sm text-muted-foreground mt-2 font-medium">{stat.description}</p>
             </CardContent>
           </Card>
         ))}
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest lead generation and outreach activities</CardDescription>
+        <Card className="border-border/50 bg-gradient-card backdrop-blur-xl shadow-elevated hover:shadow-glow transition-all duration-500">
+          <CardHeader className="border-b border-border/50 pb-4">
+            <CardTitle className="text-xl font-bold flex items-center gap-2">
+              Recent Activity
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">Latest lead generation and outreach activities</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="pt-6">
+            <div className="space-y-3">
               {isLoading ? (
-                <div className="text-sm text-gray-500">Loading recent activity...</div>
+                <div className="text-sm text-muted-foreground flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                  Loading recent activity...
+                </div>
               ) : leads.length === 0 ? (
-                <div className="text-sm text-gray-500">No recent activity</div>
+                <div className="text-center py-12 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm font-medium">No recent activity</p>
+                </div>
               ) : (
                 leads.slice(0, 4).map((lead, index) => {
                   const displayName = lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown';
@@ -112,12 +136,20 @@ export const DashboardOverview = () => {
                   }
                   
                   return (
-                    <div key={lead.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">{displayName}</p>
-                        <p className="text-sm text-gray-600">{displayCompany} - {lead.status || 'new'}</p>
+                    <div 
+                      key={lead.id || index} 
+                      className="group flex items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 border border-border/30 rounded-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-md"
+                    >
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground group-hover:text-primary transition-colors">{displayName}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-sm text-muted-foreground">{displayCompany}</p>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium capitalize">
+                            {lead.status || 'new'}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground font-medium">
                         {new Date(lead.created_at).toLocaleDateString()}
                       </span>
                     </div>
@@ -128,43 +160,54 @@ export const DashboardOverview = () => {
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
+        <Card className="border-border/50 bg-gradient-card backdrop-blur-xl shadow-elevated hover:shadow-glow transition-all duration-500">
+          <CardHeader className="border-b border-border/50 pb-4">
+            <CardTitle className="text-xl font-bold flex items-center gap-2">
+              <Bell className="h-5 w-5 text-primary" />
               Latest Notifications
             </CardTitle>
-            <CardDescription>Recent updates and alerts from your campaigns</CardDescription>
+            <CardDescription className="text-muted-foreground">Recent updates and alerts from your campaigns</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="space-y-3">
               {notifications.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Bell className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm">No notifications yet</p>
-                  <p className="text-xs text-gray-500">Notifications will appear here when leads interact with your campaigns</p>
+                <div className="text-center py-12 text-muted-foreground">
+                  <Bell className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm font-medium">No notifications yet</p>
+                  <p className="text-xs mt-1 opacity-70">Notifications will appear here when leads interact with your campaigns</p>
                 </div>
               ) : (
                 notifications.slice(0, 5).map((notification) => (
-                  <div key={notification.id} className={`p-3 rounded-lg border ${notification.read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'}`}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm">{notification.title}</p>
-                          {!notification.read && <Badge variant="secondary" className="text-xs">New</Badge>}
+                  <div 
+                    key={notification.id} 
+                    className={`group p-4 rounded-xl border transition-all duration-300 hover:scale-[1.01] ${
+                      notification.read 
+                        ? 'bg-muted/20 border-border/30 hover:bg-muted/30' 
+                        : 'bg-primary/5 border-primary/20 hover:bg-primary/10 shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-semibold text-sm text-foreground truncate">{notification.title}</p>
+                          {!notification.read && (
+                            <Badge variant="secondary" className="text-xs px-2 py-0 bg-primary/20 text-primary border-0 shrink-0">
+                              New
+                            </Badge>
+                          )}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-sm text-muted-foreground line-clamp-2">{notification.message}</p>
+                        <p className="text-xs text-muted-foreground/70 mt-2 font-medium">
                           {notification.timestamp.toLocaleDateString()} at {notification.timestamp.toLocaleTimeString()}
                         </p>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-start gap-1 shrink-0">
                         {!notification.read && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => markAsRead(notification.id)}
-                            className="text-xs p-1 h-6"
+                            className="text-xs px-2 py-1 h-7 rounded-lg hover:bg-primary/10 hover:text-primary transition-all"
                           >
                             Mark read
                           </Button>
@@ -173,7 +216,7 @@ export const DashboardOverview = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => removeNotification(notification.id)}
-                          className="text-gray-500 hover:text-gray-700 p-1 h-6 w-6"
+                          className="p-1 h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all"
                         >
                           <X className="h-3 w-3" />
                         </Button>

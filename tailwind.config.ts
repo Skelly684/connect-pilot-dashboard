@@ -68,13 +68,16 @@ export default {
 				'gradient-secondary': 'var(--gradient-secondary)',
 				'gradient-card': 'var(--gradient-card)',
 				'gradient-sidebar': 'var(--gradient-sidebar)',
+				'gradient-accent': 'var(--gradient-accent)',
 			},
 			boxShadow: {
 				'sm': 'var(--shadow-sm)',
 				'md': 'var(--shadow-md)',
 				'lg': 'var(--shadow-lg)',
 				'xl': 'var(--shadow-xl)',
+				'elevated': 'var(--shadow-elevated)',
 				'primary': 'var(--shadow-primary)',
+				'glow': 'var(--shadow-glow)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
