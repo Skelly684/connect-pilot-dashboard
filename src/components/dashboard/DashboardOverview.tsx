@@ -56,42 +56,43 @@ export const DashboardOverview = () => {
   }, [leads]);
   
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight bg-gradient-primary bg-clip-text text-transparent">
+    <div className="space-y-10 animate-fade-in">
+      <div className="space-y-3">
+        <h2 className="text-5xl font-black tracking-tight bg-gradient-primary bg-clip-text text-transparent">
           Dashboard Overview
         </h2>
-        <p className="text-muted-foreground text-lg">Monitor your lead generation and outreach performance</p>
+        <p className="text-muted-foreground text-xl font-medium">Monitor your lead generation and outreach performance in real-time</p>
         {isLoading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-            Loading data...
+          <div className="flex items-center gap-3 text-sm text-muted-foreground mt-4">
+            <div className="h-5 w-5 animate-spin rounded-full border-3 border-primary border-t-transparent shadow-glow"></div>
+            <span className="font-semibold">Loading data...</span>
           </div>
         )}
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {stats.map((stat, index) => (
           <Card 
             key={stat.title} 
-            className="group relative overflow-hidden border-border/50 bg-gradient-card backdrop-blur-xl shadow-elevated hover:shadow-glow transition-all duration-500 hover:scale-[1.02] animate-scale-in"
+            className="group relative overflow-hidden border-2 border-border/30 bg-gradient-card backdrop-blur-2xl shadow-2xl hover:shadow-glow transition-all duration-700 hover:scale-[1.05] hover:-translate-y-2 animate-scale-in"
             style={{ animationDelay: `${index * 0.1}s` }}
           >
-            <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity duration-500"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-10 transition-opacity duration-700"></div>
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                 {stat.title}
               </CardTitle>
-              <div className={`relative p-3 rounded-2xl ${stat.bg} group-hover:scale-110 transition-transform duration-300`}>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
-                <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 rounded-2xl blur transition-opacity duration-300"></div>
+              <div className={`relative p-4 rounded-3xl ${stat.bg} group-hover:scale-125 group-hover:rotate-12 transition-all duration-700 shadow-lg`}>
+                <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-30 rounded-3xl blur-md transition-all duration-700"></div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <CardContent className="space-y-3">
+              <div className="text-4xl font-black bg-gradient-to-br from-foreground via-primary to-accent bg-clip-text text-transparent">
                 {stat.value}
               </div>
-              <p className="text-sm text-muted-foreground mt-2 font-medium">{stat.description}</p>
+              <p className="text-sm text-muted-foreground font-semibold leading-tight">{stat.description}</p>
             </CardContent>
           </Card>
         ))}

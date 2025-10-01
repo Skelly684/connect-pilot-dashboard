@@ -140,16 +140,18 @@ const Dashboard = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-secondary relative overflow-hidden">
-        {/* Animated background elements */}
+        {/* Animated mesh background */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 -left-4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-0 -right-4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute inset-0 bg-gradient-mesh opacity-40"></div>
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '8s' }}></div>
+          <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s', animationDuration: '10s' }}></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-secondary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s', animationDuration: '12s' }}></div>
         </div>
         
         <AppSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
         <main className="flex-1 flex flex-col relative z-10">
           <DashboardHeader />
-          <div className="flex-1 p-6 lg:p-8 overflow-auto">
+          <div className="flex-1 p-8 lg:p-10 overflow-auto">
             <div className="max-w-7xl mx-auto animate-fade-in">
               {renderContent()}
             </div>
