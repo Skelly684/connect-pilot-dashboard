@@ -41,69 +41,55 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
   ];
 
   return (
-    <Sidebar className={`${isCollapsed ? "w-14" : "w-72"}`} collapsible="icon">
-      <SidebarTrigger className="m-3 self-end hover:bg-sidebar-accent/20 rounded-xl transition-all duration-300" />
+    <Sidebar className={isCollapsed ? "w-14" : "w-64"} collapsible="icon">
+      <SidebarTrigger className="m-2 self-end" />
       
-      <SidebarContent className="bg-gradient-sidebar backdrop-blur-2xl border-r border-sidebar-border shadow-2xl relative overflow-hidden">
-        {/* Animated background gradient */}
-        <div className="absolute inset-0 bg-gradient-mesh opacity-60 pointer-events-none"></div>
-        
-        <div className="relative p-6 border-b border-sidebar-border/30">
+      <SidebarContent className="bg-gradient-sidebar backdrop-blur-xl border-sidebar-border/50 shadow-lg">
+        <div className="p-6 border-b border-sidebar-border/50">
           <div className="flex justify-center">
-            <div className="relative group">
-              <div className="absolute -inset-2 bg-gradient-primary rounded-3xl opacity-75 group-hover:opacity-100 blur-lg transition-all duration-500 animate-pulse"></div>
+            <div className="relative">
               <img 
                 src="/lovable-uploads/7c5cb75c-bf84-4a68-9e78-2fd787db361e.png" 
                 alt="PSN Logo" 
-                className="relative w-20 h-20 rounded-3xl shadow-glow transition-all duration-500 group-hover:scale-110 group-hover:rotate-3"
+                className="w-16 h-16 rounded-2xl shadow-primary transition-transform duration-300 hover:scale-105"
               />
+              <div className="absolute -inset-0.5 bg-gradient-primary rounded-2xl opacity-20 blur"></div>
             </div>
           </div>
           {!isCollapsed && (
-            <div className="text-center mt-5 animate-fade-in">
-              <h2 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">PSN Dashboard</h2>
-              <p className="text-sm text-sidebar-foreground/80 font-medium mt-1">Lead Management System</p>
+            <div className="text-center mt-4 animate-fade-in">
+              <h2 className="text-lg font-semibold text-sidebar-foreground">PSN Dashboard</h2>
+              <p className="text-sm text-sidebar-foreground/70">Lead Management System</p>
             </div>
           )}
         </div>
         
-        <SidebarGroup className="relative px-4 py-6">
-          <SidebarGroupLabel className={`${isCollapsed ? "hidden" : "block"} text-sidebar-foreground/70 font-bold text-xs uppercase tracking-widest mb-4 px-2`}>
+        <SidebarGroup className="px-3 py-4">
+          <SidebarGroupLabel className={`${isCollapsed ? "hidden" : "block"} text-sidebar-foreground/60 font-medium text-xs uppercase tracking-wider mb-2`}>
             Main Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-2">
+            <SidebarMenu className="space-y-1">
               {menuItems.map((item, index) => (
                 <SidebarMenuItem key={item.id} className="animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
                   <SidebarMenuButton
                     onClick={() => setActiveTab(item.id)}
-                    className={`relative w-full justify-start rounded-2xl transition-all duration-500 group overflow-hidden ${
+                    className={`w-full justify-start rounded-xl transition-all duration-300 group ${
                       activeTab === item.id
-                        ? "bg-gradient-primary text-white shadow-glow font-semibold transform scale-105"
-                        : "hover:bg-sidebar-accent/30 text-sidebar-foreground hover:text-white hover:transform hover:scale-105 backdrop-blur-sm"
+                        ? "bg-gradient-primary text-sidebar-primary-foreground shadow-primary font-medium transform scale-[1.02]"
+                        : "hover:bg-sidebar-accent/50 text-sidebar-foreground hover:text-sidebar-foreground hover:transform hover:scale-[1.02]"
                     }`}
                   >
-                    {activeTab === item.id && (
-                      <div className="absolute inset-0 bg-gradient-accent opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
-                    )}
-                    <div className={`relative z-10 p-2 rounded-xl mr-3 transition-all duration-500 ${
-                      activeTab === item.id 
-                        ? "bg-white/20 shadow-lg" 
-                        : "bg-sidebar-accent/10 group-hover:bg-sidebar-accent/30"
-                    }`}>
-                      <item.icon className={`h-5 w-5 transition-all duration-500 ${
-                        activeTab === item.id ? "text-white" : "text-sidebar-foreground/80 group-hover:text-white"
-                      }`} />
-                    </div>
+                    <item.icon className={`h-5 w-5 transition-all duration-300 ${
+                      activeTab === item.id ? "text-white" : "text-sidebar-foreground/70 group-hover:text-sidebar-foreground"
+                    }`} />
                     {!isCollapsed && (
-                      <span className="relative z-10 text-sm font-semibold transition-all duration-500">
+                      <span className="ml-3 text-sm font-medium transition-all duration-300">
                         {item.title}
                       </span>
                     )}
                     {activeTab === item.id && !isCollapsed && (
-                      <div className="ml-auto relative z-10">
-                        <div className="w-2 h-2 bg-white rounded-full animate-pulse shadow-lg"></div>
-                      </div>
+                      <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
                     )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -113,43 +99,32 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
         </SidebarGroup>
         
         {isAdmin && (
-          <SidebarGroup className="relative px-4 py-6 border-t border-sidebar-border/30">
-            <SidebarGroupLabel className={`${isCollapsed ? "hidden" : "block"} text-sidebar-foreground/70 font-bold text-xs uppercase tracking-widest mb-4 px-2`}>
+          <SidebarGroup className="px-3 py-4 border-t border-sidebar-border/50">
+            <SidebarGroupLabel className={`${isCollapsed ? "hidden" : "block"} text-sidebar-foreground/60 font-medium text-xs uppercase tracking-wider mb-2`}>
               Administration
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-2">
+              <SidebarMenu className="space-y-1">
                 {adminMenuItems.map((item) => (
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton
                       onClick={() => setActiveTab(item.id)}
-                      className={`relative w-full justify-start rounded-2xl transition-all duration-500 group overflow-hidden ${
+                      className={`w-full justify-start rounded-xl transition-all duration-300 group ${
                         activeTab === item.id
-                          ? "bg-gradient-accent text-white shadow-glow font-semibold transform scale-105"
-                          : "hover:bg-sidebar-accent/30 text-sidebar-foreground hover:text-white hover:transform hover:scale-105 backdrop-blur-sm"
+                          ? "bg-gradient-primary text-sidebar-primary-foreground shadow-primary font-medium transform scale-[1.02]"
+                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground hover:text-sidebar-foreground hover:transform hover:scale-[1.02]"
                       }`}
                     >
-                      {activeTab === item.id && (
-                        <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
-                      )}
-                      <div className={`relative z-10 p-2 rounded-xl mr-3 transition-all duration-500 ${
-                        activeTab === item.id 
-                          ? "bg-white/20 shadow-lg" 
-                          : "bg-sidebar-accent/10 group-hover:bg-sidebar-accent/30"
-                      }`}>
-                        <item.icon className={`h-5 w-5 transition-all duration-500 ${
-                          activeTab === item.id ? "text-white" : "text-sidebar-foreground/80 group-hover:text-white"
-                        }`} />
-                      </div>
+                      <item.icon className={`h-5 w-5 transition-all duration-300 ${
+                        activeTab === item.id ? "text-white" : "text-sidebar-foreground/70 group-hover:text-sidebar-foreground"
+                      }`} />
                       {!isCollapsed && (
-                        <span className="relative z-10 text-sm font-semibold transition-all duration-500">
+                        <span className="ml-3 text-sm font-medium transition-all duration-300">
                           {item.title}
                         </span>
                       )}
                       {activeTab === item.id && !isCollapsed && (
-                        <div className="ml-auto relative z-10">
-                          <div className="w-2 h-2 bg-white rounded-full animate-pulse shadow-lg"></div>
-                        </div>
+                        <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
                       )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -161,20 +136,10 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
         
         {/* Bottom spacing */}
         <div className="flex-1"></div>
-        <div className="relative p-6 border-t border-sidebar-border/30">
+        <div className="p-4 border-t border-sidebar-border/50">
           {!isCollapsed && (
-            <div className="text-center space-y-2">
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <div className="h-px flex-1 bg-gradient-primary"></div>
-                <div className="w-2 h-2 rounded-full bg-gradient-primary animate-pulse"></div>
-                <div className="h-px flex-1 bg-gradient-primary"></div>
-              </div>
-              <div className="text-xs text-sidebar-foreground/60 font-medium">
-                © {new Date().getFullYear()} PSN Dashboard
-              </div>
-              <div className="text-xs text-sidebar-foreground/40">
-                Powered by AI
-              </div>
+            <div className="text-center text-xs text-sidebar-foreground/50">
+              © {new Date().getFullYear()} PSN Dashboard
             </div>
           )}
         </div>

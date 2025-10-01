@@ -35,51 +35,46 @@ export const DashboardHeader = () => {
     'UN';
 
   return (
-    <header className="relative h-20 bg-gradient-card backdrop-blur-2xl border-b border-border/50 flex items-center justify-between px-8 sticky top-0 z-40 shadow-xl">
-      {/* Animated gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-mesh opacity-30 pointer-events-none"></div>
-      
-      <div className="relative flex items-center space-x-6">
-        <div className="relative group">
-          <div className="absolute -inset-1.5 bg-gradient-primary rounded-2xl opacity-75 group-hover:opacity-100 blur-lg transition-all duration-500 animate-pulse"></div>
+    <header className="h-16 bg-gradient-card backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6 sticky top-0 z-50 shadow-md">
+      <div className="flex items-center space-x-4">
+        <div className="relative">
           <img 
             src="/assets/psn-logo.png" 
             alt="PSN Logo" 
-            className="relative w-11 h-11 rounded-2xl shadow-glow transition-all duration-500 group-hover:scale-110 group-hover:rotate-3"
+            className="w-9 h-9 rounded-xl shadow-sm transition-transform duration-300 hover:scale-110"
           />
+          <div className="absolute -inset-0.5 bg-gradient-primary rounded-xl opacity-20 blur-sm"></div>
         </div>
         <div className="hidden md:block">
-          <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">PSN Dashboard</h1>
-          <p className="text-sm text-muted-foreground font-medium">Lead Management System</p>
+          <h1 className="text-lg font-semibold text-foreground">PSN Dashboard</h1>
+          <p className="text-xs text-muted-foreground">Lead Management System</p>
         </div>
       </div>
       
-      <div className="relative flex items-center space-x-4">
+      <div className="flex items-center space-x-3">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          className="relative h-11 w-11 rounded-2xl hover:bg-primary/10 transition-all duration-500 hover:scale-110 group overflow-hidden"
+          className="h-9 w-9 rounded-xl hover:bg-muted/50 transition-all duration-300 hover:scale-105"
         >
-          <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
-          <Sun className="relative h-5 w-5 rotate-0 scale-100 transition-all duration-500 dark:-rotate-90 dark:scale-0 text-primary" />
-          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all duration-500 dark:rotate-0 dark:scale-100 text-primary" />
+          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
         </Button>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-2xl hover:bg-primary/10 transition-all duration-500 hover:scale-110 group overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
-              <Bell className="relative h-5 w-5 text-primary" />
+            <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-xl hover:bg-muted/50 transition-all duration-300 hover:scale-105">
+              <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-6 w-6 bg-gradient-accent rounded-full text-xs text-white flex items-center justify-center animate-pulse shadow-glow font-bold">
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-gradient-primary rounded-full text-xs text-white flex items-center justify-center animate-pulse shadow-primary">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-80 bg-popover/95 backdrop-blur-xl border-border/50 shadow-xl z-[100]" align="end">
+          <DropdownMenuContent className="w-80 bg-popover/95 backdrop-blur-xl border-border/50 shadow-xl" align="end">
             <DropdownMenuLabel className="flex items-center justify-between p-4">
               <span className="font-semibold">Notifications</span>
               {notifications.length > 0 && (
@@ -148,17 +143,16 @@ export const DashboardHeader = () => {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-12 w-12 rounded-2xl hover:bg-primary/10 transition-all duration-500 hover:scale-110 p-0 group">
-              <div className="absolute -inset-1 bg-gradient-primary rounded-2xl opacity-0 group-hover:opacity-75 blur-md transition-all duration-500"></div>
-              <Avatar className="relative h-11 w-11 ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all duration-500">
+            <Button variant="ghost" className="relative h-9 w-9 rounded-xl hover:bg-muted/50 transition-all duration-300 hover:scale-105">
+              <Avatar className="h-8 w-8">
                 <AvatarImage src="/avatars/01.png" alt="User" />
-                <AvatarFallback className="bg-gradient-primary text-white font-bold text-base">
+                <AvatarFallback className="bg-gradient-primary text-white font-medium text-sm">
                   {userInitials}
                 </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 bg-popover/95 backdrop-blur-xl border-border/50 shadow-xl z-[100]" align="end" forceMount>
+          <DropdownMenuContent className="w-56 bg-popover/95 backdrop-blur-xl border-border/50 shadow-xl" align="end" forceMount>
             <DropdownMenuLabel className="font-normal p-4">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-semibold leading-none">
