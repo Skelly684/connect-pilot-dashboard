@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { SelfLeadForm } from "@/components/selfLeads/SelfLeadForm";
 import { SelfLeadPreview } from "@/components/selfLeads/SelfLeadPreview";
 import { SelfLeadsRecentTable } from "@/components/selfLeads/SelfLeadsRecentTable";
+import { CsvUpload } from "@/components/selfLeads/CsvUpload";
 
 export default function SelfLeads() {
   const navigate = useNavigate();
@@ -81,6 +82,11 @@ export default function SelfLeads() {
                 <SidebarTrigger className="md:hidden" />
               </div>
             </header>
+
+            {/* CSV Upload Section */}
+            <div className="mb-6">
+              <CsvUpload />
+            </div>
 
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Form Section */}
