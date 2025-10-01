@@ -41,7 +41,7 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
   ];
 
   return (
-    <Sidebar className={`${isCollapsed ? "w-14" : "w-72"} z-40`} collapsible="icon">
+    <Sidebar className={`${isCollapsed ? "w-14" : "w-72"}`} collapsible="icon">
       <SidebarTrigger className="m-3 self-end hover:bg-sidebar-accent/20 rounded-xl transition-all duration-300" />
       
       <SidebarContent className="bg-gradient-sidebar backdrop-blur-2xl border-r border-sidebar-border shadow-2xl relative overflow-hidden">

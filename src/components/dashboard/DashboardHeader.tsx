@@ -35,7 +35,7 @@ export const DashboardHeader = () => {
     'UN';
 
   return (
-    <header className="relative h-20 bg-gradient-card backdrop-blur-2xl border-b border-border/50 flex items-center justify-between px-8 z-50 shadow-xl">
+    <header className="relative h-20 bg-gradient-card backdrop-blur-2xl border-b border-border/50 flex items-center justify-between px-8 sticky top-0 z-40 shadow-xl">
       {/* Animated gradient overlay */}
       <div className="absolute inset-0 bg-gradient-mesh opacity-30 pointer-events-none"></div>
       
