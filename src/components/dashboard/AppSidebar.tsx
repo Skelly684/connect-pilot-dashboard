@@ -44,7 +44,7 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
     <Sidebar className={isCollapsed ? "w-14" : "w-72"} collapsible="icon">
       <SidebarTrigger className="m-3 self-end hover:bg-sidebar-accent/20 rounded-xl transition-all duration-300" />
       
-      <SidebarContent className="bg-gradient-sidebar backdrop-blur-2xl border-r border-sidebar-border shadow-2xl relative overflow-hidden">
+      <SidebarContent className="bg-gradient-sidebar backdrop-blur-2xl border-r border-sidebar-border shadow-2xl relative overflow-hidden z-50">
         {/* Animated background gradient */}
         <div className="absolute inset-0 bg-gradient-mesh opacity-60 pointer-events-none"></div>
         

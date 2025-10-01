@@ -35,7 +35,7 @@ export const DashboardHeader = () => {
     'UN';
 
   return (
-    <header className="relative h-20 bg-gradient-card backdrop-blur-2xl border-b border-border/50 flex items-center justify-between px-8 sticky top-0 z-50 shadow-xl">
+    <header className="relative h-20 bg-gradient-card backdrop-blur-2xl border-b border-border/50 flex items-center justify-between px-8 z-40 shadow-xl">
       {/* Animated gradient overlay */}
       <div className="absolute inset-0 bg-gradient-mesh opacity-30 pointer-events-none"></div>
       
@@ -79,7 +79,7 @@ export const DashboardHeader = () => {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-80 bg-popover/95 backdrop-blur-xl border-border/50 shadow-xl" align="end">
+          <DropdownMenuContent className="w-80 bg-popover/95 backdrop-blur-xl border-border/50 shadow-xl z-[100]" align="end">
             <DropdownMenuLabel className="flex items-center justify-between p-4">
               <span className="font-semibold">Notifications</span>
               {notifications.length > 0 && (
@@ -158,7 +158,7 @@ export const DashboardHeader = () => {
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 bg-popover/95 backdrop-blur-xl border-border/50 shadow-xl" align="end" forceMount>
+          <DropdownMenuContent className="w-56 bg-popover/95 backdrop-blur-xl border-border/50 shadow-xl z-[100]" align="end" forceMount>
             <DropdownMenuLabel className="font-normal p-4">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-semibold leading-none">

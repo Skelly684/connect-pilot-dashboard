@@ -149,7 +149,7 @@ const Dashboard = () => {
         </div>
         
         <AppSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
-        <main className="flex-1 flex flex-col relative z-10">
+        <main className="flex-1 flex flex-col relative z-30">
           <DashboardHeader />
           <div className="flex-1 p-8 lg:p-10 overflow-auto">
             <div className="max-w-7xl mx-auto animate-fade-in">
