@@ -37,11 +37,11 @@ export const useNotifications = () => {
   }, [notifications]);
 
   const addNotification = (leadName: string, leadId: string, oldStatus: string, newStatus: string) => {
-    console.log('addNotification called:', { leadName, leadId, oldStatus, newStatus });
+    console.log('🔔 addNotification called:', { leadName, leadId, oldStatus, newStatus });
     
     // Don't notify if status didn't actually change
     if (oldStatus === newStatus) {
-      console.log('Skipping notification - status unchanged');
+      console.log('⚠️ Skipping notification - status unchanged');
       return;
     }
 
@@ -50,7 +50,7 @@ export const useNotifications = () => {
     
     // Special handling for replied status
     if (newStatus === 'replied') {
-      title = 'Lead Replied';
+      title = '✉️ Lead Replied!';
       message = `${leadName || 'Lead'} has replied to your outreach`;
     }
 
@@ -64,10 +64,15 @@ export const useNotifications = () => {
       status: newStatus
     };
 
-    console.log('Adding notification to state:', notification);
+    console.log('✅ Creating notification:', notification);
     setNotifications(prev => {
       const newNotifications = [notification, ...prev];
-      console.log('New notifications array:', newNotifications);
+      console.log('📋 Updated notifications array length:', newNotifications.length);
+      console.log('📋 First notification:', newNotifications[0]);
+      // Force a localStorage update immediately
+      localStorage.setItem('psn-notifications', JSON.stringify(newNotifications));
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('notifications-updated', { detail: newNotifications }));
       return newNotifications;
     });
   };

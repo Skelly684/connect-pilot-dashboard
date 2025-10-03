@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useNotifications } from "@/contexts/NotificationsContext";
 
 interface ChangeStatusDialogProps {
   leadId: string;
@@ -38,7 +37,6 @@ export const ChangeStatusDialog = ({
   const [selectedStatus, setSelectedStatus] = useState(currentStatus);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { addNotification } = useNotifications();
 
   const handleSubmit = async () => {
     if (selectedStatus === currentStatus) {
@@ -49,13 +47,12 @@ export const ChangeStatusDialog = ({
     setIsSubmitting(true);
     
     try {
+      console.log('🔄 ChangeStatusDialog: Starting status change for', leadName, 'from', currentStatus, 'to', selectedStatus);
       const success = await onStatusChanged(leadId, selectedStatus);
       
       if (success) {
-        console.log('Status change successful, adding notification for:', leadName, 'from', currentStatus, 'to', selectedStatus);
-        // Add notification
-        addNotification(leadName, leadId, currentStatus, selectedStatus);
-        console.log('Notification added');
+        console.log('✅ ChangeStatusDialog: Status change successful');
+        // Notification is now handled by useLeads hook - no duplicate call needed
         
         toast({
           title: "Status Updated",
@@ -64,7 +61,7 @@ export const ChangeStatusDialog = ({
         onOpenChange(false);
       }
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error('❌ ChangeStatusDialog: Error updating status:', error);
       toast({
         title: "Error",
         description: "Failed to update status. Please try again.",

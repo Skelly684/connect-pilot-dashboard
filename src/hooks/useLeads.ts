@@ -101,11 +101,16 @@ export const useLeads = () => {
 
       // Create notifications for status changes (except "new" or "contacted")
       if (currentLeads && newStatus !== 'new' && newStatus !== 'contacted') {
+        console.log('📢 useLeads: Processing notifications for', currentLeads.length, 'leads, newStatus:', newStatus);
         currentLeads.forEach(lead => {
           const leadName = lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown Lead';
-          console.log('useLeads: Adding notification for', leadName, 'status change from', lead.status, 'to', newStatus);
-          addNotification(leadName, lead.id, lead.status || 'unknown', newStatus);
+          const oldStatus = lead.status || 'unknown';
+          console.log(`📢 useLeads: Calling addNotification for "${leadName}" (${lead.id}) from "${oldStatus}" to "${newStatus}"`);
+          addNotification(leadName, lead.id, oldStatus, newStatus);
+          console.log('📢 useLeads: addNotification called successfully');
         });
+      } else {
+        console.log('⏭️ useLeads: Skipping notifications - newStatus:', newStatus, 'leadsCount:', currentLeads?.length);
       }
 
       // Trigger auto-sync to CRM when leads change to "replied" status

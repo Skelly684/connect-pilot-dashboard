@@ -988,19 +988,31 @@ export const AllLeadsSection = ({
             open={changeStatusDialogOpen}
             onOpenChange={setChangeStatusDialogOpen}
             onStatusChanged={async (leadId: string, newStatus: string) => {
-              console.log('AllLeadsSection onStatusChanged called:', { leadId, newStatus });
+              console.log('🎯 AllLeadsSection: Status change initiated for lead', leadId, 'to', newStatus);
+              
+              // Update status first
               const success = await onUpdateLeadStatus([leadId], newStatus);
-              console.log('AllLeadsSection onUpdateLeadStatus result:', success);
+              console.log('🎯 AllLeadsSection: Status update result:', success);
+              
               if (success) {
-                console.log('AllLeadsSection marking lead as unviewed:', leadId);
-                // Mark lead as unviewed so it stands out
-                const newUnviewed = new Set(unviewedLeads);
-                newUnviewed.add(leadId);
-                setUnviewedLeads(newUnviewed);
-                localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newUnviewed]));
-                console.log('AllLeadsSection unviewed leads updated:', [...newUnviewed]);
-                onRefresh();
-                setSelectedLeadForAction(null);
+                console.log('✨ AllLeadsSection: Marking lead as unviewed:', leadId);
+                // Mark lead as unviewed so it stands out with a delay to ensure state is set
+                setTimeout(() => {
+                  setUnviewedLeads(prev => {
+                    const newUnviewed = new Set(prev);
+                    newUnviewed.add(leadId);
+                    const unviewedArray = [...newUnviewed];
+                    localStorage.setItem('psn-unviewed-leads', JSON.stringify(unviewedArray));
+                    console.log('💾 AllLeadsSection: Unviewed leads saved to localStorage:', unviewedArray);
+                    return newUnviewed;
+                  });
+                }, 100);
+                
+                // Refresh after a brief delay to ensure highlight is visible
+                setTimeout(() => {
+                  onRefresh();
+                  setSelectedLeadForAction(null);
+                }, 200);
               }
               return success;
             }}

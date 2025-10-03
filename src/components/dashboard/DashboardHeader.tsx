@@ -15,14 +15,32 @@ import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { formatDistance } from "date-fns";
 import { useTheme } from "next-themes";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export const DashboardHeader = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotifications();
+  const navigate = useNavigate();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification, clearAllNotifications } = useNotifications();
   const { theme, setTheme } = useTheme();
+  const [forceUpdate, setForceUpdate] = React.useState(0);
+  
+  console.log('🎨 DashboardHeader render - notifications:', notifications.length, 'unread:', unreadCount);
+  console.log('🎨 DashboardHeader notifications detail:', notifications);
 
-  console.log('DashboardHeader notifications:', notifications.length, 'unread:', unreadCount);
+  // Listen for notification updates
+  React.useEffect(() => {
+    const handleNotificationUpdate = (event: CustomEvent) => {
+      console.log('🔔 DashboardHeader: Received notifications-updated event', event.detail);
+      setForceUpdate(prev => prev + 1); // Force re-render
+    };
+    
+    window.addEventListener('notifications-updated', handleNotificationUpdate as EventListener);
+    return () => {
+      window.removeEventListener('notifications-updated', handleNotificationUpdate as EventListener);
+    };
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -30,6 +48,7 @@ export const DashboardHeader = () => {
       title: "Signed out",
       description: "You have been signed out successfully.",
     });
+    navigate("/");
   };
 
   const userInitials = user?.email ? 
