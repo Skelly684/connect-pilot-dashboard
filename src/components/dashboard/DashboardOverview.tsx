@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Users, Send, CheckCircle, TrendingUp, Bell, X } from "lucide-react";
 import { useLeads } from "@/hooks/useLeads";
 import { useMemo } from "react";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications } from "@/contexts/NotificationsContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 

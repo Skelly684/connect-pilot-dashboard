@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications } from "@/contexts/NotificationsContext";
 import { formatDistance } from "date-fns";
 import { useTheme } from "next-themes";
 

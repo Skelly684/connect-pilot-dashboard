@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications } from "@/contexts/NotificationsContext";
 
 interface ChangeStatusDialogProps {
   leadId: string;
@@ -52,8 +52,10 @@ export const ChangeStatusDialog = ({
       const success = await onStatusChanged(leadId, selectedStatus);
       
       if (success) {
+        console.log('Status change successful, adding notification for:', leadName, 'from', currentStatus, 'to', selectedStatus);
         // Add notification
         addNotification(leadName, leadId, currentStatus, selectedStatus);
+        console.log('Notification added');
         
         toast({
           title: "Status Updated",
