@@ -70,12 +70,15 @@ export const useLeads = () => {
   };
 
   const updateLeadStatus = async (leadIds: string[], newStatus: string, campaignId?: string) => {
+    console.log('🚀 useLeads.updateLeadStatus CALLED with:', { leadIds, newStatus, campaignId });
     try {
       // Get current lead data to track status changes and for backend API
       const { data: currentLeads } = await supabase
         .from('leads')
         .select('*')
         .in('id', leadIds);
+
+      console.log('📊 useLeads: Retrieved current leads:', currentLeads);
 
       const updates: any = { status: newStatus };
       
@@ -99,8 +102,10 @@ export const useLeads = () => {
 
       if (error) throw error;
 
-      // Create notifications for status changes (except "new" or "contacted")
-      if (currentLeads && newStatus !== 'new' && newStatus !== 'contacted') {
+      console.log('✅ useLeads: Status updated in database successfully');
+
+      // Create notifications for ALL status changes
+      if (currentLeads && currentLeads.length > 0) {
         console.log('📢 useLeads: Processing notifications for', currentLeads.length, 'leads, newStatus:', newStatus);
         currentLeads.forEach(lead => {
           const leadName = lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown Lead';
