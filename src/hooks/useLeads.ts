@@ -70,16 +70,16 @@ export const useLeads = () => {
             .limit(1)
             .maybeSingle();
 
-          if (!callError && latestCall && (latestCall as any).answered === true && lead.status !== 'contacted') {
+          if (!callError && latestCall && (latestCall as any).answered === true && lead.status !== 'replied') {
             leadsToUpdate.push(lead.id);
           }
         }
 
-        // Update leads to 'contacted' status if they have answered calls
+        // Update leads to 'replied' status if they have answered calls
         if (leadsToUpdate.length > 0) {
           await supabase
             .from('leads')
-            .update({ status: 'contacted' })
+            .update({ status: 'replied' })
             .in('id', leadsToUpdate);
         }
 
