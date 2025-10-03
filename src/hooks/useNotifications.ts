@@ -37,8 +37,11 @@ export const useNotifications = () => {
   }, [notifications]);
 
   const addNotification = (leadName: string, leadId: string, oldStatus: string, newStatus: string) => {
+    console.log('addNotification called:', { leadName, leadId, oldStatus, newStatus });
+    
     // Don't notify if status didn't actually change
     if (oldStatus === newStatus) {
+      console.log('Skipping notification - status unchanged');
       return;
     }
 
@@ -61,7 +64,12 @@ export const useNotifications = () => {
       status: newStatus
     };
 
-    setNotifications(prev => [notification, ...prev]);
+    console.log('Adding notification to state:', notification);
+    setNotifications(prev => {
+      const newNotifications = [notification, ...prev];
+      console.log('New notifications array:', newNotifications);
+      return newNotifications;
+    });
   };
 
   const markAsRead = (notificationId: string) => {

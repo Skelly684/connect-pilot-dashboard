@@ -842,13 +842,17 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                open={changeStatusDialogOpen}
                onOpenChange={setChangeStatusDialogOpen}
                onStatusChanged={async (leadId: string, newStatus: string) => {
+                 console.log('LeadTable onStatusChanged called:', { leadId, newStatus });
                  const success = await onUpdateLeadStatus([leadId], newStatus);
+                 console.log('onUpdateLeadStatus result:', success);
                  if (success) {
+                   console.log('Marking lead as unviewed:', leadId);
                    // Mark lead as unviewed so it stands out
                    const newUnviewed = new Set(unviewedLeads);
                    newUnviewed.add(leadId);
                    setUnviewedLeads(newUnviewed);
                    localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newUnviewed]));
+                   console.log('Unviewed leads updated:', [...newUnviewed]);
                    onRefresh?.();
                    setSelectedLeadForAction(null);
                  }

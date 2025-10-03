@@ -22,6 +22,8 @@ export const DashboardHeader = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotifications();
   const { theme, setTheme } = useTheme();
 
+  console.log('DashboardHeader notifications:', notifications.length, 'unread:', unreadCount);
+
   const handleSignOut = async () => {
     await signOut();
     toast({
