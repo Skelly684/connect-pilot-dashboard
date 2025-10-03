@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface ChangeStatusDialogProps {
   leadId: string;
@@ -37,6 +38,7 @@ export const ChangeStatusDialog = ({
   const [selectedStatus, setSelectedStatus] = useState(currentStatus);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
 
   const handleSubmit = async () => {
     if (selectedStatus === currentStatus) {
@@ -50,6 +52,9 @@ export const ChangeStatusDialog = ({
       const success = await onStatusChanged(leadId, selectedStatus);
       
       if (success) {
+        // Add notification
+        addNotification(leadName, leadId, currentStatus, selectedStatus);
+        
         toast({
           title: "Status Updated",
           description: `${leadName}'s status has been changed to ${STATUS_OPTIONS.find(s => s.value === selectedStatus)?.label}`,

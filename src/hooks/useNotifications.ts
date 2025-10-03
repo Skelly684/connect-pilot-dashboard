@@ -37,8 +37,8 @@ export const useNotifications = () => {
   }, [notifications]);
 
   const addNotification = (leadName: string, leadId: string, oldStatus: string, newStatus: string) => {
-    // Notify when status changes FROM "accepted" to something else OR when status changes TO "replied"
-    if (oldStatus !== 'accepted' && newStatus !== 'replied') {
+    // Don't notify if status didn't actually change
+    if (oldStatus === newStatus) {
       return;
     }
 

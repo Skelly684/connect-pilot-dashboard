@@ -113,6 +113,31 @@ const getStatusColor = (status: string) => {
   }
 };
 
+const getStatusRowColor = (status: string) => {
+  switch (status?.toLowerCase()) {
+    case "new":
+      return "bg-blue-50/50";
+    case "contacted":
+      return "bg-yellow-50/50";
+    case "replied":
+      return "bg-green-50/50";
+    case "qualified":
+      return "bg-purple-50/50";
+    case "not_interested":
+      return "bg-red-50/50";
+    case "accepted":
+      return "bg-emerald-50/50";
+    case "rejected":
+      return "bg-rose-50/50";
+    case "pending_review":
+      return "bg-amber-50/50";
+    case "sent_for_contact":
+      return "bg-cyan-50/50";
+    default:
+      return "";
+  }
+};
+
 const safeToString = (value: any): string => {
   if (value === null || value === undefined) return '';
   return String(value);
@@ -596,7 +621,7 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
 
                      return (
                        <>
-                         <TableRow key={leadId} className="hover:bg-gray-50">
+                         <TableRow key={leadId} className={`hover:bg-gray-50 transition-colors ${getStatusRowColor(status)}`}>
                            <TableCell>
                              <Checkbox
                                checked={selectedLeads.has(leadId)}
