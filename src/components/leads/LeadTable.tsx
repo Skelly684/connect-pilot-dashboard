@@ -282,7 +282,20 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
   const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false);
   const [changeStatusDialogOpen, setChangeStatusDialogOpen] = useState(false);
   const [selectedLeadForAction, setSelectedLeadForAction] = useState<{ id: string; name: string; status: string } | null>(null);
-  const [viewedLeads, setViewedLeads] = useState<Set<string>>(new Set());
+  
+  // Load unviewed leads from localStorage
+  const [unviewedLeads, setUnviewedLeads] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('psn-unviewed-leads');
+    if (saved) {
+      try {
+        return new Set(JSON.parse(saved));
+      } catch {
+        return new Set();
+      }
+    }
+    return new Set();
+  });
+  
   const { toast } = useToast();
 
   console.log("LeadTable received leads:", leads);
@@ -622,9 +635,13 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
 
                      return (
                          <>
-                         <TableRow 
+                          <TableRow 
                            key={leadId} 
-                           className={`hover:bg-gray-50 transition-colors ${getStatusRowColor(status)} ${!viewedLeads.has(leadId) ? 'ring-2 ring-primary ring-inset shadow-lg bg-primary/5' : ''}`}
+                           className={`transition-all duration-300 ${
+                             unviewedLeads.has(leadId) 
+                               ? 'bg-primary/10 border-l-4 border-l-primary shadow-[0_0_15px_rgba(168,85,247,0.4)] animate-pulse' 
+                               : `hover:bg-muted/50 ${getStatusRowColor(status)}`
+                           }`}
                          >
                            <TableCell>
                              <Checkbox
@@ -672,18 +689,28 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                            <TableCell className="text-sm text-gray-500">
                              {phone || 'N/A'}
                            </TableCell>
-                             <TableCell className="text-right">
-                               <div className="flex items-center justify-end space-x-2">
-                                 <Button
-                                   variant="ghost"
-                                   size="sm"
-                                   onClick={() => {
-                                     setViewedLeads(prev => new Set([...prev, leadId]));
-                                   }}
-                                   className={!viewedLeads.has(leadId) ? 'text-primary' : ''}
-                                 >
-                                   <Eye className="h-4 w-4" />
-                                 </Button>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end space-x-2">
+                                  {unviewedLeads.has(leadId) && (
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      onClick={() => {
+                                        const newUnviewed = new Set(unviewedLeads);
+                                        newUnviewed.delete(leadId);
+                                        setUnviewedLeads(newUnviewed);
+                                        localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newUnviewed]));
+                                        toast({
+                                          title: "Marked as viewed",
+                                          description: "Lead status change has been acknowledged.",
+                                        });
+                                      }}
+                                      className="bg-primary hover:bg-primary/90 text-primary-foreground animate-pulse"
+                                    >
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      View
+                                    </Button>
+                                  )}
                                  <LeadQuickActions 
                                    lead={lead}
                                    showViewActivity={true}
@@ -818,11 +845,10 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                  const success = await onUpdateLeadStatus([leadId], newStatus);
                  if (success) {
                    // Mark lead as unviewed so it stands out
-                   setViewedLeads(prev => {
-                     const newSet = new Set(prev);
-                     newSet.delete(leadId);
-                     return newSet;
-                   });
+                   const newUnviewed = new Set(unviewedLeads);
+                   newUnviewed.add(leadId);
+                   setUnviewedLeads(newUnviewed);
+                   localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newUnviewed]));
                    onRefresh?.();
                    setSelectedLeadForAction(null);
                  }
