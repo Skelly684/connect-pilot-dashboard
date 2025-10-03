@@ -425,7 +425,50 @@ export const useLeads = () => {
 
   useEffect(() => {
     fetchLeads();
-  }, []);
+
+    // Subscribe to realtime updates for lead status changes
+    const channel = supabase
+      .channel('leads_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'leads'
+        },
+        (payload) => {
+          console.log('🔔 Realtime: Lead updated', payload);
+          const oldLead = payload.old as any;
+          const newLead = payload.new as any;
+          
+          // Check if status changed
+          if (oldLead.status !== newLead.status) {
+            console.log('🔔 Realtime: Status changed from', oldLead.status, 'to', newLead.status);
+            const leadName = newLead.name || `${newLead.first_name || ''} ${newLead.last_name || ''}`.trim() || 'Unknown Lead';
+            
+            // Trigger notification for status change
+            addNotification(leadName, newLead.id, oldLead.status, newLead.status);
+            
+            // Mark lead as unviewed for highlighting
+            const unviewedLeads = JSON.parse(localStorage.getItem('psn-unviewed-leads') || '[]');
+            if (!unviewedLeads.includes(newLead.id)) {
+              unviewedLeads.push(newLead.id);
+              localStorage.setItem('psn-unviewed-leads', JSON.stringify(unviewedLeads));
+              console.log('💾 Realtime: Marked lead as unviewed:', newLead.id);
+            }
+            
+            // Refresh leads to show updated data
+            fetchLeads();
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [addNotification]);
 
   return {
     leads,
