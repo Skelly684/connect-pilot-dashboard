@@ -92,6 +92,7 @@ serve(async (req) => {
           call_status: status,
           external_call_id,
           provider_call_id: external_call_id,
+          answered: true,
           notes: 'Call completed',
           created_at: new Date().toISOString(),
         });
@@ -105,7 +106,7 @@ serve(async (req) => {
       const { error: leadUpdateError } = await supabase
         .from('leads')
         .update({
-          status: 'contacted',
+          status: 'replied',
           last_call_status: 'completed',
           next_call_at: null,
         })
@@ -126,6 +127,7 @@ serve(async (req) => {
           call_status: status,
           external_call_id,
           provider_call_id: external_call_id,
+          answered: false,
           notes: `Call ${status}`,
           created_at: new Date().toISOString(),
         });
