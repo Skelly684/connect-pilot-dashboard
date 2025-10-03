@@ -96,6 +96,8 @@ const Dashboard = () => {
               isLoading={isSearching || isLoadingLeads}
               onDeleteLeads={deleteLeads}
               onDeleteAllLeads={deleteAllLeads}
+              onUpdateLeadStatus={updateLeadStatus}
+              onRefresh={fetchLeads}
             />
           </div>
         );
