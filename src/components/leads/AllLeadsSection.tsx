@@ -101,6 +101,7 @@ interface AllLeadsSectionProps {
   onDeleteLeads: (leadIds: string[]) => Promise<boolean>;
   onDeleteAllLeads: () => Promise<boolean>;
   onRefresh: () => void;
+  tempHighlightLeadId?: string | null;
 }
 
 const ITEMS_PER_PAGE = 25;
@@ -271,7 +272,8 @@ export const AllLeadsSection = ({
   onUpdateLeadStatus, 
   onDeleteLeads, 
   onDeleteAllLeads,
-  onRefresh 
+  onRefresh,
+  tempHighlightLeadId 
 }: AllLeadsSectionProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -299,6 +301,19 @@ export const AllLeadsSection = ({
       }
     }
   }, []);
+
+  // Add highlighted lead from realtime updates
+  useEffect(() => {
+    if (tempHighlightLeadId) {
+      console.log('🔥 AllLeadsSection: Adding lead to unviewed:', tempHighlightLeadId);
+      setUnviewedLeads(prev => {
+        const newSet = new Set(prev);
+        newSet.add(tempHighlightLeadId);
+        localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newSet]));
+        return newSet;
+      });
+    }
+  }, [tempHighlightLeadId]);
 
   // Filter leads based on search and status
   const filteredLeads = leads.filter(lead => {

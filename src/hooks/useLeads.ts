@@ -33,6 +33,7 @@ interface Lead {
 export const useLeads = () => {
   const [leads, setLeads] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [tempHighlightLeadId, setTempHighlightLeadId] = useState<string | null>(null);
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   
@@ -452,6 +453,10 @@ export const useLeads = () => {
             // Trigger notification for status change
             addNotification(leadName, newLead.id, oldLead.status, newLead.status);
             
+            // Set tempHighlightLeadId to trigger purple highlighting
+            setTempHighlightLeadId(newLead.id);
+            console.log('🔥 Realtime: Set tempHighlightLeadId to', newLead.id);
+            
             // Mark lead as unviewed for highlighting
             const unviewedLeads = JSON.parse(localStorage.getItem('psn-unviewed-leads') || '[]');
             if (!unviewedLeads.includes(newLead.id)) {
@@ -490,5 +495,6 @@ export const useLeads = () => {
     deleteAllLeads,
     updateLeadStatus,
     sendAcceptedLeadsToBackend,
+    tempHighlightLeadId,
   };
 };

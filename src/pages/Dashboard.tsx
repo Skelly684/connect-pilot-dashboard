@@ -49,7 +49,8 @@ const Dashboard = () => {
     deleteAllLeads,
     updateLeadStatus,
     sendAcceptedLeadsToBackend,
-    fetchLeads
+    fetchLeads,
+    tempHighlightLeadId
   } = useLeads();
 
   const handleSearchResults = (results: any[]) => {
@@ -110,6 +111,7 @@ const Dashboard = () => {
             onDeleteLeads={deleteLeads}
             onDeleteAllLeads={deleteAllLeads}
             onRefresh={fetchLeads}
+            tempHighlightLeadId={tempHighlightLeadId}
           />
         );
       case "review-leads":
