@@ -70,9 +70,10 @@ const formatDuration = (seconds?: number) => {
 
 const statusFilters = [
   { value: 'all', label: 'All' },
+  { value: 'answered_true', label: 'Answered' },
+  { value: 'answered_false', label: 'Not answered' },
   { value: 'queued', label: 'Queued' },
   { value: 'scheduled', label: 'Scheduled' },
-  { value: 'answered', label: 'Answered' },
   { value: 'no-answer', label: 'No Answer' },
   { value: 'busy', label: 'Busy' },
   { value: 'failed', label: 'Failed' },
@@ -92,9 +93,12 @@ export const EnhancedCallActivity = ({ leadId, leadName }: EnhancedCallActivityP
   const ITEMS_PER_PAGE = 10;
 
   // Filter call logs
-  const filteredLogs = statusFilter === 'all' 
-    ? callLogs 
-    : callLogs.filter(log => log.call_status === statusFilter);
+  const filteredLogs = (() => {
+    if (statusFilter === 'all') return callLogs;
+    if (statusFilter === 'answered_true') return callLogs.filter((log: any) => log.answered === true);
+    if (statusFilter === 'answered_false') return callLogs.filter((log: any) => log.answered === false || log.answered === null);
+    return callLogs.filter((log: any) => log.call_status === statusFilter);
+  })();
 
   // Paginate call logs
   const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE);
@@ -252,6 +256,11 @@ export const EnhancedCallActivity = ({ leadId, leadName }: EnhancedCallActivityP
                         <Badge className={`text-xs ${getCallStatusColor(log.call_status)}`}>
                           {formatCallStatus(log.call_status)}
                         </Badge>
+                        {log.answered !== null && log.answered !== undefined && (
+                          <Badge variant={log.answered ? "default" : "secondary"} className="text-xs">
+                            {log.answered ? "Answered" : "Not answered"}
+                          </Badge>
+                        )}
                         {log.call_duration && (
                           <div className="flex items-center gap-1 text-xs text-gray-500">
                             <Clock className="h-3 w-3" />

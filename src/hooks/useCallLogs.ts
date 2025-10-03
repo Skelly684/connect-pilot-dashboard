@@ -9,6 +9,7 @@ export interface CallLog {
   call_duration?: number;
   notes?: string;
   created_at: string;
+  answered?: boolean | null;
 }
 
 export const useCallLogs = () => {
@@ -31,7 +32,7 @@ export const useCallLogs = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setCallLogs((data || []) as CallLog[]);
+      setCallLogs((data || []) as any);
     } catch (error) {
       console.error('Error fetching call logs:', error);
       toast({
@@ -86,6 +87,12 @@ export const useCallLogs = () => {
     return leadCallLogs[0].call_status; // Already sorted by created_at desc
   };
 
+  const getLatestCallAnswered = (leadId: string): boolean | null => {
+    const leadCallLogs = getCallLogsForLead(leadId);
+    if (leadCallLogs.length === 0) return null;
+    return leadCallLogs[0].answered ?? null;
+  };
+
   return {
     callLogs,
     isLoading,
@@ -93,5 +100,6 @@ export const useCallLogs = () => {
     createCallLog,
     getCallLogsForLead,
     getLatestCallStatus,
+    getLatestCallAnswered,
   };
 };

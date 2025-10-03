@@ -57,7 +57,42 @@ export const useLeads = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setLeads(data || []);
+
+      // Check latest call status and update lead status if needed
+      if (data) {
+        const leadsToUpdate: string[] = [];
+        for (const lead of data) {
+          const { data: latestCall, error: callError } = await supabase
+            .from('call_logs')
+            .select('answered')
+            .eq('lead_id', lead.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!callError && latestCall && (latestCall as any).answered === true && lead.status !== 'contacted') {
+            leadsToUpdate.push(lead.id);
+          }
+        }
+
+        // Update leads to 'contacted' status if they have answered calls
+        if (leadsToUpdate.length > 0) {
+          await supabase
+            .from('leads')
+            .update({ status: 'contacted' })
+            .in('id', leadsToUpdate);
+        }
+
+        // Refetch to get updated data
+        const { data: updatedData } = await supabase
+          .from('leads')
+          .select('*, last_reply_at, last_reply_from, last_reply_subject, last_reply_snippet')
+          .order('created_at', { ascending: false });
+
+        setLeads(updatedData || []);
+      } else {
+        setLeads([]);
+      }
     } catch (error) {
       console.error('Error fetching leads:', error);
       toast({

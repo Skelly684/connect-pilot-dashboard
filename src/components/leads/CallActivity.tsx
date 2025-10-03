@@ -186,10 +186,15 @@ export const CallActivity = ({ leadId, leadName }: CallActivityProps) => {
             {callLogs.map((log) => (
               <div key={log.id} className="flex items-start gap-3 p-2 border rounded-md bg-white">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                   <div className="flex items-center gap-2 mb-1">
                     <Badge className={`text-xs ${getCallStatusColor(log.call_status)}`}>
                       {formatCallStatus(log.call_status)}
                     </Badge>
+                    {log.answered !== null && log.answered !== undefined && (
+                      <Badge variant={log.answered ? "default" : "secondary"} className="text-xs">
+                        {log.answered ? "Answered" : "Not answered"}
+                      </Badge>
+                    )}
                     {log.call_duration && (
                       <div className="flex items-center gap-1 text-xs text-gray-500">
                         <Clock className="h-3 w-3" />
