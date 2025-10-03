@@ -68,7 +68,7 @@ serve(async (req) => {
       return new Response('OK', { headers: corsHeaders });
     }
 
-    // For completed calls, check for duplicates and update lead status
+    // For completed calls, check for duplicates - the trigger will handle status update
     if (status === 'completed') {
       // Check for existing completed call log to prevent duplicates
       const { data: existingLog } = await supabase
@@ -77,14 +77,14 @@ serve(async (req) => {
         .eq('lead_id', lead_id)
         .eq('call_status', 'completed')
         .or(`external_call_id.eq.${external_call_id},provider_call_id.eq.${external_call_id}`)
-        .single();
+        .maybeSingle();
 
       if (existingLog) {
         console.log('Duplicate completed call log found, skipping insert');
         return new Response('OK - Duplicate prevented', { headers: corsHeaders });
       }
 
-      // Insert new call log with clean activity text
+      // Insert new call log - trigger will auto-update lead status
       const { error: callLogError } = await supabase
         .from('call_logs')
         .insert({
@@ -102,22 +102,7 @@ serve(async (req) => {
         throw callLogError;
       }
 
-      // Update lead status immediately
-      const { error: leadUpdateError } = await supabase
-        .from('leads')
-        .update({
-          status: 'replied',
-          last_call_status: 'completed',
-          next_call_at: null,
-        })
-        .eq('id', lead_id);
-
-      if (leadUpdateError) {
-        console.error('Error updating lead status:', leadUpdateError);
-        throw leadUpdateError;
-      }
-
-      console.log('Successfully processed completed call and updated lead status');
+      console.log('Successfully processed completed call - trigger will update lead status');
     } else {
       // For other statuses, just insert the call log
       const { error: callLogError } = await supabase
