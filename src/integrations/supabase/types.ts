@@ -67,6 +67,7 @@ export type Database = {
       }
       call_logs: {
         Row: {
+          answered: boolean | null
           attempt_number: number | null
           call_duration: number | null
           call_status: string
@@ -84,6 +85,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          answered?: boolean | null
           attempt_number?: number | null
           call_duration?: number | null
           call_status: string
@@ -101,6 +103,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          answered?: boolean | null
           attempt_number?: number | null
           call_duration?: number | null
           call_status?: string
@@ -346,7 +349,7 @@ export type Database = {
           error: string | null
           from_email: string | null
           id: string
-          idem_key: string | null
+          idem_key: string
           lead_id: string | null
           notes: string | null
           provider: string | null
@@ -366,7 +369,7 @@ export type Database = {
           error?: string | null
           from_email?: string | null
           id?: string
-          idem_key?: string | null
+          idem_key: string
           lead_id?: string | null
           notes?: string | null
           provider?: string | null
@@ -386,7 +389,7 @@ export type Database = {
           error?: string | null
           from_email?: string | null
           id?: string
-          idem_key?: string | null
+          idem_key?: string
           lead_id?: string | null
           notes?: string | null
           provider?: string | null
