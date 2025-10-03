@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useNotifications } from '@/contexts/NotificationsContext';
 import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 interface Lead {
@@ -103,6 +103,7 @@ export const useLeads = () => {
       if (currentLeads && newStatus !== 'new' && newStatus !== 'contacted') {
         currentLeads.forEach(lead => {
           const leadName = lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown Lead';
+          console.log('useLeads: Adding notification for', leadName, 'status change from', lead.status, 'to', newStatus);
           addNotification(leadName, lead.id, lead.status || 'unknown', newStatus);
         });
       }
