@@ -283,7 +283,22 @@ export const AllLeadsSection = ({
   const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false);
   const [changeStatusDialogOpen, setChangeStatusDialogOpen] = useState(false);
   const [selectedLeadForAction, setSelectedLeadForAction] = useState<{ id: string; name: string; status: string } | null>(null);
+  const [unviewedLeads, setUnviewedLeads] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+
+  // Load unviewed leads from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('psn-unviewed-leads');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setUnviewedLeads(new Set(parsed));
+        console.log('AllLeadsSection loaded unviewed leads:', parsed);
+      } catch (error) {
+        console.error('Error loading unviewed leads:', error);
+      }
+    }
+  }, []);
 
   // Filter leads based on search and status
   const filteredLeads = leads.filter(lead => {
@@ -742,8 +757,15 @@ export const AllLeadsSection = ({
                     const status = safeToString(lead.status || 'new');
 
                      return (
-                       <>
-                         <TableRow key={leadId} className="hover:bg-gray-50">
+                        <>
+                          <TableRow 
+                            key={leadId} 
+                            className={`hover:bg-gray-50 transition-all ${
+                              unviewedLeads.has(leadId) 
+                                ? 'bg-primary/10 border-l-4 border-l-primary shadow-[0_0_15px_rgba(168,85,247,0.4)] animate-pulse' 
+                                : ''
+                            }`}
+                          >
                            <TableCell>
                              <Checkbox
                                checked={selectedLeads.has(leadId)}
@@ -821,9 +843,27 @@ export const AllLeadsSection = ({
                            <TableCell className="text-sm text-gray-500">
                              {phone || 'N/A'}
                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end space-x-2">
-                                <LeadQuickActions 
+                             <TableCell className="text-right">
+                               <div className="flex items-center justify-end space-x-2">
+                                 {unviewedLeads.has(leadId) && (
+                                   <Button
+                                     size="sm"
+                                     onClick={() => {
+                                       console.log('AllLeadsSection View button clicked for lead:', leadId);
+                                       const newUnviewed = new Set(unviewedLeads);
+                                       newUnviewed.delete(leadId);
+                                       setUnviewedLeads(newUnviewed);
+                                       localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newUnviewed]));
+                                       toast({
+                                         title: "Lead Marked as Viewed",
+                                         description: "The highlight has been removed",
+                                       });
+                                     }}
+                                   >
+                                     View
+                                   </Button>
+                                 )}
+                                 <LeadQuickActions
                                   lead={lead}
                                   showViewActivity={true}
                                   onViewActivity={(leadId) => {
@@ -948,8 +988,17 @@ export const AllLeadsSection = ({
             open={changeStatusDialogOpen}
             onOpenChange={setChangeStatusDialogOpen}
             onStatusChanged={async (leadId: string, newStatus: string) => {
+              console.log('AllLeadsSection onStatusChanged called:', { leadId, newStatus });
               const success = await onUpdateLeadStatus([leadId], newStatus);
+              console.log('AllLeadsSection onUpdateLeadStatus result:', success);
               if (success) {
+                console.log('AllLeadsSection marking lead as unviewed:', leadId);
+                // Mark lead as unviewed so it stands out
+                const newUnviewed = new Set(unviewedLeads);
+                newUnviewed.add(leadId);
+                setUnviewedLeads(newUnviewed);
+                localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newUnviewed]));
+                console.log('AllLeadsSection unviewed leads updated:', [...newUnviewed]);
                 onRefresh();
                 setSelectedLeadForAction(null);
               }
