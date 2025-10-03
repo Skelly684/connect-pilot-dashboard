@@ -426,6 +426,8 @@ export const useLeads = () => {
   useEffect(() => {
     fetchLeads();
 
+    console.log('🎯 useLeads: Setting up realtime subscription for leads table');
+    
     // Subscribe to realtime updates for lead status changes
     const channel = supabase
       .channel('leads_changes')
@@ -446,6 +448,7 @@ export const useLeads = () => {
             console.log('🔔 Realtime: Status changed from', oldLead.status, 'to', newLead.status);
             const leadName = newLead.name || `${newLead.first_name || ''} ${newLead.last_name || ''}`.trim() || 'Unknown Lead';
             
+            console.log('🔔 Realtime: Calling addNotification for', leadName);
             // Trigger notification for status change
             addNotification(leadName, newLead.id, oldLead.status, newLead.status);
             
@@ -458,17 +461,25 @@ export const useLeads = () => {
             }
             
             // Refresh leads to show updated data
-            fetchLeads();
+            setTimeout(() => {
+              console.log('🔄 Realtime: Refreshing leads after status change');
+              fetchLeads();
+            }, 500);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('🔔 Realtime subscription status:', status);
+      });
+
+    console.log('✅ useLeads: Realtime subscription created');
 
     // Cleanup subscription on unmount
     return () => {
+      console.log('🧹 useLeads: Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
-  }, [addNotification]);
+  }, []);
 
   return {
     leads,
