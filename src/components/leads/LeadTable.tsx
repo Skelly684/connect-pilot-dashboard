@@ -282,6 +282,7 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
   const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false);
   const [changeStatusDialogOpen, setChangeStatusDialogOpen] = useState(false);
   const [selectedLeadForAction, setSelectedLeadForAction] = useState<{ id: string; name: string; status: string } | null>(null);
+  const [viewedLeads, setViewedLeads] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   console.log("LeadTable received leads:", leads);
@@ -620,8 +621,11 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                     const status = safeToString(lead.status || 'new');
 
                      return (
-                       <>
-                         <TableRow key={leadId} className={`hover:bg-gray-50 transition-colors ${getStatusRowColor(status)}`}>
+                         <>
+                         <TableRow 
+                           key={leadId} 
+                           className={`hover:bg-gray-50 transition-colors ${getStatusRowColor(status)} ${!viewedLeads.has(leadId) ? 'ring-2 ring-primary ring-inset shadow-lg bg-primary/5' : ''}`}
+                         >
                            <TableCell>
                              <Checkbox
                                checked={selectedLeads.has(leadId)}
@@ -668,21 +672,31 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                            <TableCell className="text-sm text-gray-500">
                              {phone || 'N/A'}
                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end space-x-2">
-                                <LeadQuickActions 
-                                  lead={lead}
-                                  showViewActivity={true}
-                                  onViewActivity={(leadId) => {
-                                    const newExpanded = new Set(expandedRows);
-                                    if (expandedRows.has(leadId)) {
-                                      newExpanded.delete(leadId);
-                                    } else {
-                                      newExpanded.add(leadId);
-                                    }
-                                    setExpandedRows(newExpanded);
-                                  }}
-                                />
+                             <TableCell className="text-right">
+                               <div className="flex items-center justify-end space-x-2">
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   onClick={() => {
+                                     setViewedLeads(prev => new Set([...prev, leadId]));
+                                   }}
+                                   className={!viewedLeads.has(leadId) ? 'text-primary' : ''}
+                                 >
+                                   <Eye className="h-4 w-4" />
+                                 </Button>
+                                 <LeadQuickActions 
+                                   lead={lead}
+                                   showViewActivity={true}
+                                   onViewActivity={(leadId) => {
+                                     const newExpanded = new Set(expandedRows);
+                                     if (expandedRows.has(leadId)) {
+                                       newExpanded.delete(leadId);
+                                     } else {
+                                       newExpanded.add(leadId);
+                                     }
+                                     setExpandedRows(newExpanded);
+                                   }}
+                                 />
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="sm">
@@ -794,21 +808,27 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
             }}
           />
           {onUpdateLeadStatus && (
-            <ChangeStatusDialog
-              leadId={selectedLeadForAction.id}
-              leadName={selectedLeadForAction.name}
-              currentStatus={selectedLeadForAction.status}
-              open={changeStatusDialogOpen}
-              onOpenChange={setChangeStatusDialogOpen}
-              onStatusChanged={async (leadId: string, newStatus: string) => {
-                const success = await onUpdateLeadStatus([leadId], newStatus);
-                if (success) {
-                  onRefresh?.();
-                  setSelectedLeadForAction(null);
-                }
-                return success;
-              }}
-            />
+             <ChangeStatusDialog
+               leadId={selectedLeadForAction.id}
+               leadName={selectedLeadForAction.name}
+               currentStatus={selectedLeadForAction.status}
+               open={changeStatusDialogOpen}
+               onOpenChange={setChangeStatusDialogOpen}
+               onStatusChanged={async (leadId: string, newStatus: string) => {
+                 const success = await onUpdateLeadStatus([leadId], newStatus);
+                 if (success) {
+                   // Mark lead as unviewed so it stands out
+                   setViewedLeads(prev => {
+                     const newSet = new Set(prev);
+                     newSet.delete(leadId);
+                     return newSet;
+                   });
+                   onRefresh?.();
+                   setSelectedLeadForAction(null);
+                 }
+                 return success;
+               }}
+             />
           )}
         </>
       )}
