@@ -65,57 +65,67 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    /* Deep, rich background with subtle blue undertones */
+    --background: 222 47% 4%;
+    --foreground: 210 40% 98%;
 
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    /* Elevated surfaces with depth */
+    --card: 222 47% 7%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 98%;
+    /* Vibrant purple with enhanced saturation */
+    --primary: 262 90% 65%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    /* Refined secondary with subtle contrast */
+    --secondary: 222 47% 11%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    /* Muted elements with perfect readability */
+    --muted: 222 47% 11%;
+    --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 98%;
+    /* Accent with electric glow */
+    --accent: 262 90% 65%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
+    /* Modern, saturated alerts */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
 
-    --success: 142.1 70.6% 45.3%;
-    --success-foreground: 144.9 80.4% 10%;
+    --success: 142 76% 45%;
+    --success-foreground: 210 40% 98%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 262 83% 58%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 262 83% 58%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 262 83% 58%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 262 83% 58%;
+    /* Sophisticated borders with subtle visibility */
+    --border: 222 47% 14%;
+    --input: 222 47% 14%;
+    --ring: 262 90% 65%;
     
-    /* Dark mode gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(262 83% 68%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(240 3.7% 15.9%) 0%, hsl(240 3.7% 18%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(240 10% 3.9%) 0%, hsl(240 3.7% 15.9%) 100%);
-    --gradient-sidebar: linear-gradient(180deg, hsl(240 5.9% 10%) 0%, hsl(240 3.7% 15.9%) 100%);
+    /* Premium sidebar design */
+    --sidebar-background: 222 47% 5%;
+    --sidebar-foreground: 215 20.2% 90%;
+    --sidebar-primary: 262 90% 65%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 262 90% 65%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 47% 12%;
+    --sidebar-ring: 262 90% 65%;
     
-    /* Dark mode shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
-    --shadow-primary: 0 10px 25px -5px hsl(262 83% 58% / 0.5);
+    /* Mesmerizing gradients with depth and glow */
+    --gradient-primary: linear-gradient(135deg, hsl(262 90% 65%) 0%, hsl(280 90% 70%) 50%, hsl(262 90% 65%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(222 47% 14%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(222 47% 7%) 0%, hsl(222 47% 9%) 50%, hsl(222 47% 7%) 100%);
+    --gradient-sidebar: linear-gradient(180deg, hsl(222 47% 5%) 0%, hsl(222 47% 6%) 50%, hsl(222 47% 4%) 100%);
+    
+    /* Luxurious shadows with colored glows */
+    --shadow-sm: 0 2px 8px 0 rgb(0 0 0 / 0.3), 0 1px 3px 0 hsl(262 90% 65% / 0.05);
+    --shadow-md: 0 8px 16px -4px rgb(0 0 0 / 0.4), 0 4px 8px -2px hsl(262 90% 65% / 0.1);
+    --shadow-lg: 0 16px 32px -8px rgb(0 0 0 / 0.5), 0 8px 16px -4px hsl(262 90% 65% / 0.15);
+    --shadow-xl: 0 24px 48px -12px rgb(0 0 0 / 0.6), 0 12px 24px -6px hsl(262 90% 65% / 0.2);
+    --shadow-primary: 0 0 40px hsl(262 90% 65% / 0.35), 0 12px 32px -8px hsl(262 90% 65% / 0.4);
   }
 }
 
