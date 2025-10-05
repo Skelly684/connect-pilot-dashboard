@@ -243,12 +243,6 @@ export function CsvUpload() {
           </div>
           {fileName && <p className="text-sm text-muted-foreground mt-1">{fileName}</p>}
         </div>
-
-        <div className="text-sm text-muted-foreground">
-          <p>• All imported leads will be set to "Accepted" status</p>
-          <p>• Duplicate emails will be automatically skipped</p>
-          <p>• Each lead must have an email and either a first name or company name</p>
-        </div>
       </CardContent>
     </Card>
   );
