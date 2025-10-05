@@ -83,6 +83,8 @@ export const MessagingTab = ({
       await onUpdateCampaign(campaign.id, { caller_prompt: callerPrompt });
 
       // Handle email template and steps
+      let templateIdForSteps = campaign.email_template_id;
+      
       if (selectedTemplateId === 'new' || !campaign.email_template_id) {
         // Create new template - get current user
         const { data: { user } } = await supabase.auth.getUser();
@@ -102,18 +104,20 @@ export const MessagingTab = ({
         
         // Link template to campaign
         await onUpdateCampaign(campaign.id, { email_template_id: newTemplate.id });
+        templateIdForSteps = newTemplate.id;
       } else {
         // Update existing template
         await onUpdateEmailTemplate(selectedTemplateId, {
           subject: emailSubject,
           body: emailBody
         });
+        templateIdForSteps = selectedTemplateId;
       }
 
       // Save email steps using the hook's UPSERT method
       const stepsToSave = emailSteps.map(step => ({
         step_number: step.step_number,
-        template_id: campaign.email_template_id,
+        template_id: templateIdForSteps,
         is_active: true,
         send_at: null,
         send_offset_minutes: step.send_offset_minutes,
