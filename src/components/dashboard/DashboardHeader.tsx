@@ -56,7 +56,7 @@ export const DashboardHeader = () => {
     'UN';
 
   return (
-    <header className="h-16 bg-gradient-card backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6 sticky top-0 z-50 shadow-md">
+    <header className="h-16 bg-gradient-card backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6 fixed top-0 left-0 right-0 z-50 shadow-md">
       <div className="flex items-center space-x-4">
         <div className="relative">
           <img 
