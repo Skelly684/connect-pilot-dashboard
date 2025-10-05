@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -251,6 +251,7 @@ export const ReviewNewLeadsSection = ({
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const isOperatingRef = useRef(false); // Hard lock to prevent double-clicks
   const { toast } = useToast();
   const navigate = useNavigate();
   const { campaigns, getDefaultCampaign } = useCampaigns();
@@ -279,6 +280,8 @@ export const ReviewNewLeadsSection = ({
   };
 
   const handleAcceptSelected = async () => {
+    // Prevent double submissions
+    if (isOperatingRef.current || isProcessing) return;
     if (selectedLeads.size === 0) return;
     
     const campaignId = selectedCampaignId || getDefaultCampaign()?.id;
@@ -291,36 +294,51 @@ export const ReviewNewLeadsSection = ({
       return;
     }
     
+    isOperatingRef.current = true;
     setIsProcessing(true);
-    const success = await onAcceptLeads(Array.from(selectedLeads), campaignId);
-    if (success) {
-      setSelectedLeads(new Set());
-      onRefresh();
-      toast({
-        title: "Success",
-        description: `${selectedLeads.size} leads accepted for outreach`,
-      });
+    try {
+      const success = await onAcceptLeads(Array.from(selectedLeads), campaignId);
+      if (success) {
+        setSelectedLeads(new Set());
+        onRefresh();
+        toast({
+          title: "Success",
+          description: `${selectedLeads.size} leads accepted for outreach`,
+        });
+      }
+    } finally {
+      setIsProcessing(false);
+      isOperatingRef.current = false;
     }
-    setIsProcessing(false);
   };
 
   const handleRejectSelected = async () => {
+    // Prevent double submissions
+    if (isOperatingRef.current || isProcessing) return;
     if (selectedLeads.size === 0) return;
     
+    isOperatingRef.current = true;
     setIsProcessing(true);
-    const success = await onRejectLeads(Array.from(selectedLeads));
-    if (success) {
-      setSelectedLeads(new Set());
-      onRefresh();
-      toast({
-        title: "Success",
-        description: `${selectedLeads.size} leads rejected`,
-      });
+    try {
+      const success = await onRejectLeads(Array.from(selectedLeads));
+      if (success) {
+        setSelectedLeads(new Set());
+        onRefresh();
+        toast({
+          title: "Success",
+          description: `${selectedLeads.size} leads rejected`,
+        });
+      }
+    } finally {
+      setIsProcessing(false);
+      isOperatingRef.current = false;
     }
-    setIsProcessing(false);
   };
 
   const handleAcceptAll = async () => {
+    // Prevent double submissions
+    if (isOperatingRef.current || isProcessing) return;
+    
     const allLeadIds = newLeads.map(lead => String(lead.id || `lead-${newLeads.indexOf(lead)}`));
     if (allLeadIds.length === 0) return;
     
@@ -334,37 +352,53 @@ export const ReviewNewLeadsSection = ({
       return;
     }
     
+    isOperatingRef.current = true;
     setIsProcessing(true);
-    const success = await onAcceptLeads(allLeadIds, campaignId);
-    if (success) {
-      setSelectedLeads(new Set());
-      onRefresh();
-      toast({
-        title: "Success",
-        description: `All ${allLeadIds.length} leads accepted for outreach`,
-      });
+    try {
+      const success = await onAcceptLeads(allLeadIds, campaignId);
+      if (success) {
+        setSelectedLeads(new Set());
+        onRefresh();
+        toast({
+          title: "Success",
+          description: `All ${allLeadIds.length} leads accepted for outreach`,
+        });
+      }
+    } finally {
+      setIsProcessing(false);
+      isOperatingRef.current = false;
     }
-    setIsProcessing(false);
   };
 
   const handleRejectAll = async () => {
+    // Prevent double submissions
+    if (isOperatingRef.current || isProcessing) return;
+    
     const allLeadIds = newLeads.map(lead => String(lead.id || `lead-${newLeads.indexOf(lead)}`));
     if (allLeadIds.length === 0) return;
     
+    isOperatingRef.current = true;
     setIsProcessing(true);
-    const success = await onRejectLeads(allLeadIds);
-    if (success) {
-      setSelectedLeads(new Set());
-      onRefresh();
-      toast({
-        title: "Success",
-        description: `All ${allLeadIds.length} leads rejected`,
-      });
+    try {
+      const success = await onRejectLeads(allLeadIds);
+      if (success) {
+        setSelectedLeads(new Set());
+        onRefresh();
+        toast({
+          title: "Success",
+          description: `All ${allLeadIds.length} leads rejected`,
+        });
+      }
+    } finally {
+      setIsProcessing(false);
+      isOperatingRef.current = false;
     }
-    setIsProcessing(false);
   };
 
   const handleSendToBackend = async () => {
+    // Prevent double submissions
+    if (isOperatingRef.current || isProcessing) return;
+    
     if (acceptedLeads.length === 0) {
       toast({
         title: "No Accepted Leads",
@@ -375,17 +409,26 @@ export const ReviewNewLeadsSection = ({
     }
 
     const campaignId = selectedCampaignId || getDefaultCampaign()?.id;
+    isOperatingRef.current = true;
     setIsProcessing(true);
-    const success = await onSendAcceptedLeads(acceptedLeads, campaignId);
-    if (success) {
-      onRefresh();
+    try {
+      const success = await onSendAcceptedLeads(acceptedLeads, campaignId);
+      if (success) {
+        onRefresh();
+      }
+    } finally {
+      setIsProcessing(false);
+      isOperatingRef.current = false;
     }
-    setIsProcessing(false);
   };
 
   const handleSendSingleLead = async (lead: Lead) => {
+    // Prevent double submissions
+    if (isOperatingRef.current || isProcessing) return;
+    
+    isOperatingRef.current = true;
+    setIsProcessing(true);
     try {
-      setIsProcessing(true);
       const leadData = [{
         id: lead.id,
         first_name: lead.firstName || lead.first_name,
@@ -420,12 +463,17 @@ export const ReviewNewLeadsSection = ({
       });
     } finally {
       setIsProcessing(false);
+      isOperatingRef.current = false;
     }
   };
 
   const handleCallLead = async (lead: Lead) => {
+    // Prevent double submissions
+    if (isOperatingRef.current || isProcessing) return;
+    
+    isOperatingRef.current = true;
+    setIsProcessing(true);
     try {
-      setIsProcessing(true);
       const phone = extractPhone(lead);
       const campaignId = getDefaultCampaign()?.id;
 
@@ -454,6 +502,7 @@ export const ReviewNewLeadsSection = ({
       });
     } finally {
       setIsProcessing(false);
+      isOperatingRef.current = false;
     }
   };
 
@@ -510,17 +559,19 @@ export const ReviewNewLeadsSection = ({
                     onClick={handleAcceptSelected} 
                     disabled={isProcessing}
                     className="bg-green-600 hover:bg-green-700"
+                    aria-busy={isProcessing ? 'true' : 'false'}
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Accept Selected ({selectedLeads.size})
+                    {isProcessing ? 'Accepting…' : `Accept Selected (${selectedLeads.size})`}
                   </Button>
                   <Button 
                     onClick={handleRejectSelected} 
                     disabled={isProcessing}
                     variant="destructive"
+                    aria-busy={isProcessing ? 'true' : 'false'}
                   >
                     <XCircle className="h-4 w-4 mr-2" />
-                    Reject Selected ({selectedLeads.size})
+                    {isProcessing ? 'Rejecting…' : `Reject Selected (${selectedLeads.size})`}
                   </Button>
                 </>
               ) : (
@@ -530,9 +581,10 @@ export const ReviewNewLeadsSection = ({
                       <Button 
                         disabled={isProcessing}
                         className="bg-green-600 hover:bg-green-700"
+                        aria-busy={isProcessing ? 'true' : 'false'}
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Accept All ({newLeads.length})
+                        {isProcessing ? 'Processing…' : `Accept All (${newLeads.length})`}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -557,9 +609,10 @@ export const ReviewNewLeadsSection = ({
                       <Button 
                         disabled={isProcessing}
                         variant="destructive"
+                        aria-busy={isProcessing ? 'true' : 'false'}
                       >
                         <XCircle className="h-4 w-4 mr-2" />
-                        Reject All ({newLeads.length})
+                        {isProcessing ? 'Processing…' : `Reject All (${newLeads.length})`}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -712,9 +765,10 @@ export const ReviewNewLeadsSection = ({
                 onClick={handleSendToBackend} 
                 disabled={isProcessing}
                 className="bg-blue-600 hover:bg-blue-700"
+                aria-busy={isProcessing ? 'true' : 'false'}
               >
                 <Send className="h-4 w-4 mr-2" />
-                Send to Backend ({acceptedLeads.length})
+                {isProcessing ? 'Sending…' : `Send to Backend (${acceptedLeads.length})`}
               </Button>
             </div>
           </CardHeader>
