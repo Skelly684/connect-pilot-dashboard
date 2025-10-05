@@ -135,33 +135,33 @@ export const DashboardOverview = () => {
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-600/90 to-purple-700/90 dark:from-purple-600/80 dark:to-purple-800/80 animate-[pulse_3s_ease-in-out_infinite] dark:shadow-[0_0_60px_hsl(262_100%_70%/0.5)]">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-white">
+              <Bell className="h-5 w-5 text-white" />
               Latest Notifications
             </CardTitle>
-            <CardDescription>Recent updates and alerts from your campaigns</CardDescription>
+            <CardDescription className="text-purple-100">Recent updates and alerts from your campaigns</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {notifications.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Bell className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm">No notifications yet</p>
-                  <p className="text-xs text-gray-500">Notifications will appear here when leads interact with your campaigns</p>
+                <div className="text-center py-8 text-purple-100">
+                  <Bell className="h-8 w-8 text-purple-200 mx-auto mb-2" />
+                  <p className="text-sm text-white">No notifications yet</p>
+                  <p className="text-xs text-purple-200">Notifications will appear here when leads interact with your campaigns</p>
                 </div>
               ) : (
                 notifications.slice(0, 5).map((notification) => (
-                  <div key={notification.id} className={`p-3 rounded-lg border ${notification.read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'}`}>
+                  <div key={notification.id} className={`p-3 rounded-lg border ${notification.read ? 'bg-purple-800/30 border-purple-600/50' : 'bg-purple-900/50 border-purple-400/70'}`}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm">{notification.title}</p>
-                          {!notification.read && <Badge variant="secondary" className="text-xs">New</Badge>}
+                          <p className="font-medium text-sm text-white">{notification.title}</p>
+                          {!notification.read && <Badge variant="secondary" className="text-xs bg-purple-300 text-purple-900">New</Badge>}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-sm text-purple-100 mt-1">{notification.message}</p>
+                        <p className="text-xs text-purple-200 mt-1">
                           {notification.timestamp.toLocaleDateString()} at {notification.timestamp.toLocaleTimeString()}
                         </p>
                       </div>
@@ -171,7 +171,7 @@ export const DashboardOverview = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => markAsRead(notification.id)}
-                            className="text-xs p-1 h-6"
+                            className="text-xs p-1 h-6 text-purple-200 hover:text-white hover:bg-purple-700/50"
                           >
                             Mark read
                           </Button>
@@ -180,7 +180,7 @@ export const DashboardOverview = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => removeNotification(notification.id)}
-                          className="text-gray-500 hover:text-gray-700 p-1 h-6 w-6"
+                          className="text-purple-200 hover:text-white hover:bg-purple-700/50 p-1 h-6 w-6"
                         >
                           <X className="h-3 w-3" />
                         </Button>

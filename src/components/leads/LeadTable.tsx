@@ -635,14 +635,14 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
 
                      return (
                          <>
-                           <TableRow 
-                            key={leadId} 
-                            className={`transition-all duration-500 cursor-pointer ${
-                              unviewedLeads.has(leadId) 
-                                ? 'bg-primary/10 border-l-4 border-l-primary shadow-[0_0_15px_rgba(168,85,247,0.4)] animate-pulse' 
-                                : 'hover:bg-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-purple-900/30 dark:hover:to-purple-800/20 dark:hover:shadow-[0_0_20px_hsl(262_100%_70%/0.3)]'
-                            }`}
-                          >
+                            <TableRow 
+                             key={leadId} 
+                             className={`transition-all duration-500 cursor-pointer ${
+                               unviewedLeads.has(leadId) 
+                                 ? 'bg-primary/10 border-l-4 border-l-primary shadow-[0_0_15px_rgba(168,85,247,0.4)] animate-pulse' 
+                                 : 'hover:bg-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-purple-900/60 dark:hover:to-purple-700/60 dark:hover:shadow-[0_0_50px_hsl(262_100%_70%/0.6)]'
+                             }`}
+                           >
                             <TableCell>
                               <Checkbox
                                 checked={selectedLeads.has(leadId)}
@@ -657,19 +657,19 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                                     {fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'N'}
                                   </AvatarFallback>
                                 </Avatar>
-                                <div>
-                                  <div className="font-medium text-gray-900 dark:text-foreground">{fullName}</div>
-                                  <div className="text-sm text-gray-500 dark:text-foreground/70">{email || 'No email'}</div>
-                                </div>
+                                 <div>
+                                   <div className="font-medium text-gray-900 dark:text-white">{fullName}</div>
+                                   <div className="text-sm text-gray-500 dark:text-foreground/80">{email || 'No email'}</div>
+                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell className="font-medium dark:text-foreground/90">
-                              {jobTitle || 'N/A'}
-                            </TableCell>
+                             <TableCell className="font-medium dark:text-foreground">
+                               {jobTitle || 'N/A'}
+                             </TableCell>
                             <TableCell>
                               <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
                             </TableCell>
-                            <TableCell className="text-sm text-gray-500 dark:text-foreground/70">{location || 'N/A'}</TableCell>
+                            <TableCell className="text-sm text-gray-500 dark:text-foreground/80">{location || 'N/A'}</TableCell>
                            <TableCell>
                              <div className="flex flex-col gap-1">
                                {/* Only show status if it's not "no-tz" */}
@@ -686,9 +686,9 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                                />
                               </div>
                             </TableCell>
-                            <TableCell className="text-sm text-gray-500 dark:text-foreground/70">
-                              {phone || 'N/A'}
-                            </TableCell>
+                             <TableCell className="text-sm text-gray-500 dark:text-foreground/80">
+                               {phone || 'N/A'}
+                             </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end space-x-2">
                                   {unviewedLeads.has(leadId) && (
