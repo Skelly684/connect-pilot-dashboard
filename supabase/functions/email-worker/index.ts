@@ -52,91 +52,78 @@ serve(async (req) => {
     const results = [];
     for (const email of claimedEmails) {
       try {
-        console.log(`Sending email ${email.id} to ${email.to_email}`);
+        console.log(`📧 Processing email ${email.id} to ${email.to_email}`);
         
         // TODO: Actually send the email via Gmail API here
-        // For now, we'll simulate sending
-        // In production, you'd use Google Gmail API with OAuth tokens
+        // For now, we'll simulate successful sending
+        console.log(`✅ Simulated send (replace with Gmail API)`);
         
-        // Get user's OAuth token
-        const { data: tokenData } = await supabase
-          .from('google_oauth_tokens')
-          .select('access_token, refresh_token, expires_at')
-          .eq('user_id', email.lead_id) // Assuming user_id stored somewhere
+        // Step 3: Mark email as sent (this logs to email_logs AND deletes from outbox)
+        const { data: markResult, error: markError } = await supabase.rpc('mark_email_sent', {
+          p_outbox_id: email.id,
+          p_lock_token: email.lock_token,
+          p_provider_message_id: `sim_${Date.now()}` // Replace with actual Gmail message ID
+        });
+
+        if (markError) {
+          console.error(`❌ Failed to mark email ${email.id} as sent:`, markError);
+          results.push({ email_id: email.id, status: 'mark_failed', error: markError.message });
+          continue;
+        }
+        
+        console.log(`✅ Email ${email.id} logged and removed from outbox`);
+        
+        // Step 4: Update lead's next_email_step and next_email_at
+        const { data: leadData } = await supabase
+          .from('leads')
+          .select('next_email_step, campaign_id')
+          .eq('id', email.lead_id)
           .single();
 
-        // Simulate successful send for now
-        const sendSuccess = true; // Replace with actual Gmail API call
-        
-        if (sendSuccess) {
-          // Step 3: Mark email as sent (this deletes from outbox and logs to email_logs)
-          const { data: markResult, error: markError } = await supabase.rpc('mark_email_sent', {
-            p_outbox_id: email.id,
-            p_lock_token: email.lock_token,
-            p_provider_message_id: `sim_${Date.now()}` // Replace with actual Gmail message ID
-          });
+        if (leadData) {
+          const nextStep = (leadData.next_email_step || 1) + 1;
+          
+          // Get the next step's timing
+          const { data: nextStepData } = await supabase
+            .from('campaign_email_steps')
+            .select('send_offset_minutes, template_id')
+            .eq('campaign_id', leadData.campaign_id)
+            .eq('step_number', nextStep)
+            .eq('is_active', true)
+            .single();
 
-          if (markError) {
-            console.error(`Failed to mark email ${email.id} as sent:`, markError);
-            results.push({ email_id: email.id, status: 'mark_failed', error: markError.message });
-          } else {
-            console.log(`✅ Email ${email.id} sent and logged`);
-            
-            // Step 4: Update lead's next_email_step and next_email_at
-            const { data: leadData } = await supabase
+          if (nextStepData) {
+            // Calculate next send time
+            const nextSendAt = new Date();
+            nextSendAt.setMinutes(nextSendAt.getMinutes() + nextStepData.send_offset_minutes);
+
+            // Update lead and queue next email
+            await supabase
               .from('leads')
-              .select('next_email_step, campaign_id')
-              .eq('id', email.lead_id)
-              .single();
-
-            if (leadData) {
-              const nextStep = (leadData.next_email_step || 1) + 1;
-              
-              // Get the next step's timing
-              const { data: nextStepData } = await supabase
-                .from('campaign_email_steps')
-                .select('send_offset_minutes')
-                .eq('campaign_id', leadData.campaign_id)
-                .eq('step_number', nextStep)
-                .eq('is_active', true)
-                .single();
-
-              if (nextStepData) {
-                // Calculate next send time
-                const nextSendAt = new Date();
-                nextSendAt.setMinutes(nextSendAt.getMinutes() + nextStepData.send_offset_minutes);
-
-                await supabase
-                  .from('leads')
-                  .update({
-                    next_email_step: nextStep,
-                    next_email_at: nextSendAt.toISOString(),
-                    last_email_status: 'sent'
-                  })
-                  .eq('id', email.lead_id);
-                
-                console.log(`📅 Scheduled next email (step ${nextStep}) for ${nextSendAt.toISOString()}`);
-              } else {
-                // No more steps, mark sequence complete
-                await supabase
-                  .from('leads')
-                  .update({
-                    next_email_step: null,
-                    next_email_at: null,
-                    last_email_status: 'sequence_complete'
-                  })
-                  .eq('id', email.lead_id);
-                
-                console.log(`🎉 Email sequence completed for lead ${email.lead_id}`);
-              }
-            }
-
-            results.push({ email_id: email.id, status: 'sent', to: email.to_email });
+              .update({
+                next_email_step: nextStep,
+                next_email_at: nextSendAt.toISOString(),
+                last_email_status: 'sent'
+              })
+              .eq('id', email.lead_id);
+            
+            console.log(`📅 Updated lead: next step ${nextStep} at ${nextSendAt.toISOString()}`);
+          } else {
+            // No more steps, mark sequence complete
+            await supabase
+              .from('leads')
+              .update({
+                next_email_step: null,
+                next_email_at: null,
+                last_email_status: 'sequence_complete'
+              })
+              .eq('id', email.lead_id);
+            
+            console.log(`🎉 Email sequence completed for lead ${email.lead_id}`);
           }
-        } else {
-          // Failed to send
-          results.push({ email_id: email.id, status: 'send_failed', error: 'Gmail API error' });
         }
+
+        results.push({ email_id: email.id, status: 'sent', to: email.to_email });
 
       } catch (emailError) {
         console.error(`Error processing email ${email.id}:`, emailError);
