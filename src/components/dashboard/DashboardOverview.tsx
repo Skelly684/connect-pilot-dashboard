@@ -116,12 +116,15 @@ export const DashboardOverview = () => {
                   }
                   
                   return (
-                    <div key={lead.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div 
+                      key={lead.id || index} 
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-card rounded-lg transition-all duration-500 hover:bg-purple-100 dark:hover:bg-gradient-to-r dark:hover:from-purple-900/40 dark:hover:to-purple-800/30 dark:hover:shadow-[0_0_30px_hsl(262_100%_70%/0.4)] dark:hover:scale-[1.02] cursor-pointer"
+                    >
                       <div>
-                        <p className="font-medium text-gray-900">{displayName}</p>
-                        <p className="text-sm text-gray-600">{displayCompany} - {lead.status || 'new'}</p>
+                        <p className="font-medium text-gray-900 dark:text-foreground">{displayName}</p>
+                        <p className="text-sm text-gray-600 dark:text-foreground/80">{displayCompany} - {lead.status || 'new'}</p>
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-foreground/70">
                         {new Date(lead.created_at).toLocaleDateString()}
                       </span>
                     </div>
