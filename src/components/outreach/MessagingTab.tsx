@@ -50,23 +50,30 @@ export const MessagingTab = ({
       if (campaign.id) {
         const { data: steps } = await supabase
           .from('campaign_email_steps')
-          .select('*')
+          .select(`
+            *,
+            email_templates (
+              id,
+              subject,
+              body
+            )
+          `)
           .eq('campaign_id', campaign.id)
           .order('step_number');
         
         if (steps && steps.length > 0) {
-          setEmailSteps(steps.map(step => ({
+          setEmailSteps(steps.map((step: any) => ({
             id: step.id,
             step_number: step.step_number,
-            subject: campaign.email_template?.subject || '',
-            body: campaign.email_template?.body || '',
+            subject: step.email_templates?.subject || '',
+            body: step.email_templates?.body || '',
             send_offset_minutes: step.send_offset_minutes || 0
           })));
         }
       }
     };
     loadEmailSteps();
-  }, [campaign.id, campaign.email_template]);
+  }, [campaign.id]);
 
   // Update state when campaign data changes
   useEffect(() => {
@@ -82,47 +89,41 @@ export const MessagingTab = ({
       // Update caller prompt
       await onUpdateCampaign(campaign.id, { caller_prompt: callerPrompt });
 
-      // Handle email template and steps
-      let templateIdForSteps = campaign.email_template_id;
-      
-      if (selectedTemplateId === 'new' || !campaign.email_template_id) {
-        // Create new template - get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.error('User not authenticated');
-          return;
-        }
-        
-        const newTemplate = await onCreateEmailTemplate({
-          name: `Campaign – ${campaign.name}`,
-          subject: emailSubject,
-          body: emailBody,
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('User not authenticated');
+        return;
+      }
+
+      // Create/update a template for EACH step
+      const stepsToSave = await Promise.all(emailSteps.map(async (step) => {
+        // Create a new template for this step
+        const template = await onCreateEmailTemplate({
+          name: `${campaign.name} - Step ${step.step_number}`,
+          subject: step.subject,
+          body: step.body,
           user_id: user.id,
           campaign_id: campaign.id,
           is_active: true
         });
-        
-        // Link template to campaign
-        await onUpdateCampaign(campaign.id, { email_template_id: newTemplate.id });
-        templateIdForSteps = newTemplate.id;
-      } else {
-        // Update existing template
-        await onUpdateEmailTemplate(selectedTemplateId, {
-          subject: emailSubject,
-          body: emailBody
-        });
-        templateIdForSteps = selectedTemplateId;
-      }
 
-      // Save email steps using the hook's UPSERT method
-      const stepsToSave = emailSteps.map(step => ({
-        step_number: step.step_number,
-        template_id: templateIdForSteps,
-        is_active: true,
-        send_at: null,
-        send_offset_minutes: step.send_offset_minutes,
+        return {
+          step_number: step.step_number,
+          template_id: template.id,
+          is_active: true,
+          send_at: null,
+          send_offset_minutes: step.send_offset_minutes,
+        };
       }));
+
+      // Save email steps with their respective templates
       await saveEmailSteps(campaign.id, stepsToSave);
+
+      // Link the first step's template to the campaign for backward compatibility
+      if (stepsToSave.length > 0) {
+        await onUpdateCampaign(campaign.id, { email_template_id: stepsToSave[0].template_id });
+      }
     } catch (error) {
       console.error('Error saving messaging:', error);
     }
