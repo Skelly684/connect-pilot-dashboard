@@ -351,6 +351,7 @@ export type Database = {
           id: string
           idem_key: string
           lead_id: string | null
+          lock_token: string | null
           notes: string | null
           provider: string | null
           snippet: string | null
@@ -371,6 +372,7 @@ export type Database = {
           id?: string
           idem_key: string
           lead_id?: string | null
+          lock_token?: string | null
           notes?: string | null
           provider?: string | null
           snippet?: string | null
@@ -391,6 +393,7 @@ export type Database = {
           id?: string
           idem_key?: string
           lead_id?: string | null
+          lock_token?: string | null
           notes?: string | null
           provider?: string | null
           snippet?: string | null
@@ -410,6 +413,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_outbox: {
+        Row: {
+          attempts: number
+          body: string | null
+          campaign_id: string | null
+          created_at: string
+          id: string
+          idem_key: string
+          last_error: string | null
+          lead_id: string
+          lock_token: string | null
+          provider: string
+          send_after: string
+          status: string
+          step_number: number
+          subject: string | null
+          template_id: string | null
+          to_email: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          body?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          idem_key: string
+          last_error?: string | null
+          lead_id: string
+          lock_token?: string | null
+          provider?: string
+          send_after?: string
+          status?: string
+          step_number: number
+          subject?: string | null
+          template_id?: string | null
+          to_email: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          body?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          idem_key?: string
+          last_error?: string | null
+          lead_id?: string
+          lock_token?: string | null
+          provider?: string
+          send_after?: string
+          status?: string
+          step_number?: number
+          subject?: string | null
+          template_id?: string | null
+          to_email?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       email_templates: {
         Row: {
@@ -825,9 +888,52 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_next_email: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          body: string | null
+          campaign_id: string | null
+          created_at: string
+          id: string
+          idem_key: string
+          last_error: string | null
+          lead_id: string
+          lock_token: string | null
+          provider: string
+          send_after: string
+          status: string
+          step_number: number
+          subject: string | null
+          template_id: string | null
+          to_email: string
+          updated_at: string
+        }[]
+      }
       is_admin: {
         Args: { u: string }
         Returns: boolean
+      }
+      mark_email_sent: {
+        Args: {
+          p_lock_token: string
+          p_outbox_id: string
+          p_provider_message_id?: string
+        }
+        Returns: boolean
+      }
+      queue_email_step: {
+        Args: {
+          p_body: string
+          p_campaign_id: string
+          p_lead_id: string
+          p_send_after?: string
+          p_step_number: number
+          p_subject: string
+          p_template_id: string
+          p_to_email: string
+        }
+        Returns: string
       }
     }
     Enums: {
