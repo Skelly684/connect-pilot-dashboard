@@ -74,7 +74,7 @@ export const DashboardOverview = () => {
               </div>
             </CardHeader>
             <CardContent className="relative z-10">
-              <div className="stat-value text-3xl font-extrabold text-gray-900 dark:text-foreground">
+              <div className="stat-value text-3xl font-semibold text-gray-600 dark:text-foreground">
                 {stat.value}
               </div>
               <p className="text-xs text-gray-500 dark:text-foreground/70 mt-1 font-medium">
