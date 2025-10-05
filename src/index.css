@@ -241,4 +241,15 @@ All colors MUST be HSL.
       box-shadow: 0 0 40px hsl(262 100% 70% / 0.6);
     }
   }
+  
+  /* Lead pulse purple - for status change highlighting */
+  .lead-pulse-purple {
+    @apply bg-primary/10 border-l-4 border-l-primary animate-pulse;
+    box-shadow: 0 0 30px hsl(262 83% 58% / 0.5);
+  }
+  
+  .dark .lead-pulse-purple {
+    @apply bg-primary/20 border-l-4 border-l-primary animate-pulse;
+    box-shadow: 0 0 50px hsl(262 100% 70% / 0.7), 0 0 100px hsl(262 100% 70% / 0.4);
+  }
 }

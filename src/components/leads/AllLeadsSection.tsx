@@ -775,9 +775,9 @@ export const AllLeadsSection = ({
                         <>
                           <TableRow 
                             key={leadId} 
-                            className={`hover:bg-gray-50 transition-all ${
+                            className={`hover:bg-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-purple-900/60 dark:hover:to-purple-700/60 dark:hover:shadow-[0_0_50px_hsl(262_100%_70%/0.6)] transition-all ${
                               unviewedLeads.has(leadId) 
-                                ? 'bg-primary/10 border-l-4 border-l-primary shadow-[0_0_15px_rgba(168,85,247,0.4)] animate-pulse' 
+                                ? 'lead-pulse-purple' 
                                 : ''
                             }`}
                           >

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,6 +92,7 @@ interface LeadTableProps {
   onDeleteAllLeads: () => Promise<boolean>;
   onUpdateLeadStatus?: (leadIds: string[], newStatus: string) => Promise<boolean>;
   onRefresh?: () => void;
+  tempHighlightLeadId?: string | null;
 }
 
 const ITEMS_PER_PAGE = 25;
@@ -273,7 +274,7 @@ const CompanyCell = ({ company }: { company: any }) => {
   );
 };
 
-export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLeads, onUpdateLeadStatus, onRefresh }: LeadTableProps) => {
+export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLeads, onUpdateLeadStatus, onRefresh, tempHighlightLeadId }: LeadTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
@@ -297,6 +298,19 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
   });
   
   const { toast } = useToast();
+
+  // Add highlighted lead from realtime updates
+  useEffect(() => {
+    if (tempHighlightLeadId) {
+      console.log('🔥 LeadTable: Adding lead to unviewed:', tempHighlightLeadId);
+      setUnviewedLeads(prev => {
+        const newSet = new Set(prev);
+        newSet.add(tempHighlightLeadId);
+        localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newSet]));
+        return newSet;
+      });
+    }
+  }, [tempHighlightLeadId]);
 
   console.log("LeadTable received leads:", leads);
   console.log("LeadTable isLoading:", isLoading);
@@ -635,11 +649,11 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
 
                      return (
                          <>
-                            <TableRow 
+                             <TableRow 
                              key={leadId} 
                              className={`transition-all duration-500 cursor-pointer ${
                                unviewedLeads.has(leadId) 
-                                 ? 'bg-primary/10 border-l-4 border-l-primary shadow-[0_0_15px_rgba(168,85,247,0.4)] animate-pulse' 
+                                 ? 'lead-pulse-purple' 
                                  : 'hover:bg-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-purple-900/60 dark:hover:to-purple-700/60 dark:hover:shadow-[0_0_50px_hsl(262_100%_70%/0.6)]'
                              }`}
                            >

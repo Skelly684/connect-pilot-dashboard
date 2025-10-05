@@ -99,6 +99,7 @@ const Dashboard = () => {
               onDeleteAllLeads={deleteAllLeads}
               onUpdateLeadStatus={updateLeadStatus}
               onRefresh={fetchLeads}
+              tempHighlightLeadId={tempHighlightLeadId}
             />
           </div>
         );
