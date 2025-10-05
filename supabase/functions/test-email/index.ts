@@ -46,21 +46,25 @@ serve(async (req) => {
       from: template.from_name || 'PSN'
     });
 
-    // Log the test email using safe_log_email (with automatic idem_key)
-    // Note: Test emails don't have lead_id, so we'll use a special UUID
-    const testLeadId = '00000000-0000-0000-0000-000000000000';
-    await supabase.rpc('safe_log_email', {
-      p_lead_id: testLeadId,
-      p_campaign_id: null,
-      p_user_id: null,
-      p_to_email: testEmail,
-      p_subject: `[TEST] ${template.subject}`,
-      p_body: template.body,
-      p_status: 'test_sent',
-      p_template_id: emailTemplateId,
-      p_direction: 'outbound',
-      p_custom_idem_key: `test_${emailTemplateId}_${testEmail}_${Date.now()}`
-    });
+    // Get user_id from auth context
+    const authHeader = req.headers.get('Authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token);
+    
+    // Use safe_log_email function to prevent duplicates
+    if (user) {
+      await supabase.rpc('safe_log_email', {
+        p_lead_id: '00000000-0000-0000-0000-000000000000', // Test placeholder UUID
+        p_campaign_id: template.campaign_id || '00000000-0000-0000-0000-000000000000',
+        p_user_id: user.id,
+        p_to_email: testEmail,
+        p_subject: `[TEST] ${template.subject}`,
+        p_body: template.body,
+        p_status: 'test_sent',
+        p_direction: 'outbound',
+        p_custom_idem_key: `test_${template.id}_${testEmail}_${Date.now()}`
+      });
+    }
 
     return new Response(
       JSON.stringify({ 

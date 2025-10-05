@@ -67,19 +67,18 @@ serve(async (req) => {
       throw leadError;
     }
 
-    // Insert log entry using safe_log_email function (with automatic idem_key)
-    const { error: logError } = await supabase
-      .rpc('safe_log_email', {
-        p_lead_id: lead_id,
-        p_campaign_id: lead.campaign_id,
-        p_user_id: lead.user_id,
-        p_to_email: '', // System log, no recipient
-        p_subject: "[Sequence Stopped]",
-        p_body: `Email sequence stopped due to ${reason}`,
-        p_status: "sequence_stopped",
-        p_direction: "system",
-        p_custom_idem_key: `stop_${lead_id}_${reason}_${Date.now()}`
-      });
+    // Use safe_log_email function to prevent duplicates
+    const { error: logError } = await supabase.rpc('safe_log_email', {
+      p_lead_id: lead_id,
+      p_campaign_id: lead.campaign_id,
+      p_user_id: lead.user_id,
+      p_to_email: 'system@internal',
+      p_subject: '[Sequence Stopped]',
+      p_body: `Email sequence stopped due to ${reason}`,
+      p_status: 'sequence_stopped',
+      p_direction: 'system',
+      p_custom_idem_key: `stop_${lead_id}_${reason}`
+    });
 
     if (logError) {
       console.warn('Error logging sequence stop:', logError);
