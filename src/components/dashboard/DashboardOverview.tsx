@@ -57,9 +57,9 @@ export const DashboardOverview = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
-        <p className="text-gray-600">Monitor your lead generation and outreach performance</p>
-        {isLoading && <p className="text-sm text-gray-500">Loading data...</p>}
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-foreground">Dashboard Overview</h2>
+        <p className="text-gray-600 dark:text-foreground/90 text-base">Monitor your lead generation and outreach performance</p>
+        {isLoading && <p className="text-sm text-gray-500 dark:text-foreground/70">Loading data...</p>}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

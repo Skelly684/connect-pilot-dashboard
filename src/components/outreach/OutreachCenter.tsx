@@ -85,8 +85,8 @@ export const OutreachCenter = () => {
             Back to Campaigns
           </Button>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Edit Campaign</h2>
-            <p className="text-gray-600">{editingCampaign.name}</p>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-foreground">Edit Campaign</h2>
+            <p className="text-gray-600 dark:text-foreground/90 text-base">{editingCampaign.name}</p>
           </div>
         </div>
         <CampaignEditor campaign={editingCampaign} />
@@ -98,8 +98,8 @@ export const OutreachCenter = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Outreach Center</h2>
-          <p className="text-gray-600">Manage your email and phone outreach campaigns</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-foreground">Outreach Center</h2>
+          <p className="text-gray-600 dark:text-foreground/90 text-base">Manage your email and phone outreach campaigns</p>
         </div>
         <Button onClick={() => setShowNewCampaign(true)} className="gap-2">
           <Plus className="h-4 w-4" />
