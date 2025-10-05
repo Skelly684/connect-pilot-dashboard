@@ -146,9 +146,9 @@ const Dashboard = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-secondary">
         <AppSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col overflow-auto">
           <DashboardHeader />
-          <div className="flex-1 p-6 overflow-auto pt-20">
+          <div className="flex-1 p-6">
             <div className="max-w-7xl mx-auto animate-fade-in">
               {renderContent()}
             </div>
