@@ -211,7 +211,7 @@ const CompanyCell = ({ company }: { company: any }) => {
   
   return (
     <div className="space-y-1">
-      <div className="font-medium text-gray-900">
+      <div className="font-medium text-gray-900 dark:text-white">
         {companyInfo.name || '—'}
       </div>
       {companyInfo.website && (
@@ -228,13 +228,13 @@ const CompanyCell = ({ company }: { company: any }) => {
         </div>
       )}
       {companyInfo.industry && (
-        <div className="text-sm text-gray-600">{companyInfo.industry}</div>
+        <div className="text-sm text-gray-600 dark:text-foreground/80">{companyInfo.industry}</div>
       )}
       {companyInfo.location && (
-        <div className="text-sm text-gray-500">{companyInfo.location}</div>
+        <div className="text-sm text-gray-500 dark:text-foreground/80">{companyInfo.location}</div>
       )}
       {companyInfo.phone && (
-        <div className="text-sm text-gray-500">{companyInfo.phone}</div>
+        <div className="text-sm text-gray-500 dark:text-foreground/80">{companyInfo.phone}</div>
       )}
     </div>
   );
@@ -627,7 +627,7 @@ export const ReviewNewLeadsSection = ({
                     const status = safeToString(lead.status || 'new');
 
                     return (
-                      <TableRow key={leadId} className="hover:bg-gray-50">
+                      <TableRow key={leadId} className="transition-all duration-500 cursor-pointer hover:bg-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-purple-900/60 dark:hover:to-purple-700/60 dark:hover:shadow-[0_0_50px_hsl(262_100%_70%/0.6)]">
                         <TableCell>
                           <Checkbox
                             checked={selectedLeads.has(leadId)}
@@ -643,24 +643,24 @@ export const ReviewNewLeadsSection = ({
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium text-gray-900">{fullName}</div>
-                              <div className="text-sm text-gray-500">{email || 'No email'}</div>
+                              <div className="font-medium text-gray-900 dark:text-white">{fullName}</div>
+                              <div className="text-sm text-gray-500 dark:text-foreground/80">{email || 'No email'}</div>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium dark:text-foreground">
                           {jobTitle || 'N/A'}
                         </TableCell>
                         <TableCell>
                           <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
                         </TableCell>
-                        <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
+                        <TableCell className="text-sm text-gray-500 dark:text-foreground/80">{location || 'N/A'}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(status)}>
                              {status?.replace('_', ' ') || 'new'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-gray-500">
+                        <TableCell className="text-sm text-gray-500 dark:text-foreground/80">
                           {phone || 'N/A'}
                         </TableCell>
                          <TableCell className="text-right">
@@ -744,7 +744,7 @@ export const ReviewNewLeadsSection = ({
                     const status = safeToString(lead.status || 'accepted');
 
                     return (
-                      <TableRow key={leadId} className="hover:bg-gray-50">
+                      <TableRow key={leadId} className="transition-all duration-500 cursor-pointer hover:bg-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-purple-900/60 dark:hover:to-purple-700/60 dark:hover:shadow-[0_0_50px_hsl(262_100%_70%/0.6)]">
                         <TableCell>
                           <div className="flex items-center space-x-3">
                             <Avatar className="h-8 w-8">
@@ -754,24 +754,24 @@ export const ReviewNewLeadsSection = ({
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium text-gray-900">{fullName}</div>
-                              <div className="text-sm text-gray-500">{email || 'No email'}</div>
+                              <div className="font-medium text-gray-900 dark:text-white">{fullName}</div>
+                              <div className="text-sm text-gray-500 dark:text-foreground/80">{email || 'No email'}</div>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium dark:text-foreground">
                           {jobTitle || 'N/A'}
                         </TableCell>
                         <TableCell>
                           <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
                         </TableCell>
-                        <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
+                        <TableCell className="text-sm text-gray-500 dark:text-foreground/80">{location || 'N/A'}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(status)}>
                             {status?.replace('_', ' ') || 'new'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-gray-500">
+                        <TableCell className="text-sm text-gray-500 dark:text-foreground/80">
                           {phone || 'N/A'}
                         </TableCell>
                          <TableCell className="text-right">

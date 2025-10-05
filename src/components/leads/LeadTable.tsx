@@ -245,7 +245,7 @@ const CompanyCell = ({ company }: { company: any }) => {
   
   return (
     <div className="space-y-1">
-      <div className="font-medium text-gray-900">
+      <div className="font-medium text-gray-900 dark:text-white">
         {companyInfo.name || '—'}
       </div>
       {companyInfo.website && (
@@ -262,13 +262,13 @@ const CompanyCell = ({ company }: { company: any }) => {
         </div>
       )}
       {companyInfo.industry && (
-        <div className="text-sm text-gray-600">{companyInfo.industry}</div>
+        <div className="text-sm text-gray-600 dark:text-foreground/80">{companyInfo.industry}</div>
       )}
       {companyInfo.location && (
-        <div className="text-sm text-gray-500">{companyInfo.location}</div>
+        <div className="text-sm text-gray-500 dark:text-foreground/80">{companyInfo.location}</div>
       )}
       {companyInfo.phone && (
-        <div className="text-sm text-gray-500">{companyInfo.phone}</div>
+        <div className="text-sm text-gray-500 dark:text-foreground/80">{companyInfo.phone}</div>
       )}
     </div>
   );
