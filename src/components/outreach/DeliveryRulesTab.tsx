@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Eye } from 'lucide-react';
 import { Campaign, EmailTemplate, EmailStep, DeliveryRules, useCampaigns } from '@/hooks/useCampaigns';
 import { useToast } from '@/hooks/use-toast';
+
+// Simple debounce utility
+function debounce<F extends (...args: any[]) => void>(fn: F, wait = 300) {
+  let timeout: NodeJS.Timeout | null = null;
+  return function (this: any, ...args: Parameters<F>) {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => fn.apply(this, args), wait);
+  } as F;
+}
 
 interface DeliveryRulesTabProps {
   campaign: Campaign;
@@ -36,6 +45,9 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [emailSteps, setEmailStepsState] = useState<EmailStepForm[]>(propEmailSteps || []);
+  
+  // Create ref for debounced save
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Use provided email steps or manage internal state
   const setEmailSteps = (steps: EmailStepForm[]) => {
@@ -112,7 +124,7 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
     template => template.campaign_id === null || template.campaign_id === campaign.id
   );
 
-  const handleSaveRules = async () => {
+  const handleSaveRulesImmediate = async () => {
     setIsLoading(true);
     try {
       // Update campaign with delivery rules and legacy fields for backward compatibility
@@ -146,6 +158,28 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
     }
     setIsLoading(false);
   };
+
+  // Debounced version with 300ms delay
+  const handleSaveRules = useCallback(() => {
+    // Clear any existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Set new timeout
+    saveTimeoutRef.current = setTimeout(() => {
+      handleSaveRulesImmediate();
+    }, 300);
+  }, [handleSaveRulesImmediate]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const addEmailStep = () => {
     if (emailSteps.length >= 5) return;
@@ -489,7 +523,11 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSaveRules} disabled={isLoading}>
+        <Button 
+          onClick={handleSaveRules} 
+          disabled={isLoading}
+          aria-busy={isLoading ? 'true' : 'false'}
+        >
           {isLoading ? 'Saving...' : 'Save Delivery Rules'}
         </Button>
       </div>

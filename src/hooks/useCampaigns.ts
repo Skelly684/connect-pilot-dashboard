@@ -145,25 +145,62 @@ export const useCampaigns = () => {
 
   const saveEmailSteps = async (campaignId: string, steps: Omit<EmailStep, 'id' | 'campaign_id'>[]) => {
     try {
-      // Delete existing steps
-      await supabase
+      // 1) Load current rows so we can preserve IDs and only delete removed ones
+      const { data: existing, error: loadErr } = await supabase
         .from('campaign_email_steps')
-        .delete()
+        .select('id, step_number, template_id, is_active, send_at, send_offset_minutes')
         .eq('campaign_id', campaignId);
+      
+      if (loadErr) throw loadErr;
+      
+      const byStepNo = new Map<number, any>();
+      (existing || []).forEach(r => byStepNo.set(Number(r.step_number), r));
 
-      // Insert new steps
-      if (steps.length > 0) {
-        const stepsWithCampaignId = steps.map(step => ({
-          ...step,
-          campaign_id: campaignId
-        }));
+      // 2) Build UPSERT payload — include id when the step already exists
+      const toUpsert = steps.map(s => {
+        const prior = byStepNo.get(Number(s.step_number));
+        return {
+          id: prior?.id,    // preserve id if exists (enables true upsert)
+          campaign_id: campaignId,
+          step_number: s.step_number,
+          template_id: s.template_id ?? null,
+          is_active: s.is_active ?? true,
+          send_at: s.send_at ?? null,
+          send_offset_minutes: s.send_offset_minutes ?? null,
+        };
+      });
 
-        const { error } = await supabase
-          .from('campaign_email_steps')
-          .insert(stepsWithCampaignId);
+      // 3) Work out which existing rows were removed in the UI
+      const incomingStepNos = new Set(steps.map(s => Number(s.step_number)));
+      const toDeleteIds = (existing || [])
+        .filter(r => !incomingStepNos.has(Number(r.step_number)))
+        .map(r => r.id);
 
-        if (error) throw error;
+      // 4) Client-side guard: ensure no duplicate step_number in payload
+      const stepNos = steps.map(s => Number(s.step_number));
+      if (new Set(stepNos).size !== stepNos.length) {
+        throw new Error('Duplicate step numbers detected. Each follow-up step must have a unique step number.');
       }
+
+      // 5) Perform UPSERT (by primary key id). This preserves stable IDs and avoids racey DELETE+INSERT.
+      const { error: upsertErr } = await supabase
+        .from('campaign_email_steps')
+        .upsert(toUpsert, { onConflict: 'id' });
+      
+      if (upsertErr) throw upsertErr;
+
+      // 6) Delete only the rows that were removed
+      if (toDeleteIds.length > 0) {
+        const { error: delErr } = await supabase
+          .from('campaign_email_steps')
+          .delete()
+          .in('id', toDeleteIds);
+        
+        if (delErr) throw delErr;
+      }
+
+      // 7) Refetch campaigns to sync UI with DB state
+      await fetchCampaigns();
 
       toast({
         title: "Success",
@@ -173,7 +210,7 @@ export const useCampaigns = () => {
       console.error('Error saving email steps:', error);
       toast({
         title: "Error",
-        description: "Failed to save email steps",
+        description: error instanceof Error ? error.message : "Failed to save email steps",
         variant: "destructive",
       });
       throw error;

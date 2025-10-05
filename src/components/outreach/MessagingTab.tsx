@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Campaign, EmailTemplate } from '@/hooks/useCampaigns';
+import { Campaign, EmailTemplate, useCampaigns } from '@/hooks/useCampaigns';
 import { TemplatePreview } from './TemplatePreview';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,7 @@ export const MessagingTab = ({
   onCreateEmailTemplate,
   emailTemplates
 }: MessagingTabProps) => {
+  const { saveEmailSteps } = useCampaigns();
   const [callerPrompt, setCallerPrompt] = useState(campaign.caller_prompt);
   const [emailSubject, setEmailSubject] = useState(campaign.email_template?.subject || '');
   const [emailBody, setEmailBody] = useState(campaign.email_template?.body || '');
@@ -109,33 +110,19 @@ export const MessagingTab = ({
         });
       }
 
-      // Save email steps
-      await saveEmailSteps();
+      // Save email steps using the hook's UPSERT method
+      const stepsToSave = emailSteps.map(step => ({
+        step_number: step.step_number,
+        template_id: campaign.email_template_id,
+        is_active: true,
+        send_at: null,
+        send_offset_minutes: step.send_offset_minutes,
+      }));
+      await saveEmailSteps(campaign.id, stepsToSave);
     } catch (error) {
       console.error('Error saving messaging:', error);
     }
     setIsLoading(false);
-  };
-
-  const saveEmailSteps = async () => {
-    // Delete existing steps
-    await supabase
-      .from('campaign_email_steps')
-      .delete()
-      .eq('campaign_id', campaign.id);
-
-    // Insert new steps
-    if (emailSteps.length > 0) {
-      await supabase
-        .from('campaign_email_steps')
-        .insert(emailSteps.map(step => ({
-          campaign_id: campaign.id,
-          step_number: step.step_number,
-          send_offset_minutes: step.send_offset_minutes,
-          template_id: campaign.email_template_id,
-          is_active: true
-        })));
-    }
   };
 
   const addEmailStep = () => {
