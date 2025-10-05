@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Eye } from 'lucide-react';
 import { Campaign, EmailTemplate, EmailStep, DeliveryRules, useCampaigns } from '@/hooks/useCampaigns';
 import { useToast } from '@/hooks/use-toast';
+import { localDatetimeInputToUtcIso, utcIsoToLocalDatetimeInput } from '@/utils/datetime';
 
 // Simple debounce utility
 function debounce<F extends (...args: any[]) => void>(fn: F, wait = 300) {
@@ -127,6 +128,34 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
   const handleSaveRulesImmediate = async () => {
     setIsLoading(true);
     try {
+      // Validate email steps for mutual exclusivity and completeness
+      if (deliveryRules.use_email && campaign.id !== 'new') {
+        for (const s of emailSteps) {
+          const mode = s.when_to_send;
+          const hasExact = !!s.send_at;
+          const hasDelay = typeof s.send_offset_minutes === 'number' && s.send_offset_minutes > 0;
+          
+          if (mode === 'exact' && (!hasExact || s.send_offset_minutes !== null)) {
+            toast({
+              title: "Validation Error",
+              description: `Step ${s.step_number}: please set a valid exact 'Send At' time and ensure delay is not set.`,
+              variant: "destructive",
+            });
+            setIsLoading(false);
+            return;
+          }
+          if (mode === 'delay' && (!hasDelay || s.send_at !== null)) {
+            toast({
+              title: "Validation Error",
+              description: `Step ${s.step_number}: please set a valid delay in minutes and ensure exact time is not set.`,
+              variant: "destructive",
+            });
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
+
       // Update campaign with delivery rules and legacy fields for backward compatibility
       await onUpdateCampaign(campaign.id, {
         delivery_rules: deliveryRules,
@@ -140,10 +169,11 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
       if (deliveryRules.use_email && campaign.id !== 'new') {
         const stepsToSave = emailSteps.map(step => ({
           step_number: step.step_number,
-          template_id: step.template_id,
-          send_at: step.when_to_send === 'exact' ? step.send_at : null,
-          send_offset_minutes: step.when_to_send === 'delay' ? step.send_offset_minutes : null,
-          is_active: step.is_active,
+          template_id: step.template_id || null,
+          is_active: !!step.is_active,
+          // Enforce mutual exclusivity: exactly one field is set, the other is null
+          send_at: step.when_to_send === 'exact' ? (step.send_at || null) : null,
+          send_offset_minutes: step.when_to_send === 'delay' ? (step.send_offset_minutes ?? null) : null,
         }));
 
         await saveEmailSteps(campaign.id, stepsToSave);
@@ -155,6 +185,11 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
       });
     } catch (error) {
       console.error('Error saving rules:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save delivery rules",
+        variant: "destructive",
+      });
     }
     setIsLoading(false);
   };
@@ -213,11 +248,21 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
     const newSteps = [...emailSteps];
     newSteps[index] = { ...newSteps[index], ...updates };
     
-    // Clear the other timing field when switching
+    // Enforce mutual exclusivity: only one timing field can be set
     if (updates.when_to_send === 'exact') {
       newSteps[index].send_offset_minutes = null;
     } else if (updates.when_to_send === 'delay') {
       newSteps[index].send_at = null;
+    }
+    
+    // Additional enforcement if updating send_at or send_offset_minutes directly
+    if ('send_at' in updates && updates.send_at !== undefined) {
+      newSteps[index].send_offset_minutes = null;
+      newSteps[index].when_to_send = 'exact';
+    }
+    if ('send_offset_minutes' in updates && updates.send_offset_minutes !== null && updates.send_offset_minutes !== undefined) {
+      newSteps[index].send_at = null;
+      newSteps[index].when_to_send = 'delay';
     }
     
     setEmailSteps(newSteps);
@@ -487,9 +532,12 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
                         <Label>Send At</Label>
                         <Input
                           type="datetime-local"
-                          value={step.send_at || ''}
-                          onChange={(e) => updateEmailStep(index, { send_at: e.target.value || null })}
+                          value={utcIsoToLocalDatetimeInput(step.send_at)}
+                          onChange={(e) => updateEmailStep(index, { send_at: localDatetimeInputToUtcIso(e.target.value) })}
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Times shown in your local timezone; saved in UTC
+                        </p>
                       </div>
                     )}
 
