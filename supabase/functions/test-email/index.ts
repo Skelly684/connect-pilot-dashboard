@@ -46,13 +46,20 @@ serve(async (req) => {
       from: template.from_name || 'PSN'
     });
 
-    // Log the test email
-    await supabase.from('email_logs').insert({
-      lead_id: null, // Test email doesn't have a lead
-      email_to: testEmail,
-      subject: `[TEST] ${template.subject}`,
-      body: template.body,
-      status: 'test_sent'
+    // Log the test email using safe_log_email (with automatic idem_key)
+    // Note: Test emails don't have lead_id, so we'll use a special UUID
+    const testLeadId = '00000000-0000-0000-0000-000000000000';
+    await supabase.rpc('safe_log_email', {
+      p_lead_id: testLeadId,
+      p_campaign_id: null,
+      p_user_id: null,
+      p_to_email: testEmail,
+      p_subject: `[TEST] ${template.subject}`,
+      p_body: template.body,
+      p_status: 'test_sent',
+      p_template_id: emailTemplateId,
+      p_direction: 'outbound',
+      p_custom_idem_key: `test_${emailTemplateId}_${testEmail}_${Date.now()}`
     });
 
     return new Response(

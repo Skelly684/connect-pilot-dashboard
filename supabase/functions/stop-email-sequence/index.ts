@@ -67,18 +67,18 @@ serve(async (req) => {
       throw leadError;
     }
 
-    // Insert log entry into email_logs
+    // Insert log entry using safe_log_email function (with automatic idem_key)
     const { error: logError } = await supabase
-      .from('email_logs')
-      .insert({
-        lead_id: lead_id,
-        campaign_id: lead.campaign_id,
-        user_id: lead.user_id,
-        subject: "[Sequence Stopped]",
-        body: `Email sequence stopped due to ${reason}`,
-        status: "sequence_stopped",
-        direction: "system",
-        created_at: new Date().toISOString()
+      .rpc('safe_log_email', {
+        p_lead_id: lead_id,
+        p_campaign_id: lead.campaign_id,
+        p_user_id: lead.user_id,
+        p_to_email: '', // System log, no recipient
+        p_subject: "[Sequence Stopped]",
+        p_body: `Email sequence stopped due to ${reason}`,
+        p_status: "sequence_stopped",
+        p_direction: "system",
+        p_custom_idem_key: `stop_${lead_id}_${reason}_${Date.now()}`
       });
 
     if (logError) {
