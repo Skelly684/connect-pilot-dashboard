@@ -935,6 +935,22 @@ export type Database = {
         }
         Returns: string
       }
+      safe_log_email: {
+        Args: {
+          p_body: string
+          p_campaign_id: string
+          p_custom_idem_key?: string
+          p_direction?: string
+          p_lead_id: string
+          p_status: string
+          p_step_number?: number
+          p_subject: string
+          p_template_id?: string
+          p_to_email: string
+          p_user_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
