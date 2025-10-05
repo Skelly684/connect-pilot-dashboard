@@ -99,9 +99,9 @@ export function SelfLeadsRecentTable() {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="bg-gradient-card border-border/50 shadow-elegant animate-fade-in">
         <CardHeader>
-          <CardTitle>Recent Self-Generated Leads</CardTitle>
+          <CardTitle className="text-foreground">Recent Self-Generated Leads</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
@@ -114,9 +114,9 @@ export function SelfLeadsRecentTable() {
 
   if (recentLeads.length === 0) {
     return (
-      <Card>
+      <Card className="bg-gradient-card border-border/50 shadow-elegant animate-fade-in">
         <CardHeader>
-          <CardTitle>Recent Self-Generated Leads</CardTitle>
+          <CardTitle className="text-foreground">Recent Self-Generated Leads</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
@@ -128,9 +128,9 @@ export function SelfLeadsRecentTable() {
   }
 
   return (
-    <Card>
+    <Card className="bg-gradient-card border-border/50 hover:shadow-elegant transition-all duration-500 animate-fade-in">
       <CardHeader>
-        <CardTitle>Recent Self-Generated Leads</CardTitle>
+        <CardTitle className="text-foreground">Recent Self-Generated Leads</CardTitle>
         <p className="text-sm text-muted-foreground">
           Last 10 leads added in the past 48 hours
         </p>
@@ -149,16 +149,19 @@ export function SelfLeadsRecentTable() {
           </TableHeader>
           <TableBody>
             {recentLeads.map((lead) => (
-              <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50">
+              <TableRow 
+                key={lead.id} 
+                className="cursor-pointer hover:bg-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-purple-500/10 dark:hover:to-pink-500/10 transition-all duration-500 dark:hover:shadow-[0_0_50px_hsl(262_100%_70%/0.6)]"
+              >
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-sm">
+                    <Avatar className="h-8 w-8 ring-2 ring-primary/20">
+                      <AvatarFallback className="text-sm bg-gradient-primary text-white font-semibold">
                         {getInitials(lead.first_name, lead.last_name)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-medium">{getFullName(lead)}</div>
+                      <div className="font-medium text-foreground">{getFullName(lead)}</div>
                       {hasEmail(lead) && (
                         <div className="text-sm text-muted-foreground">
                           {lead.email_address}
@@ -168,7 +171,7 @@ export function SelfLeadsRecentTable() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm">
+                  <span className="text-sm text-foreground">
                     {lead.job_title?.trim() && lead.job_title !== 'N/A' 
                       ? lead.job_title 
                       : 'N/A'
@@ -176,7 +179,7 @@ export function SelfLeadsRecentTable() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className="font-medium">
+                  <span className="font-medium text-foreground">
                     {lead.company_name?.trim() && lead.company_name !== 'N/A'
                       ? lead.company_name
                       : 'N/A'
@@ -191,7 +194,7 @@ export function SelfLeadsRecentTable() {
                 <TableCell>
                   <Badge 
                     variant="outline" 
-                    className="bg-green-100 text-green-800 border-green-200"
+                    className="bg-green-500/20 text-green-400 border-green-500/30 shadow-sm"
                   >
                     accepted
                   </Badge>
@@ -199,17 +202,17 @@ export function SelfLeadsRecentTable() {
                 <TableCell>
                   <div className="flex items-center justify-center gap-2">
                     <Phone 
-                      className={`h-4 w-4 ${
+                      className={`h-4 w-4 transition-all duration-300 ${
                         hasPhone(lead) 
-                          ? 'text-blue-600' 
-                          : 'text-gray-300'
+                          ? 'text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]' 
+                          : 'text-muted-foreground/30'
                       }`} 
                     />
                     <Mail 
-                      className={`h-4 w-4 ${
+                      className={`h-4 w-4 transition-all duration-300 ${
                         hasEmail(lead) 
-                          ? 'text-blue-600' 
-                          : 'text-gray-300'
+                          ? 'text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]' 
+                          : 'text-muted-foreground/30'
                       }`} 
                     />
                   </div>

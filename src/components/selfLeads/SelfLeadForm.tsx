@@ -374,9 +374,9 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
   return (
     <div className="space-y-6">
       {/* Contact Information */}
-      <Card>
+      <Card className="bg-gradient-card border-border/50 hover:shadow-elegant transition-all duration-500 animate-scale-in">
         <CardHeader>
-          <CardTitle>Contact Information</CardTitle>
+          <CardTitle className="text-foreground">Contact Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -453,9 +453,9 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       </Card>
 
       {/* Company Information */}
-      <Card>
+      <Card className="bg-gradient-card border-border/50 hover:shadow-elegant transition-all duration-500 animate-scale-in">
         <CardHeader>
-          <CardTitle>Company Information</CardTitle>
+          <CardTitle className="text-foreground">Company Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -561,9 +561,9 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       </Card>
 
       {/* Location */}
-      <Card>
+      <Card className="bg-gradient-card border-border/50 hover:shadow-elegant transition-all duration-500 animate-scale-in">
         <CardHeader>
-          <CardTitle>Location</CardTitle>
+          <CardTitle className="text-foreground">Location</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
@@ -628,9 +628,9 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       </Card>
 
       {/* Optional Details */}
-      <Card>
+      <Card className="bg-gradient-card border-border/50 hover:shadow-elegant transition-all duration-500 animate-scale-in">
         <CardHeader>
-          <CardTitle>Optional Details</CardTitle>
+          <CardTitle className="text-foreground">Optional Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -705,13 +705,14 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       </Card>
 
       {/* Action Buttons */}
-      <Card>
+      <Card className="bg-gradient-card border-border/50 shadow-elegant">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <Button
               variant="outline"
               onClick={onReset}
               disabled={isSaving || isContacting}
+              className="hover-scale"
             >
               Reset
             </Button>
@@ -720,6 +721,7 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
               <Button
                 onClick={handleSaveAndAccept}
                 disabled={isSaving || isContacting}
+                className="hover-scale bg-gradient-to-r from-primary to-purple-500 hover:shadow-primary"
               >
                 {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Save & Accept
@@ -729,6 +731,7 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
                 variant="secondary"
                 onClick={handleSaveAcceptAndContact}
                 disabled={isSaving || isContacting}
+                className="hover-scale"
               >
                 {isContacting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Save, Accept & Contact

@@ -67,15 +67,17 @@ export default function SelfLeads() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-gradient-secondary">
         <AppSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
         <main className="flex-1 overflow-auto">
-          <div className="p-6 space-y-6">
-            <header className="border-b pb-4">
+          <div className="p-6 space-y-6 animate-fade-in">
+            <header className="border-b border-border/30 pb-4 bg-gradient-card/50 backdrop-blur-sm rounded-lg p-6 shadow-elegant">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Self-Generated Leads</h1>
-                  <p className="text-gray-600 mt-1">
+                  <h1 className="text-3xl font-bold text-foreground bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                    Self-Generated Leads
+                  </h1>
+                  <p className="text-muted-foreground mt-1">
                     Manually add a lead. Choose Accept to save only, or Accept & Contact to start calls/emails.
                   </p>
                 </div>

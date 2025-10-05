@@ -193,17 +193,17 @@ export function CsvUpload() {
   };
 
   return (
-    <Card>
+    <Card className="bg-gradient-card border-border/50 hover:shadow-elegant transition-all duration-500 animate-scale-in">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheet className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-foreground">
+          <FileSpreadsheet className="h-5 w-5 text-primary" />
           Bulk Import from CSV
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
+        <Alert className="border-primary/30 bg-primary/10">
+          <AlertCircle className="h-4 w-4 text-primary" />
+          <AlertDescription className="text-foreground">
             CSV must include these column headers: EMAIL, FIRST NAME, LAST NAME, COMPANY, JOB TITLE, DEPARTMENT, PHONE NUMBER, COUNTRY, REGION, LEAD SOURCE
           </AlertDescription>
         </Alert>
