@@ -153,7 +153,7 @@ export const DashboardOverview = () => {
                 </div>
               ) : (
                 notifications.slice(0, 5).map((notification) => (
-                  <div key={notification.id} className={`p-3 rounded-lg border transition-all duration-500 ${notification.read ? 'bg-gray-50 dark:bg-card border-gray-200 dark:border-border' : 'bg-gradient-to-br from-purple-600/90 to-purple-700/90 dark:from-purple-600/80 dark:to-purple-800/80 border-purple-400/70 animate-[pulse_3s_ease-in-out_infinite] dark:shadow-[0_0_40px_hsl(262_100%_70%/0.5)]'}`}>
+                  <div key={notification.id} className={`p-3 rounded-lg border transition-all duration-500 ${notification.read ? 'bg-gray-50 dark:bg-card border-gray-200 dark:border-border' : 'bg-gradient-to-br from-purple-600/90 to-purple-700/90 dark:from-purple-600/80 dark:to-purple-800/80 border-purple-400/70 notification-pulse'}`}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">

@@ -241,4 +241,20 @@ All colors MUST be HSL.
       box-shadow: 0 0 40px hsl(262 100% 70% / 0.6);
     }
   }
+  
+  /* Notification purple pulse */
+  @keyframes notification-pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px hsl(262 100% 70% / 0.4);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow: 0 0 40px hsl(262 100% 70% / 0.7);
+      transform: scale(1.02);
+    }
+  }
+  
+  .notification-pulse {
+    animation: notification-pulse 2s ease-in-out infinite;
+  }
 }
