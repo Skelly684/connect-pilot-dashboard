@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { SelfLeadForm } from "@/components/selfLeads/SelfLeadForm";
 import { SelfLeadPreview } from "@/components/selfLeads/SelfLeadPreview";
 import { SelfLeadsRecentTable } from "@/components/selfLeads/SelfLeadsRecentTable";
@@ -70,20 +71,18 @@ export default function SelfLeads() {
       <div className="min-h-screen flex w-full bg-gradient-secondary">
         <AppSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
         <main className="flex-1 overflow-auto">
+          <DashboardHeader />
           <div className="p-6 space-y-6 animate-fade-in">
-            <header className="border-b border-border/30 pb-4 bg-gradient-card/50 backdrop-blur-sm rounded-lg p-6 shadow-elegant">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold text-foreground bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
-                    Self-Generated Leads
-                  </h1>
-                  <p className="text-muted-foreground mt-1">
-                    Manually add a lead. Choose Accept to save only, or Accept & Contact to start calls/emails.
-                  </p>
-                </div>
-                <SidebarTrigger className="md:hidden" />
+            <div className="border-b border-border/30 pb-4 bg-gradient-card/50 backdrop-blur-sm rounded-lg p-6 shadow-elegant">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                  Self-Generated Leads
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  Manually add a lead. Choose Accept to save only, or Accept & Contact to start calls/emails.
+                </p>
               </div>
-            </header>
+            </div>
 
             {/* CSV Upload Section */}
             <div className="mb-6">
