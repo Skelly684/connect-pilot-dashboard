@@ -237,7 +237,7 @@ const CompanyCell = ({ company }: { company: any }) => {
   
   return (
     <div className="space-y-1">
-      <div className="font-medium text-gray-900">
+      <div className="font-medium text-gray-900 dark:text-white">
         {companyInfo.name || '—'}
       </div>
       {companyInfo.website && (
@@ -246,7 +246,7 @@ const CompanyCell = ({ company }: { company: any }) => {
             href={companyInfo.website.startsWith('http') ? companyInfo.website : `https://${companyInfo.website}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center space-x-1"
           >
             <span>{companyInfo.website}</span>
             <ExternalLink className="h-3 w-3" />
@@ -254,13 +254,13 @@ const CompanyCell = ({ company }: { company: any }) => {
         </div>
       )}
       {companyInfo.industry && (
-        <div className="text-sm text-gray-600">{companyInfo.industry}</div>
+        <div className="text-sm text-gray-600 dark:text-foreground/80">{companyInfo.industry}</div>
       )}
       {companyInfo.location && (
-        <div className="text-sm text-gray-500">{companyInfo.location}</div>
+        <div className="text-sm text-gray-500 dark:text-foreground/80">{companyInfo.location}</div>
       )}
       {companyInfo.phone && (
-        <div className="text-sm text-gray-500">{companyInfo.phone}</div>
+        <div className="text-sm text-gray-500 dark:text-foreground/80">{companyInfo.phone}</div>
       )}
     </div>
   );
@@ -790,44 +790,44 @@ export const AllLeadsSection = ({
                            <TableCell>
                              <div className="flex items-center space-x-3">
                                <Avatar className="h-8 w-8">
-                                 <AvatarImage src={`/avatars/${leadId}.png`} />
-                                 <AvatarFallback>
-                                   {fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'N'}
-                                 </AvatarFallback>
-                               </Avatar>
-                                <div>
-                                  <div className="font-medium text-gray-900">{fullName}</div>
-                                  <div className="text-sm text-gray-500">{email || 'No email'}</div>
-                                  {lead.status === 'replied' && lead.last_reply_snippet && (
-                                    <div className="mt-2 border-l-2 border-emerald-200 pl-2">
-                                      <div className="flex items-center space-x-1">
-                                        <Reply className="h-3 w-3 text-emerald-600" />
-                                        <span className="text-xs font-medium text-emerald-700">Reply:</span>
-                                        <span className="text-xs text-gray-700">
-                                          {lead.last_reply_subject || '(no subject)'}
-                                        </span>
-                                      </div>
-                                      <div className="text-xs text-gray-600 mt-1 line-clamp-2">
-                                        {lead.last_reply_snippet.length > 140 
-                                          ? `${lead.last_reply_snippet.substring(0, 140)}...`
-                                          : lead.last_reply_snippet
-                                        }
-                                      </div>
-                                      <div className="text-xs text-gray-400 mt-1">
-                                        from {lead.last_reply_from} • {lead.last_reply_at ? formatRelativeTime(lead.last_reply_at).relative : 'unknown time'}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
+                                  <AvatarImage src={`/avatars/${leadId}.png`} />
+                                  <AvatarFallback>
+                                    {fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'N'}
+                                  </AvatarFallback>
+                                </Avatar>
+                                 <div>
+                                   <div className="font-medium text-gray-900 dark:text-white">{fullName}</div>
+                                   <div className="text-sm text-gray-500 dark:text-foreground/80">{email || 'No email'}</div>
+                                   {lead.status === 'replied' && lead.last_reply_snippet && (
+                                     <div className="mt-2 border-l-2 border-emerald-200 dark:border-emerald-600 pl-2">
+                                       <div className="flex items-center space-x-1">
+                                         <Reply className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                                         <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Reply:</span>
+                                         <span className="text-xs text-gray-700 dark:text-foreground/90">
+                                           {lead.last_reply_subject || '(no subject)'}
+                                         </span>
+                                       </div>
+                                       <div className="text-xs text-gray-600 dark:text-foreground/80 mt-1 line-clamp-2">
+                                         {lead.last_reply_snippet.length > 140 
+                                           ? `${lead.last_reply_snippet.substring(0, 140)}...`
+                                           : lead.last_reply_snippet
+                                         }
+                                       </div>
+                                       <div className="text-xs text-gray-400 dark:text-foreground/60 mt-1">
+                                         from {lead.last_reply_from} • {lead.last_reply_at ? formatRelativeTime(lead.last_reply_at).relative : 'unknown time'}
+                                       </div>
+                                     </div>
+                                   )}
+                                 </div>
                              </div>
                            </TableCell>
-                           <TableCell className="font-medium">
-                             {jobTitle || 'N/A'}
-                           </TableCell>
-                           <TableCell>
-                             <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
-                           </TableCell>
-                           <TableCell className="text-sm text-gray-500">{location || 'N/A'}</TableCell>
+                           <TableCell className="font-medium dark:text-foreground">
+                              {jobTitle || 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                              <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-500 dark:text-foreground/80">{location || 'N/A'}</TableCell>
                             <TableCell>
                                <div className="flex flex-col gap-1">
                                  {/* Only show status if it's not "no-tz" */}
@@ -837,16 +837,16 @@ export const AllLeadsSection = ({
                                    </Badge>
                                  )}
                                  {replySnippets.has(leadId) && (
-                                   <div className="mt-1 p-2 bg-emerald-50 border border-emerald-200 rounded-md">
-                                     <div className="flex items-center space-x-1 mb-1">
-                                       <Reply className="h-3 w-3 text-emerald-600" />
-                                       <span className="text-xs font-medium text-emerald-700">Latest Reply</span>
-                                     </div>
-                                     <div className="text-xs text-emerald-800 line-clamp-2">
-                                       {replySnippets.get(leadId)}
-                                     </div>
-                                   </div>
-                                 )}
+                                    <div className="mt-1 p-2 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-md">
+                                      <div className="flex items-center space-x-1 mb-1">
+                                        <Reply className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                                        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Latest Reply</span>
+                                      </div>
+                                      <div className="text-xs text-emerald-800 dark:text-emerald-200 line-clamp-2">
+                                        {replySnippets.get(leadId)}
+                                      </div>
+                                    </div>
+                                  )}
                                  <EnhancedCallStatusBadge 
                                    leadId={leadId} 
                                    lastCallStatus={lead.last_call_status}
@@ -855,9 +855,9 @@ export const AllLeadsSection = ({
                                  />
                                </div>
                             </TableCell>
-                           <TableCell className="text-sm text-gray-500">
-                             {phone || 'N/A'}
-                           </TableCell>
+                           <TableCell className="text-sm text-gray-500 dark:text-foreground/80">
+                              {phone || 'N/A'}
+                            </TableCell>
                              <TableCell className="text-right">
                                <div className="flex items-center justify-end space-x-2">
                                  {unviewedLeads.has(leadId) && (
