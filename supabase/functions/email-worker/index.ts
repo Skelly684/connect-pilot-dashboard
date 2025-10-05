@@ -54,9 +54,42 @@ serve(async (req) => {
       try {
         console.log(`📧 Processing email ${email.id} to ${email.to_email}`);
         
-        // TODO: Actually send the email via Gmail API here
-        // For now, we'll simulate successful sending
-        console.log(`✅ Simulated send (replace with Gmail API)`);
+        // Send email via Render backend (which handles Gmail API)
+        let sendSuccess = false;
+        try {
+          const renderBackend = 'https://leads-automation-apel.onrender.com/api';
+          const sendResponse = await fetch(`${renderBackend}/send-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-User-Id': email.user_id || 'system'
+            },
+            body: JSON.stringify({
+              to: email.to_email,
+              subject: email.subject,
+              body: email.body,
+              lead_id: email.lead_id,
+              campaign_id: email.campaign_id
+            })
+          });
+
+          if (sendResponse.ok) {
+            sendSuccess = true;
+            console.log(`✅ Email sent successfully via Render backend`);
+          } else {
+            const errorText = await sendResponse.text();
+            console.error(`❌ Render backend error:`, errorText);
+          }
+        } catch (sendError) {
+          console.error(`❌ Failed to reach Render backend:`, sendError);
+        }
+
+        if (!sendSuccess) {
+          // Failed to send, don't mark as sent
+          console.error(`Email ${email.id} failed to send`);
+          results.push({ email_id: email.id, status: 'send_failed', error: 'Render backend unavailable' });
+          continue;
+        }
         
         // Step 3: Mark email as sent (this logs to email_logs AND deletes from outbox)
         const { data: markResult, error: markError } = await supabase.rpc('mark_email_sent', {
