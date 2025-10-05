@@ -31,6 +31,9 @@ verify_jwt = true
 [functions.vapi-webhook]
 verify_jwt = false
 
+[functions.send-gmail]
+verify_jwt = false
+
 [db]
 enabled = true
 port = 54322

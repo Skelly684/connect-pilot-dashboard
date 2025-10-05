@@ -54,34 +54,43 @@ serve(async (req) => {
       try {
         console.log(`📧 Processing email ${email.id} to ${email.to_email}`);
         
-        // Send email via Render backend (which handles Gmail API)
+        // Get user_id for Gmail OAuth
+        const { data: leadData } = await supabase
+          .from('leads')
+          .select('user_id')
+          .eq('id', email.lead_id)
+          .single();
+
+        if (!leadData?.user_id) {
+          console.error(`❌ No user_id found for lead ${email.lead_id}`);
+          results.push({ email_id: email.id, status: 'send_failed', error: 'No user_id' });
+          continue;
+        }
+
+        // Send email via Gmail API edge function
         let sendSuccess = false;
         try {
-          const renderBackend = 'https://leads-automation-apel.onrender.com/api';
-          const sendResponse = await fetch(`${renderBackend}/send-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-User-Id': email.user_id || 'system'
-            },
-            body: JSON.stringify({
+          const sendResponse = await supabase.functions.invoke('send-gmail', {
+            body: {
+              user_id: leadData.user_id,
               to: email.to_email,
               subject: email.subject,
               body: email.body,
               lead_id: email.lead_id,
               campaign_id: email.campaign_id
-            })
+            }
           });
 
-          if (sendResponse.ok) {
+          if (sendResponse.error) {
+            console.error(`❌ Gmail send error:`, sendResponse.error);
+          } else if (sendResponse.data?.success) {
             sendSuccess = true;
-            console.log(`✅ Email sent successfully via Render backend`);
+            console.log(`✅ Email sent successfully via Gmail API`);
           } else {
-            const errorText = await sendResponse.text();
-            console.error(`❌ Render backend error:`, errorText);
+            console.error(`❌ Gmail send failed:`, sendResponse.data);
           }
         } catch (sendError) {
-          console.error(`❌ Failed to reach Render backend:`, sendError);
+          console.error(`❌ Failed to call send-gmail:`, sendError);
         }
 
         if (!sendSuccess) {
@@ -107,20 +116,20 @@ serve(async (req) => {
         console.log(`✅ Email ${email.id} logged and removed from outbox`);
         
         // Step 4: Update lead's next_email_step and next_email_at
-        const { data: leadData } = await supabase
+        const { data: leadUpdateData } = await supabase
           .from('leads')
           .select('next_email_step, campaign_id')
           .eq('id', email.lead_id)
           .single();
 
-        if (leadData) {
-          const nextStep = (leadData.next_email_step || 1) + 1;
+        if (leadUpdateData) {
+          const nextStep = (leadUpdateData.next_email_step || 1) + 1;
           
           // Get the next step details
           const { data: nextStepData } = await supabase
             .from('campaign_email_steps')
             .select('send_offset_minutes, template_id')
-            .eq('campaign_id', leadData.campaign_id)
+            .eq('campaign_id', leadUpdateData.campaign_id)
             .eq('step_number', nextStep)
             .eq('is_active', true)
             .single();
@@ -141,7 +150,7 @@ serve(async (req) => {
               // Queue the next email using the same function as the trigger
               await supabase.rpc('queue_email_step', {
                 p_lead_id: email.lead_id,
-                p_campaign_id: leadData.campaign_id,
+                p_campaign_id: leadUpdateData.campaign_id,
                 p_step_number: nextStep,
                 p_template_id: nextStepData.template_id,
                 p_to_email: email.to_email,
