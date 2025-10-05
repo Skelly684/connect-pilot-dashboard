@@ -65,68 +65,68 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Deep, rich background with blue undertones */
-    --background: 220 40% 3%;
-    --foreground: 210 15% 99%;
+    /* Deep, rich background */
+    --background: 217 33% 2%;
+    --foreground: 0 0% 100%;
 
-    /* Elevated surfaces with enhanced contrast */
-    --card: 220 35% 8%;
-    --card-foreground: 210 15% 99%;
+    /* Elevated surfaces with strong contrast */
+    --card: 217 33% 10%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 220 35% 10%;
-    --popover-foreground: 210 15% 99%;
+    --popover: 217 33% 12%;
+    --popover-foreground: 0 0% 100%;
 
     /* Vibrant glowing purple */
-    --primary: 262 95% 68%;
-    --primary-foreground: 210 15% 99%;
+    --primary: 262 100% 70%;
+    --primary-foreground: 0 0% 100%;
 
     /* Enhanced secondary surfaces */
-    --secondary: 220 30% 14%;
-    --secondary-foreground: 210 15% 98%;
+    --secondary: 217 25% 18%;
+    --secondary-foreground: 0 0% 100%;
 
     /* High contrast muted elements */
-    --muted: 220 30% 14%;
-    --muted-foreground: 215 15% 85%;
+    --muted: 217 25% 18%;
+    --muted-foreground: 0 0% 90%;
 
     /* Electric accent */
-    --accent: 262 95% 68%;
-    --accent-foreground: 210 15% 99%;
+    --accent: 262 100% 70%;
+    --accent-foreground: 0 0% 100%;
 
     /* Vibrant alerts */
-    --destructive: 0 90% 65%;
-    --destructive-foreground: 210 15% 99%;
+    --destructive: 0 100% 70%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 142 80% 50%;
-    --success-foreground: 210 15% 99%;
+    --success: 142 85% 55%;
+    --success-foreground: 0 0% 100%;
 
     /* Enhanced borders */
-    --border: 220 30% 18%;
-    --input: 220 35% 16%;
-    --ring: 262 95% 68%;
+    --border: 217 25% 20%;
+    --input: 217 33% 18%;
+    --ring: 262 100% 70%;
     
     /* Premium sidebar */
-    --sidebar-background: 220 40% 4%;
-    --sidebar-foreground: 210 15% 96%;
-    --sidebar-primary: 262 95% 68%;
-    --sidebar-primary-foreground: 210 15% 99%;
-    --sidebar-accent: 262 95% 68%;
-    --sidebar-accent-foreground: 210 15% 99%;
-    --sidebar-border: 220 30% 15%;
-    --sidebar-ring: 262 95% 68%;
+    --sidebar-background: 217 33% 4%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 262 100% 70%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 262 100% 70%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 217 25% 18%;
+    --sidebar-ring: 262 100% 70%;
     
-    /* Premium gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(262 95% 68%) 0%, hsl(280 95% 75%) 50%, hsl(262 95% 68%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(220 30% 14%) 0%, hsl(220 30% 18%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(220 35% 8%) 0%, hsl(220 35% 11%) 50%, hsl(220 35% 8%) 100%);
-    --gradient-sidebar: linear-gradient(180deg, hsl(220 40% 4%) 0%, hsl(220 40% 6%) 50%, hsl(220 40% 4%) 100%);
+    /* Premium gradients with depth */
+    --gradient-primary: linear-gradient(135deg, hsl(262 100% 70%) 0%, hsl(280 100% 75%) 50%, hsl(262 100% 70%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(217 25% 18%) 0%, hsl(217 25% 22%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(217 33% 10%) 0%, hsl(217 33% 13%) 50%, hsl(217 33% 10%) 100%);
+    --gradient-sidebar: linear-gradient(180deg, hsl(217 33% 4%) 0%, hsl(217 33% 6%) 50%, hsl(217 33% 4%) 100%);
     
     /* Sophisticated shadows with glows */
-    --shadow-sm: 0 2px 10px 0 rgb(0 0 0 / 0.4), 0 1px 4px 0 hsl(262 95% 68% / 0.08);
-    --shadow-md: 0 10px 20px -5px rgb(0 0 0 / 0.5), 0 5px 10px -3px hsl(262 95% 68% / 0.15);
-    --shadow-lg: 0 20px 40px -10px rgb(0 0 0 / 0.6), 0 10px 20px -5px hsl(262 95% 68% / 0.2);
-    --shadow-xl: 0 30px 60px -15px rgb(0 0 0 / 0.7), 0 15px 30px -8px hsl(262 95% 68% / 0.25);
-    --shadow-primary: 0 0 50px hsl(262 95% 68% / 0.4), 0 15px 40px -10px hsl(262 95% 68% / 0.5);
-    --shadow-hover: 0 0 70px hsl(262 95% 68% / 0.3), 0 25px 50px -12px hsl(262 95% 68% / 0.4), 0 0 0 1px hsl(262 95% 68% / 0.15);
+    --shadow-sm: 0 2px 10px 0 rgb(0 0 0 / 0.5), 0 1px 4px 0 hsl(262 100% 70% / 0.1);
+    --shadow-md: 0 10px 20px -5px rgb(0 0 0 / 0.6), 0 5px 10px -3px hsl(262 100% 70% / 0.2);
+    --shadow-lg: 0 20px 40px -10px rgb(0 0 0 / 0.7), 0 10px 20px -5px hsl(262 100% 70% / 0.25);
+    --shadow-xl: 0 30px 60px -15px rgb(0 0 0 / 0.8), 0 15px 30px -8px hsl(262 100% 70% / 0.3);
+    --shadow-primary: 0 0 60px hsl(262 100% 70% / 0.5), 0 20px 50px -12px hsl(262 100% 70% / 0.6);
+    --shadow-hover: 0 0 80px hsl(262 100% 70% / 0.4), 0 30px 60px -15px hsl(262 100% 70% / 0.5), 0 0 0 2px hsl(262 100% 70% / 0.3);
   }
 }
 
@@ -139,45 +139,92 @@ All colors MUST be HSL.
     @apply bg-background text-foreground antialiased;
   }
   
-  /* Premium card hover effects - automatically applied to all cards in dark mode */
-  .dark [class*="Card"] {
-    @apply transition-all duration-500 ease-out;
-  }
-  
-  .dark [class*="Card"]:hover {
-    @apply brightness-110;
-    transform: translateY(-2px) scale(1.01);
-    box-shadow: 0 0 70px hsl(262 95% 68% / 0.3), 0 25px 50px -12px hsl(262 95% 68% / 0.4), 0 0 0 1px hsl(262 95% 68% / 0.15);
-    animation: pulse-glow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-  
-  /* Button glow effects in dark mode */
-  .dark button:not([disabled]):hover {
-    animation: button-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-  
-  @keyframes pulse-glow {
-    0%, 100% {
-      box-shadow: 0 0 70px hsl(262 95% 68% / 0.3), 0 25px 50px -12px hsl(262 95% 68% / 0.4), 0 0 0 1px hsl(262 95% 68% / 0.15);
-    }
-    50% {
-      box-shadow: 0 0 100px hsl(262 95% 68% / 0.4), 0 30px 60px -12px hsl(262 95% 68% / 0.5), 0 0 0 1px hsl(262 95% 68% / 0.2);
-    }
-  }
-  
-  @keyframes button-pulse {
-    0%, 100% {
-      filter: brightness(1);
-    }
-    50% {
-      filter: brightness(1.15);
-    }
-  }
-  
   /* Smooth text rendering */
   .dark {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+  }
+  
+  /* Premium stat card hover effects */
+  .dark .stat-card {
+    @apply transition-all duration-700 ease-out cursor-pointer relative overflow-hidden;
+    transform-style: preserve-3d;
+  }
+  
+  .dark .stat-card::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-700;
+    background: linear-gradient(135deg, hsl(262 100% 70% / 0.1) 0%, hsl(262 100% 70% / 0.05) 100%);
+    z-index: 0;
+  }
+  
+  .dark .stat-card:hover::before {
+    @apply opacity-100;
+  }
+  
+  .dark .stat-card:hover {
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 0 80px hsl(262 100% 70% / 0.4), 
+                0 30px 60px -15px hsl(262 100% 70% / 0.5),
+                0 0 0 2px hsl(262 100% 70% / 0.3);
+    animation: border-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* Make numbers pop in dark mode */
+  .dark .stat-value {
+    @apply text-foreground font-bold;
+    text-shadow: 0 0 20px hsl(262 100% 70% / 0.5),
+                 0 2px 4px rgb(0 0 0 / 0.8);
+  }
+  
+  .dark .stat-card:hover .stat-value {
+    @apply scale-110;
+    text-shadow: 0 0 30px hsl(262 100% 70% / 0.7),
+                 0 4px 8px rgb(0 0 0 / 0.9);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Pulsing border animation */
+  @keyframes border-pulse {
+    0%, 100% {
+      box-shadow: 0 0 80px hsl(262 100% 70% / 0.4), 
+                  0 30px 60px -15px hsl(262 100% 70% / 0.5),
+                  0 0 0 2px hsl(262 100% 70% / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 120px hsl(262 100% 70% / 0.6), 
+                  0 35px 70px -15px hsl(262 100% 70% / 0.7),
+                  0 0 0 3px hsl(262 100% 70% / 0.5);
+    }
+  }
+  
+  /* Button glow effects */
+  .dark button:not([disabled]):hover {
+    animation: button-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes button-glow {
+    0%, 100% {
+      filter: brightness(1);
+      box-shadow: 0 0 20px hsl(262 100% 70% / 0.3);
+    }
+    50% {
+      filter: brightness(1.2);
+      box-shadow: 0 0 40px hsl(262 100% 70% / 0.5);
+    }
+  }
+  
+  /* Card hover effects */
+  .dark [class*="Card"]:not(.stat-card) {
+    @apply transition-all duration-500 ease-out;
+  }
+  
+  .dark [class*="Card"]:not(.stat-card):hover {
+    @apply brightness-110;
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 0 70px hsl(262 100% 70% / 0.35), 
+                0 25px 50px -12px hsl(262 100% 70% / 0.45), 
+                0 0 0 1px hsl(262 100% 70% / 0.2);
   }
 }
