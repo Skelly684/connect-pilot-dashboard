@@ -93,6 +93,7 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
   };
 
   const buildLeadObject = () => {
+    const emailValue = formData.email_address?.trim() || 'N/A';
     return {
       id: crypto.randomUUID(),
       user_id: user?.id,
@@ -100,7 +101,8 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       last_name: formData.last_name?.trim() || 'N/A',
       job_title: formData.job_title?.trim() || 'N/A',
       company_name: formData.company_name?.trim() || 'N/A',
-      email_address: formData.email_address?.trim() || 'N/A',
+      email: emailValue,
+      email_address: emailValue,
       contact_phone_numbers: JSON.stringify(formData.contact_phone_numbers.filter((p: any) => p.rawNumber?.trim())),
       city_name: formData.city_name?.trim() || 'N/A',
       state_name: formData.state_name?.trim() || 'N/A',
@@ -109,6 +111,7 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       campaign_id: formData.campaign_id || null,
       status: 'accepted',
       accepted_at: new Date().toISOString(),
+      next_email_step: 1,
       call_attempts: 0,
       last_call_status: null,
       next_call_at: null,
