@@ -83,7 +83,7 @@ serve(async (req) => {
         if (leadData) {
           const nextStep = (leadData.next_email_step || 1) + 1;
           
-          // Get the next step's timing
+          // Get the next step details
           const { data: nextStepData } = await supabase
             .from('campaign_email_steps')
             .select('send_offset_minutes, template_id')
@@ -92,22 +92,43 @@ serve(async (req) => {
             .eq('is_active', true)
             .single();
 
-          if (nextStepData) {
+          if (nextStepData && nextStepData.template_id) {
             // Calculate next send time
             const nextSendAt = new Date();
             nextSendAt.setMinutes(nextSendAt.getMinutes() + nextStepData.send_offset_minutes);
 
-            // Update lead and queue next email
-            await supabase
-              .from('leads')
-              .update({
-                next_email_step: nextStep,
-                next_email_at: nextSendAt.toISOString(),
-                last_email_status: 'sent'
-              })
-              .eq('id', email.lead_id);
-            
-            console.log(`📅 Updated lead: next step ${nextStep} at ${nextSendAt.toISOString()}`);
+            // Get template details for queuing
+            const { data: templateData } = await supabase
+              .from('email_templates')
+              .select('subject, body')
+              .eq('id', nextStepData.template_id)
+              .single();
+
+            if (templateData) {
+              // Queue the next email using the same function as the trigger
+              await supabase.rpc('queue_email_step', {
+                p_lead_id: email.lead_id,
+                p_campaign_id: leadData.campaign_id,
+                p_step_number: nextStep,
+                p_template_id: nextStepData.template_id,
+                p_to_email: email.to_email,
+                p_subject: templateData.subject,
+                p_body: templateData.body,
+                p_send_after: nextSendAt.toISOString()
+              });
+
+              // Update lead tracking
+              await supabase
+                .from('leads')
+                .update({
+                  next_email_step: nextStep,
+                  next_email_at: nextSendAt.toISOString(),
+                  last_email_status: 'sent'
+                })
+                .eq('id', email.lead_id);
+              
+              console.log(`📅 Queued next email (step ${nextStep}) for ${nextSendAt.toISOString()}`);
+            }
           } else {
             // No more steps, mark sequence complete
             await supabase
