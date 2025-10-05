@@ -159,8 +159,7 @@ export const useCampaigns = () => {
       // 2) Build UPSERT payload — include id when the step already exists
       const toUpsert = steps.map(s => {
         const prior = byStepNo.get(Number(s.step_number));
-        return {
-          id: prior?.id,    // preserve id if exists (enables true upsert)
+        const row: any = {
           campaign_id: campaignId,
           step_number: s.step_number,
           template_id: s.template_id ?? null,
@@ -168,6 +167,11 @@ export const useCampaigns = () => {
           send_at: s.send_at ?? null,
           send_offset_minutes: s.send_offset_minutes ?? null,
         };
+        // Only include id if it exists (for updates), otherwise let DB generate it
+        if (prior?.id) {
+          row.id = prior.id;
+        }
+        return row;
       });
 
       // 3) Work out which existing rows were removed in the UI
