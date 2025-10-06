@@ -21,9 +21,9 @@ serve(async (req) => {
       reply_type = "gmail_poll" 
     } = await req.json();
     
-    if (!lead_id || !from_email) {
+    if (!from_email) {
       return new Response(
-        JSON.stringify({ error: 'lead_id and from_email are required' }),
+        JSON.stringify({ error: 'from_email is required' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -37,19 +37,61 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log(`Processing email reply for lead ${lead_id} from ${from_email}`);
+    console.log(`Processing email reply from ${from_email}, lead_id hint: ${lead_id}`);
     
-    // Get lead details
-    const { data: lead, error: leadError } = await supabase
-      .from('leads')
-      .select('user_id, campaign_id, email_sequence_stopped')
-      .eq('id', lead_id)
-      .single();
+    // Try to find the lead - first by ID if provided, then by email
+    let lead = null;
+    let leadError = null;
+    
+    if (lead_id) {
+      const result = await supabase
+        .from('leads')
+        .select('id, user_id, campaign_id, email_sequence_stopped')
+        .eq('id', lead_id)
+        .maybeSingle();
+      
+      lead = result.data;
+      leadError = result.error;
+    }
+    
+    // If lead not found by ID, try to find by email address
+    if (!lead) {
+      console.log(`Lead ${lead_id} not found by ID, searching by email: ${from_email}`);
+      
+      const result = await supabase
+        .from('leads')
+        .select('id, user_id, campaign_id, email_sequence_stopped')
+        .eq('email_address', from_email)
+        .maybeSingle();
+      
+      lead = result.data;
+      leadError = result.error;
+      
+      if (lead) {
+        console.log(`✅ Found lead by email: ${lead.id}`);
+      }
+    }
 
     if (leadError) {
       console.error('Error fetching lead details:', leadError);
       throw leadError;
     }
+    
+    if (!lead) {
+      console.error(`❌ No lead found for email ${from_email}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Lead not found',
+          message: `No lead found with email ${from_email}. The lead may have been deleted.`
+        }),
+        { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    const actualLeadId = lead.id;
 
     // Update lead status to "replied" and add reply details
     const { error: updateError } = await supabase
@@ -62,7 +104,7 @@ serve(async (req) => {
         last_reply_at: new Date().toISOString(),
         last_email_reply_at: new Date().toISOString()
       })
-      .eq('id', lead_id);
+      .eq('id', actualLeadId);
 
     if (updateError) {
       console.error('Error updating lead status:', updateError);
@@ -73,7 +115,7 @@ serve(async (req) => {
     const { error: replyLogError } = await supabase
       .from('email_logs')
       .insert({
-        lead_id: lead_id,
+        lead_id: actualLeadId,
         campaign_id: lead.campaign_id,
         user_id: lead.user_id,
         from_email: from_email,
@@ -94,7 +136,7 @@ serve(async (req) => {
     if (!lead.email_sequence_stopped) {
       try {
         const stopResponse = await supabase.functions.invoke('stop-email-sequence', {
-          body: { lead_id, reason: 'reply' }
+          body: { lead_id: actualLeadId, reason: 'reply' }
         });
         
         if (stopResponse.error) {
@@ -108,15 +150,15 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Successfully processed reply for lead ${lead_id}`);
+    console.log(`Successfully processed reply for lead ${actualLeadId}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        lead_id: lead_id,
+        lead_id: actualLeadId,
         reply_processed: true,
         sequence_stopped: sequenceStoppedResult?.stopped || lead.email_sequence_stopped,
-        message: `Reply processed for lead ${lead_id}`
+        message: `Reply processed for lead ${actualLeadId}`
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
