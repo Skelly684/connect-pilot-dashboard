@@ -31,8 +31,8 @@ export function Activity({ leadId }: Props) {
 
   const rows: { kind: "email" | "call" | "reply"; when: string; title: string; sub?: string; body?: string }[] = [];
 
-  // Email events (both sent & replies) - deduplicate sequence stopped entries
-  const sequenceStoppedSeen = new Set<string>();
+  // Email events (both sent & replies) - deduplicate all entries
+  const emailSeenKeys = new Set<string>();
   
   for (const e of state.emails) {
     const when = e.created_at || e.updated_at || e.inserted_at || "";
@@ -49,6 +49,13 @@ export function Activity({ leadId }: Props) {
       const subject = (e.subject || "").trim();
       const body = e.body || snippet || "";
       
+      // Deduplicate replies by subject + sender
+      const dedupeKey = `reply_${subject}_${sender || e.to_email || 'unknown'}`;
+      if (emailSeenKeys.has(dedupeKey)) {
+        continue;
+      }
+      emailSeenKeys.add(dedupeKey);
+      
       rows.push({
         kind: "reply",
         when,
@@ -60,14 +67,12 @@ export function Activity({ leadId }: Props) {
       const subject = e.subject || "";
       const title = subject ? `Email sent: ${subject}` : "Email sent";
       
-      // Deduplicate sequence stopped entries - only show once per lead
-      if (subject === "[Sequence Stopped]") {
-        const dedupeKey = `sequence_stopped_${e.to_email || 'unknown'}`;
-        if (sequenceStoppedSeen.has(dedupeKey)) {
-          continue; // Skip this duplicate
-        }
-        sequenceStoppedSeen.add(dedupeKey);
+      // Deduplicate sent emails by subject + recipient
+      const dedupeKey = `sent_${subject}_${e.to_email || 'unknown'}`;
+      if (emailSeenKeys.has(dedupeKey)) {
+        continue;
       }
+      emailSeenKeys.add(dedupeKey);
       
       rows.push({
         kind: "email",

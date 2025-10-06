@@ -73,29 +73,29 @@ export const useNotifications = () => {
     });
   }, []);
 
-  const markAsRead = (notificationId: string) => {
+  const markAsRead = useCallback((notificationId: string) => {
     setNotifications(prev =>
       prev.map(n =>
         n.id === notificationId ? { ...n, read: true } : n
       )
     );
-  };
+  }, []);
 
-  const markAllAsRead = () => {
+  const markAllAsRead = useCallback(() => {
     setNotifications(prev =>
       prev.map(n => ({ ...n, read: true }))
     );
-  };
+  }, []);
 
-  const removeNotification = (notificationId: string) => {
+  const removeNotification = useCallback((notificationId: string) => {
     setNotifications(prev =>
       prev.filter(n => n.id !== notificationId)
     );
-  };
+  }, []);
 
-  const clearAllNotifications = () => {
+  const clearAllNotifications = useCallback(() => {
     setNotifications([]);
-  };
+  }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
