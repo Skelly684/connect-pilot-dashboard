@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
@@ -34,14 +34,26 @@ const Dashboard = () => {
     }
   }, [searchParams]);
 
+  const { 
+    leads, 
+    isLoading: isLoadingLeads, 
+    saveLeads, 
+    deleteLeads, 
+    deleteAllLeads,
+    updateLeadStatus,
+    sendAcceptedLeadsToBackend,
+    fetchLeads,
+    tempHighlightLeadId
+  } = useLeads();
+
   // Handle reply detection from realtime
-  const handleReplyDetected = (leadId: string) => {
+  const handleReplyDetected = useCallback((leadId: string) => {
     console.log('💜 Dashboard: Reply detected for lead', leadId);
     setReplyLeadId(leadId);
     
     // Refresh leads to show updated status
     fetchLeads();
-  };
+  }, [fetchLeads]);
 
   // Set up realtime listener for replies
   useLeadReplyRealtime(user?.id, handleReplyDetected);
@@ -56,18 +68,6 @@ const Dashboard = () => {
       setActiveTab(tab);
     }
   };
-  
-  const { 
-    leads, 
-    isLoading: isLoadingLeads, 
-    saveLeads, 
-    deleteLeads, 
-    deleteAllLeads,
-    updateLeadStatus,
-    sendAcceptedLeadsToBackend,
-    fetchLeads,
-    tempHighlightLeadId
-  } = useLeads();
 
   const handleSearchResults = (results: any[]) => {
     console.log("Received search results:", results);
