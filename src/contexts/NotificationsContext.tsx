@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useMemo } from 'react';
 import { useNotifications as useNotificationsHook, Notification } from '@/hooks/useNotifications';
 
 interface NotificationsContextType {
@@ -14,10 +14,21 @@ interface NotificationsContextType {
 const NotificationsContext = createContext<NotificationsContextType | undefined>(undefined);
 
 export const NotificationsProvider = ({ children }: { children: ReactNode }) => {
-  const notifications = useNotificationsHook();
+  const notificationsHook = useNotificationsHook();
+  
+  // Memoize the context value to prevent unnecessary re-renders and subscription recreations
+  const contextValue = useMemo(() => notificationsHook, [
+    notificationsHook.notifications,
+    notificationsHook.unreadCount,
+    notificationsHook.addNotification,
+    notificationsHook.markAsRead,
+    notificationsHook.markAllAsRead,
+    notificationsHook.removeNotification,
+    notificationsHook.clearAllNotifications,
+  ]);
   
   return (
-    <NotificationsContext.Provider value={notifications}>
+    <NotificationsContext.Provider value={contextValue}>
       {children}
     </NotificationsContext.Provider>
   );
