@@ -115,76 +115,8 @@ serve(async (req) => {
         
         console.log(`✅ Email ${email.id} logged and removed from outbox`);
         
-        // Step 4: Update lead's next_email_step and next_email_at
-        const { data: leadUpdateData } = await supabase
-          .from('leads')
-          .select('next_email_step, campaign_id')
-          .eq('id', email.lead_id)
-          .single();
-
-        if (leadUpdateData) {
-          const nextStep = (leadUpdateData.next_email_step || 1) + 1;
-          
-          // Get the next step details
-          const { data: nextStepData } = await supabase
-            .from('campaign_email_steps')
-            .select('send_offset_minutes, template_id')
-            .eq('campaign_id', leadUpdateData.campaign_id)
-            .eq('step_number', nextStep)
-            .eq('is_active', true)
-            .single();
-
-          if (nextStepData && nextStepData.template_id) {
-            // Calculate next send time
-            const nextSendAt = new Date();
-            nextSendAt.setMinutes(nextSendAt.getMinutes() + nextStepData.send_offset_minutes);
-
-            // Get template details for queuing
-            const { data: templateData } = await supabase
-              .from('email_templates')
-              .select('subject, body')
-              .eq('id', nextStepData.template_id)
-              .single();
-
-            if (templateData) {
-              // Queue the next email using the same function as the trigger
-              await supabase.rpc('queue_email_step', {
-                p_lead_id: email.lead_id,
-                p_campaign_id: leadUpdateData.campaign_id,
-                p_step_number: nextStep,
-                p_template_id: nextStepData.template_id,
-                p_to_email: email.to_email,
-                p_subject: templateData.subject,
-                p_body: templateData.body,
-                p_send_after: nextSendAt.toISOString()
-              });
-
-              // Update lead tracking
-              await supabase
-                .from('leads')
-                .update({
-                  next_email_step: nextStep,
-                  next_email_at: nextSendAt.toISOString(),
-                  last_email_status: 'sent'
-                })
-                .eq('id', email.lead_id);
-              
-              console.log(`📅 Queued next email (step ${nextStep}) for ${nextSendAt.toISOString()}`);
-            }
-          } else {
-            // No more steps, mark sequence complete
-            await supabase
-              .from('leads')
-              .update({
-                next_email_step: null,
-                next_email_at: null,
-                last_email_status: 'sequence_complete'
-              })
-              .eq('id', email.lead_id);
-            
-            console.log(`🎉 Email sequence completed for lead ${email.lead_id}`);
-          }
-        }
+        // mark_email_sent already handles queuing the next step and updating the lead
+        // No need to duplicate that logic here
 
         results.push({ email_id: email.id, status: 'sent', to: email.to_email });
 

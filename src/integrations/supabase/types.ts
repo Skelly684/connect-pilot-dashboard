@@ -910,6 +910,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      cleanup_stuck_emails: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       is_admin: {
         Args: { u: string }
         Returns: boolean
