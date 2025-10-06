@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -276,6 +277,7 @@ export const AllLeadsSection = ({
   onRefresh,
   tempHighlightLeadId 
 }: AllLeadsSectionProps) => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -859,7 +861,10 @@ export const AllLeadsSection = ({
                                  {unviewedLeads.has(leadId) && (
                                   <Button
                                     size="sm"
-                                    onClick={() => markLeadAsViewed(leadId)}
+                                    onClick={() => {
+                                      markLeadAsViewed(leadId);
+                                      navigate(`/lead/${leadId}`);
+                                    }}
                                     className="bg-primary hover:bg-primary/90 text-primary-foreground animate-pulse"
                                   >
                                     <Eye className="h-4 w-4 mr-1" />

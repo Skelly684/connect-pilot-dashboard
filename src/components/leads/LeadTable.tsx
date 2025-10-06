@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -276,6 +277,7 @@ const CompanyCell = ({ company }: { company: any }) => {
 };
 
 export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLeads, onUpdateLeadStatus, onRefresh, tempHighlightLeadId }: LeadTableProps) => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
@@ -702,11 +704,14 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                              </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end space-x-2">
-                                   {unviewedLeads.has(leadId) && (
+                                  {unviewedLeads.has(leadId) && (
                                     <Button
                                       variant="default"
                                       size="sm"
-                                      onClick={() => markLeadAsViewed(leadId)}
+                                      onClick={() => {
+                                        markLeadAsViewed(leadId);
+                                        navigate(`/lead/${leadId}`);
+                                      }}
                                       className="bg-primary hover:bg-primary/90 text-primary-foreground animate-pulse"
                                     >
                                       <Eye className="h-4 w-4 mr-1" />
