@@ -407,15 +407,7 @@ export type Database = {
           to_email?: string | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "email_logs_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       email_outbox: {
         Row: {
