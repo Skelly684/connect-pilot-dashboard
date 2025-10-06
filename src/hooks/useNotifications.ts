@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export interface Notification {
   id: string;
@@ -36,9 +36,8 @@ export const useNotifications = () => {
     localStorage.setItem('psn-notifications', JSON.stringify(notifications));
   }, [notifications]);
 
-  const addNotification = (leadName: string, leadId: string, oldStatus: string, newStatus: string) => {
+  const addNotification = useCallback((leadName: string, leadId: string, oldStatus: string, newStatus: string) => {
     console.log('🔔 addNotification CALLED:', { leadName, leadId, oldStatus, newStatus });
-    console.log('🔔 Current notifications before add:', notifications.length);
     
     // Don't notify if status didn't actually change
     if (oldStatus === newStatus) {
@@ -66,22 +65,13 @@ export const useNotifications = () => {
     };
 
     console.log('✅ Creating notification:', notification);
-    console.log('🔔 About to call setNotifications...');
     setNotifications(prev => {
-      console.log('🔔 Inside setNotifications callback, prev:', prev.length);
       const newNotifications = [notification, ...prev];
-      console.log('📋 New notifications array length:', newNotifications.length);
-      console.log('📋 First notification:', newNotifications[0]);
-      // Force a localStorage update immediately
       localStorage.setItem('psn-notifications', JSON.stringify(newNotifications));
-      console.log('💾 Saved to localStorage');
-      // Dispatch custom event to notify other components
       window.dispatchEvent(new CustomEvent('notifications-updated', { detail: newNotifications }));
-      console.log('📣 Dispatched notifications-updated event');
       return newNotifications;
     });
-    console.log('🔔 setNotifications called');
-  };
+  }, []);
 
   const markAsRead = (notificationId: string) => {
     setNotifications(prev =>
