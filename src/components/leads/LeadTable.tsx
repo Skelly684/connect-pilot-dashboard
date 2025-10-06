@@ -297,18 +297,37 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
     return new Set();
   });
   
+  // Track leads that are currently pulsing (will stop after 30s)
+  const [pulsingLeads, setPulsingLeads] = useState<Set<string>>(new Set());
+  
   const { toast } = useToast();
 
   // Add highlighted lead from realtime updates
   useEffect(() => {
     if (tempHighlightLeadId) {
-      console.log('🔥 LeadTable: Adding lead to unviewed:', tempHighlightLeadId);
+      console.log('🔥 LeadTable: Adding lead to pulsing:', tempHighlightLeadId);
+      setPulsingLeads(prev => {
+        const newSet = new Set(prev);
+        newSet.add(tempHighlightLeadId);
+        return newSet;
+      });
+      
       setUnviewedLeads(prev => {
         const newSet = new Set(prev);
         newSet.add(tempHighlightLeadId);
         localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newSet]));
         return newSet;
       });
+      
+      // Stop pulsing after 30 seconds, but keep subtle accent
+      setTimeout(() => {
+        console.log('⏰ LeadTable: Stopping pulse for', tempHighlightLeadId);
+        setPulsingLeads(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(tempHighlightLeadId);
+          return newSet;
+        });
+      }, 30000);
     }
   }, [tempHighlightLeadId]);
 
@@ -645,18 +664,22 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                     const email = extractEmail(lead);
                     const phone = extractPhone(lead);
                     const location = extractLocation(lead);
-                    const status = safeToString(lead.status || 'new');
+                     const status = safeToString(lead.status || 'new');
+                     const isPulsing = pulsingLeads.has(leadId);
+                     const isUnviewed = unviewedLeads.has(leadId);
 
-                     return (
-                         <>
-                             <TableRow 
-                             key={leadId} 
-                             className={`transition-all duration-500 cursor-pointer ${
-                               unviewedLeads.has(leadId) 
-                                 ? 'lead-pulse-purple' 
-                                 : 'hover:bg-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-purple-900/60 dark:hover:to-purple-700/60 dark:hover:shadow-[0_0_50px_hsl(262_100%_70%/0.6)]'
-                             }`}
-                           >
+                      return (
+                          <>
+                              <TableRow 
+                              key={leadId} 
+                              className={`transition-all duration-500 cursor-pointer ${
+                                isPulsing 
+                                  ? 'lead-pulse-purple' 
+                                  : isUnviewed
+                                  ? 'lead-accent-purple'
+                                  : 'hover:bg-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-purple-900/60 dark:hover:to-purple-700/60 dark:hover:shadow-[0_0_50px_hsl(262_100%_70%/0.6)]'
+                              }`}
+                            >
                             <TableCell>
                               <Checkbox
                                 checked={selectedLeads.has(leadId)}

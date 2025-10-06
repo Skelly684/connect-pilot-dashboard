@@ -14,13 +14,17 @@ import { OutreachCenter } from "@/components/outreach/OutreachCenter";
 import { SettingsPage } from "@/components/settings/SettingsPage";
 import { AdminPage } from "@/components/admin/AdminPage";
 import { useLeads } from "@/hooks/useLeads";
+import { useLeadReplyRealtime } from "@/hooks/useLeadReplyRealtime";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [replyLeadId, setReplyLeadId] = useState<string | null>(null);
 
   // Handle URL parameters for navigation from other pages
   useEffect(() => {
@@ -29,6 +33,30 @@ const Dashboard = () => {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
+
+  // Handle reply detection from realtime
+  const handleReplyDetected = (leadId: string) => {
+    console.log('💜 Dashboard: Reply detected for lead', leadId);
+    setReplyLeadId(leadId);
+    
+    // Mark as unviewed for purple pulse
+    const unviewedLeads = JSON.parse(localStorage.getItem('psn-unviewed-leads') || '[]');
+    if (!unviewedLeads.includes(leadId)) {
+      unviewedLeads.push(leadId);
+      localStorage.setItem('psn-unviewed-leads', JSON.stringify(unviewedLeads));
+    }
+    
+    // Refresh leads to show updated status
+    fetchLeads();
+    
+    // Clear after 30 seconds
+    setTimeout(() => {
+      setReplyLeadId(null);
+    }, 30000);
+  };
+
+  // Set up realtime listener for replies
+  useLeadReplyRealtime(user?.id, handleReplyDetected);
 
   // Handle tab changes with proper navigation
   const handleTabChange = (tab: string) => {
@@ -99,7 +127,7 @@ const Dashboard = () => {
               onDeleteAllLeads={deleteAllLeads}
               onUpdateLeadStatus={updateLeadStatus}
               onRefresh={fetchLeads}
-              tempHighlightLeadId={tempHighlightLeadId}
+              tempHighlightLeadId={replyLeadId || tempHighlightLeadId}
             />
           </div>
         );
@@ -112,7 +140,7 @@ const Dashboard = () => {
             onDeleteLeads={deleteLeads}
             onDeleteAllLeads={deleteAllLeads}
             onRefresh={fetchLeads}
-            tempHighlightLeadId={tempHighlightLeadId}
+            tempHighlightLeadId={replyLeadId || tempHighlightLeadId}
           />
         );
       case "review-leads":
