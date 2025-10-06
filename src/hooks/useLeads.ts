@@ -246,6 +246,22 @@ export const useLeads = () => {
 
   const sendAcceptedLeadsToBackend = async (acceptedLeads: any[], campaignId?: string) => {
     try {
+      // Check delivery rules to see if calls are enabled
+      let shouldSendCalls = true; // Default to true if no campaign found
+      if (campaignId) {
+        const { data: campaign } = await supabase
+          .from('campaigns')
+          .select('delivery_rules')
+          .eq('id', campaignId)
+          .single();
+        
+        if (campaign?.delivery_rules && typeof campaign.delivery_rules === 'object') {
+          const deliveryRules = campaign.delivery_rules as any;
+          shouldSendCalls = deliveryRules.use_calls !== false;
+          console.log('📞 Campaign delivery_rules.use_calls:', shouldSendCalls);
+        }
+      }
+
       // Prepare the leads data for the backend
       const leadsData = acceptedLeads.map(lead => ({
         id: lead.id,
@@ -255,7 +271,8 @@ export const useLeads = () => {
         jobTitle: lead.job_title,
         company: lead.company || lead.company_name,
         email: lead.email || lead.email_address,
-        phone: lead.phone,
+        // Only include phone if calls are enabled in campaign
+        phone: shouldSendCalls ? lead.phone : null,
         location: lead.location,
         headline: lead.headline,
         status: lead.status

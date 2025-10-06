@@ -202,6 +202,7 @@ export type Database = {
           retry_minutes: number
           send_first_immediately: boolean | null
           subject: string | null
+          timezone: string | null
           updated_at: string
           user_id: string | null
         }
@@ -225,6 +226,7 @@ export type Database = {
           retry_minutes?: number
           send_first_immediately?: boolean | null
           subject?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -248,6 +250,7 @@ export type Database = {
           retry_minutes?: number
           send_first_immediately?: boolean | null
           subject?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id?: string | null
         }
