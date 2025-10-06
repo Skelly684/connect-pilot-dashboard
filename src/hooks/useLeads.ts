@@ -501,7 +501,7 @@ export const useLeads = () => {
             console.log('🔔 Realtime: Status changed from', oldLead.status, 'to', newLead.status);
             const leadName = newLead.name || `${newLead.first_name || ''} ${newLead.last_name || ''}`.trim() || 'Unknown Lead';
             
-            console.log('🔔 Realtime: Calling addNotification for', leadName);
+            console.log('🔔 Realtime: Calling addNotification for', leadName, 'status:', newLead.status);
             // Trigger notification for status change
             addNotification(leadName, newLead.id, oldLead.status, newLead.status);
             
@@ -509,12 +509,17 @@ export const useLeads = () => {
             setTempHighlightLeadId(newLead.id);
             console.log('🔥 Realtime: Set tempHighlightLeadId to', newLead.id);
             
-            // Mark lead as unviewed for highlighting
+            // Mark lead as unviewed for highlighting with purple pulse
             const unviewedLeads = JSON.parse(localStorage.getItem('psn-unviewed-leads') || '[]');
             if (!unviewedLeads.includes(newLead.id)) {
               unviewedLeads.push(newLead.id);
               localStorage.setItem('psn-unviewed-leads', JSON.stringify(unviewedLeads));
-              console.log('💾 Realtime: Marked lead as unviewed:', newLead.id);
+              console.log('💾 Realtime: Marked lead as unviewed for purple pulse:', newLead.id);
+            }
+            
+            // Special logging for replied status
+            if (newLead.status === 'replied') {
+              console.log('✉️ REPLIED STATUS DETECTED - Notification and purple pulse triggered for:', leadName);
             }
             
             // Refresh leads to show updated data
@@ -527,6 +532,11 @@ export const useLeads = () => {
       )
       .subscribe((status) => {
         console.log('🔔 Realtime subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Realtime: Successfully subscribed to lead updates');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Realtime: Channel error - will attempt to reconnect');
+        }
       });
 
     console.log('✅ useLeads: Realtime subscription created');
@@ -536,7 +546,7 @@ export const useLeads = () => {
       console.log('🧹 useLeads: Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [addNotification]);
 
   return {
     leads,
