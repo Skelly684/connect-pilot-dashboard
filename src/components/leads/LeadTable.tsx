@@ -710,7 +710,12 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                                       size="sm"
                                       onClick={() => {
                                         markLeadAsViewed(leadId);
-                                        navigate(`/lead/${leadId}`);
+                                        // Expand the activity panel
+                                        const newExpanded = new Set(expandedRows);
+                                        if (!expandedRows.has(leadId)) {
+                                          newExpanded.add(leadId);
+                                        }
+                                        setExpandedRows(newExpanded);
                                       }}
                                       className="bg-primary hover:bg-primary/90 text-primary-foreground animate-pulse"
                                     >
