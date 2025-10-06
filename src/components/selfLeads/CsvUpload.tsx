@@ -98,7 +98,6 @@ export function CsvUpload() {
           campaign_id: selectedCampaignId,
           status: 'accepted',
           accepted_at: new Date().toISOString(),
-          next_email_step: 1,
           call_attempts: 0,
           last_call_status: null,
           next_call_at: null,

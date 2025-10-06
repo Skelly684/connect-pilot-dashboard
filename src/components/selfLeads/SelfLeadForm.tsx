@@ -111,7 +111,6 @@ export function SelfLeadForm({ formData, onFormDataChange, onReset }: SelfLeadFo
       campaign_id: formData.campaign_id || null,
       status: 'accepted',
       accepted_at: new Date().toISOString(),
-      next_email_step: 1,
       call_attempts: 0,
       last_call_status: null,
       next_call_at: null,
