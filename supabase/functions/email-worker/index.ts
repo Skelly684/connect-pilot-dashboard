@@ -21,6 +21,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Step 0: Clean up any stuck emails first
+    console.log('🧹 Running cleanup on stuck emails...');
+    await supabase.rpc('cleanup_stuck_emails');
+
     // Step 1: Claim emails from the queue using atomic locking
     const { data: claimedEmails, error: claimError } = await supabase.rpc('claim_next_email', {
       p_limit: 10  // Process up to 10 emails per run
@@ -62,8 +66,15 @@ serve(async (req) => {
           .single();
 
         if (!leadData?.user_id) {
-          console.error(`❌ No user_id found for lead ${email.lead_id}`);
-          results.push({ email_id: email.id, status: 'send_failed', error: 'No user_id' });
+          console.error(`❌ No user_id found for lead ${email.lead_id} - deleting email from queue`);
+          
+          // Delete this email since the lead doesn't exist
+          await supabase
+            .from('email_outbox')
+            .delete()
+            .eq('id', email.id);
+            
+          results.push({ email_id: email.id, status: 'deleted', error: 'Lead not found' });
           continue;
         }
 
@@ -94,9 +105,21 @@ serve(async (req) => {
         }
 
         if (!sendSuccess) {
-          // Failed to send, don't mark as sent
-          console.error(`Email ${email.id} failed to send`);
-          results.push({ email_id: email.id, status: 'send_failed', error: 'Render backend unavailable' });
+          // Failed to send, reset the email back to queued
+          console.error(`❌ Email ${email.id} failed to send - resetting to queued`);
+          
+          await supabase
+            .from('email_outbox')
+            .update({
+              status: 'queued',
+              lock_token: null,
+              attempts: email.attempts + 1,
+              last_error: 'Failed to send via Gmail API',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', email.id);
+            
+          results.push({ email_id: email.id, status: 'send_failed', error: 'Gmail API failed' });
           continue;
         }
         
