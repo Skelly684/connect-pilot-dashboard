@@ -11,7 +11,7 @@ interface EmailRequest {
   to: string;
   subject: string;
   body: string;
-  lead_id?: string;
+  lead_id: string;  // Required for Reply-To tracking
   campaign_id?: string;
 }
 
@@ -30,9 +30,25 @@ serve(async (req) => {
 
     const { user_id, to, subject, body, lead_id, campaign_id }: EmailRequest = await req.json();
 
-    if (!user_id || !to || !subject || !body) {
-      throw new Error('Missing required fields: user_id, to, subject, body');
+    if (!user_id || !to || !subject || !body || !lead_id) {
+      throw new Error('Missing required fields: user_id, to, subject, body, lead_id');
     }
+
+    // Verify the lead exists before sending
+    const { data: lead, error: leadError } = await supabase
+      .from('leads')
+      .select('id, email_address')
+      .eq('id', lead_id)
+      .single();
+
+    if (leadError || !lead) {
+      console.error('Lead not found:', lead_id, leadError);
+      throw new Error(`Cannot send email: Lead ${lead_id} does not exist`);
+    }
+
+    // Form the Reply-To address with lead tracking
+    const replyTo = `scott+${lead_id}@premiersportsnetwork.com`;
+    console.log(`📧 Sending email with Reply-To: ${replyTo}`);
 
     // Get user's Gmail OAuth token
     const { data: tokenData, error: tokenError } = await supabase
@@ -84,9 +100,10 @@ serve(async (req) => {
       console.log('✅ Token refreshed');
     }
 
-    // Create email in RFC 2822 format
+    // Create email in RFC 2822 format with Reply-To tracking
     const emailContent = [
       `To: ${to}`,
+      `Reply-To: ${replyTo}`,
       `Subject: ${subject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
@@ -119,14 +136,39 @@ serve(async (req) => {
     }
 
     const gmailResponse = await sendResponse.json();
-    console.log('✅ Email sent via Gmail, message ID:', gmailResponse.id);
+    const providerMessageId = gmailResponse.id;
+    console.log('✅ Email sent via Gmail, message ID:', providerMessageId);
+
+    // Log the sent email with lead tracking info
+    const { error: logError } = await supabase
+      .from('email_logs')
+      .insert({
+        lead_id,
+        campaign_id,
+        user_id,
+        to_email: to,
+        subject,
+        body,
+        status: 'sent',
+        provider: 'gmail_api',
+        direction: 'outbound',
+        idem_key: `sent_${lead_id}_${Date.now()}`,
+        created_at: new Date().toISOString()
+      });
+
+    if (logError) {
+      console.error('Warning: Failed to log email send:', logError);
+      // Don't fail the request if logging fails
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message_id: gmailResponse.id,
+        message_id: providerMessageId,
         to,
-        subject
+        subject,
+        reply_to: replyTo,
+        lead_id
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

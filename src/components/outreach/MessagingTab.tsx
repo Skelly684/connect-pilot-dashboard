@@ -9,7 +9,8 @@ import { Campaign, EmailTemplate, useCampaigns } from '@/hooks/useCampaigns';
 import { TemplatePreview } from './TemplatePreview';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Trash2, Info } from 'lucide-react';
 
 interface MessagingTabProps {
   campaign: Campaign;
@@ -210,6 +211,14 @@ export const MessagingTab = ({
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          <Alert className="bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-sm text-blue-900">
+              Email replies are automatically tracked via Reply-To addresses (scott+lead_id@premiersportsnetwork.com). 
+              When leads reply, their status updates to "replied" and sequences stop automatically.
+            </AlertDescription>
+          </Alert>
+
           <div className="text-sm text-muted-foreground">
             <p>Available tokens: {'{first_name}'}, {'{last_name}'}, {'{company}'}, {'{company_name}'}, {'{email}'}, {'{job_title}'}</p>
           </div>
