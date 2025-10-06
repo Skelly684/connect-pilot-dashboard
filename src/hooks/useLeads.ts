@@ -546,7 +546,8 @@ export const useLeads = () => {
       console.log('🧹 useLeads: Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
-  }, [addNotification]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     leads,
