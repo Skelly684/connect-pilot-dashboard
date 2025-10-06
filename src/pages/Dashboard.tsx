@@ -39,7 +39,7 @@ const Dashboard = () => {
     console.log('💜 Dashboard: Reply detected for lead', leadId);
     setReplyLeadId(leadId);
     
-    // Mark as unviewed for purple pulse
+    // Mark as unviewed for purple pulse (persists until user views the lead)
     const unviewedLeads = JSON.parse(localStorage.getItem('psn-unviewed-leads') || '[]');
     if (!unviewedLeads.includes(leadId)) {
       unviewedLeads.push(leadId);
@@ -48,11 +48,6 @@ const Dashboard = () => {
     
     // Refresh leads to show updated status
     fetchLeads();
-    
-    // Clear after 30 seconds
-    setTimeout(() => {
-      setReplyLeadId(null);
-    }, 30000);
   };
 
   // Set up realtime listener for replies

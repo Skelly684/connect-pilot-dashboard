@@ -286,7 +286,6 @@ export const AllLeadsSection = ({
   const [changeStatusDialogOpen, setChangeStatusDialogOpen] = useState(false);
   const [selectedLeadForAction, setSelectedLeadForAction] = useState<{ id: string; name: string; status: string } | null>(null);
   const [unviewedLeads, setUnviewedLeads] = useState<Set<string>>(new Set());
-  const [pulsingLeads, setPulsingLeads] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Load unviewed leads from localStorage
@@ -306,31 +305,26 @@ export const AllLeadsSection = ({
   // Add highlighted lead from realtime updates
   useEffect(() => {
     if (tempHighlightLeadId) {
-      console.log('🔥 AllLeadsSection: Adding lead to pulsing:', tempHighlightLeadId);
-      setPulsingLeads(prev => {
-        const newSet = new Set(prev);
-        newSet.add(tempHighlightLeadId);
-        return newSet;
-      });
-      
+      console.log('🔥 AllLeadsSection: Adding lead to unviewed:', tempHighlightLeadId);
       setUnviewedLeads(prev => {
         const newSet = new Set(prev);
         newSet.add(tempHighlightLeadId);
         localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newSet]));
         return newSet;
       });
-      
-      // Stop pulsing after 30 seconds, but keep subtle accent
-      setTimeout(() => {
-        console.log('⏰ AllLeadsSection: Stopping pulse for', tempHighlightLeadId);
-        setPulsingLeads(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(tempHighlightLeadId);
-          return newSet;
-        });
-      }, 30000);
     }
   }, [tempHighlightLeadId]);
+
+  // Mark lead as viewed
+  const markLeadAsViewed = (leadId: string) => {
+    console.log('👁️ Marking lead as viewed:', leadId);
+    setUnviewedLeads(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(leadId);
+      localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newSet]));
+      return newSet;
+    });
+  };
 
   // Filter leads based on search and status
   const filteredLeads = leads.filter(lead => {
@@ -787,7 +781,6 @@ export const AllLeadsSection = ({
                     const phone = extractPhone(lead);
                     const location = extractLocation(lead);
                      const status = safeToString(lead.status || 'new');
-                     const isPulsing = pulsingLeads.has(leadId);
                      const isUnviewed = unviewedLeads.has(leadId);
 
                       return (
@@ -795,10 +788,8 @@ export const AllLeadsSection = ({
                           <TableRow 
                             key={leadId} 
                             className={`transition-all duration-500 ${
-                              isPulsing 
-                                ? 'lead-pulse-purple' 
-                                : isUnviewed
-                                ? 'lead-accent-purple'
+                              isUnviewed
+                                ? 'lead-pulse-purple'
                                 : 'hover:bg-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-purple-900/60 dark:hover:to-purple-700/60 dark:hover:shadow-[0_0_50px_hsl(262_100%_70%/0.6)]'
                             }`}
                           >
@@ -882,27 +873,22 @@ export const AllLeadsSection = ({
                              <TableCell className="text-right">
                                <div className="flex items-center justify-end space-x-2">
                                  {unviewedLeads.has(leadId) && (
-                                   <Button
-                                     size="sm"
-                                     onClick={() => {
-                                       console.log('AllLeadsSection View button clicked for lead:', leadId);
-                                       const newUnviewed = new Set(unviewedLeads);
-                                       newUnviewed.delete(leadId);
-                                       setUnviewedLeads(newUnviewed);
-                                       localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newUnviewed]));
-                                       toast({
-                                         title: "Lead Marked as Viewed",
-                                         description: "The highlight has been removed",
-                                       });
-                                     }}
-                                   >
-                                     View
-                                   </Button>
-                                 )}
+                                  <Button
+                                    size="sm"
+                                    onClick={() => markLeadAsViewed(leadId)}
+                                    className="bg-primary hover:bg-primary/90 text-primary-foreground animate-pulse"
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    View
+                                  </Button>
+                                )}
                                  <LeadQuickActions
                                   lead={lead}
                                   showViewActivity={true}
                                   onViewActivity={(leadId) => {
+                                    // Mark as viewed when expanding activity
+                                    markLeadAsViewed(leadId);
+                                    
                                     const newExpanded = new Set(expandedRows);
                                     if (expandedRows.has(leadId)) {
                                       newExpanded.delete(leadId);

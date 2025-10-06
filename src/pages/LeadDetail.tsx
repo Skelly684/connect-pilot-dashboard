@@ -7,7 +7,7 @@ import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { LeadActivityPanel } from '@/components/leads/LeadActivityPanel';
 import { useLeads } from '@/hooks/useLeads';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 
 const LeadDetail = () => {
   const { id: leadId } = useParams();
@@ -17,6 +17,18 @@ const LeadDetail = () => {
   const lead = useMemo(() => {
     return leads.find(l => l.id === leadId);
   }, [leads, leadId]);
+
+  // Mark lead as viewed when page loads
+  useEffect(() => {
+    if (leadId) {
+      console.log('👁️ LeadDetail: Marking lead as viewed:', leadId);
+      const unviewedLeads = JSON.parse(localStorage.getItem('psn-unviewed-leads') || '[]');
+      const filtered = unviewedLeads.filter((id: string) => id !== leadId);
+      if (filtered.length !== unviewedLeads.length) {
+        localStorage.setItem('psn-unviewed-leads', JSON.stringify(filtered));
+      }
+    }
+  }, [leadId]);
 
   const handleTabChange = (tab: string) => {
     if (tab === "overview" || tab === "leads" || tab === "all-leads" || tab === "review-leads" || tab === "outreach" || tab === "integrations" || tab === "settings") {
