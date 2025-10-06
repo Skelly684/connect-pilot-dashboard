@@ -21,11 +21,10 @@ const LeadDetail = () => {
   // Mark lead as viewed when page loads
   useEffect(() => {
     if (leadId) {
-      console.log('👁️ LeadDetail: Marking lead as viewed:', leadId);
-      const unviewedLeads = JSON.parse(localStorage.getItem('psn-unviewed-leads') || '[]');
-      const filtered = unviewedLeads.filter((id: string) => id !== leadId);
-      if (filtered.length !== unviewedLeads.length) {
-        localStorage.setItem('psn-unviewed-leads', JSON.stringify(filtered));
+      const viewedLeads = JSON.parse(localStorage.getItem('psn-viewed-leads') || '[]');
+      if (!viewedLeads.includes(leadId)) {
+        viewedLeads.push(leadId);
+        localStorage.setItem('psn-viewed-leads', JSON.stringify(viewedLeads));
       }
     }
   }, [leadId]);

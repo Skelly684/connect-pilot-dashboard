@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -83,6 +83,7 @@ interface Lead {
   last_call_status?: string;
   next_call_at?: string | null;
   call_attempts?: number;
+  last_email_status?: string;
 }
 
 interface LeadTableProps {
@@ -283,44 +284,28 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
   const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false);
   const [changeStatusDialogOpen, setChangeStatusDialogOpen] = useState(false);
   const [selectedLeadForAction, setSelectedLeadForAction] = useState<{ id: string; name: string; status: string } | null>(null);
-  
-  // Load unviewed leads from localStorage
-  const [unviewedLeads, setUnviewedLeads] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('psn-unviewed-leads');
-    if (saved) {
-      try {
-        return new Set(JSON.parse(saved));
-      } catch {
-        return new Set();
-      }
-    }
-    return new Set();
-  });
-  
   const { toast } = useToast();
 
-  // Add highlighted lead from realtime updates
-  useEffect(() => {
-    if (tempHighlightLeadId) {
-      console.log('🔥 LeadTable: Adding lead to unviewed:', tempHighlightLeadId);
-      setUnviewedLeads(prev => {
-        const newSet = new Set(prev);
-        newSet.add(tempHighlightLeadId);
-        localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newSet]));
-        return newSet;
-      });
-    }
-  }, [tempHighlightLeadId]);
+  // Track which replied leads should pulse (replied but not yet viewed)
+  const unviewedLeads = useMemo(() => {
+    const viewedLeads = JSON.parse(localStorage.getItem('psn-viewed-leads') || '[]');
+    return new Set(
+      leads
+        .filter(lead => 
+          (lead.status?.toLowerCase() === 'replied' || lead.last_email_status?.toLowerCase() === 'reply') &&
+          !viewedLeads.includes(String(lead.id))
+        )
+        .map(lead => String(lead.id))
+    );
+  }, [leads]);
 
   // Mark lead as viewed
   const markLeadAsViewed = (leadId: string) => {
-    console.log('👁️ Marking lead as viewed:', leadId);
-    setUnviewedLeads(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(leadId);
-      localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newSet]));
-      return newSet;
-    });
+    const viewedLeads = JSON.parse(localStorage.getItem('psn-viewed-leads') || '[]');
+    if (!viewedLeads.includes(leadId)) {
+      viewedLeads.push(leadId);
+      localStorage.setItem('psn-viewed-leads', JSON.stringify(viewedLeads));
+    }
   };
 
   console.log("LeadTable received leads:", leads);
@@ -866,13 +851,7 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
                  const success = await onUpdateLeadStatus([leadId], newStatus);
                  console.log('onUpdateLeadStatus result:', success);
                  if (success) {
-                   console.log('Marking lead as unviewed:', leadId);
-                   // Mark lead as unviewed so it stands out
-                   const newUnviewed = new Set(unviewedLeads);
-                   newUnviewed.add(leadId);
-                   setUnviewedLeads(newUnviewed);
-                   localStorage.setItem('psn-unviewed-leads', JSON.stringify([...newUnviewed]));
-                   console.log('Unviewed leads updated:', [...newUnviewed]);
+                   // Lead status updated - component will auto-refresh
                    onRefresh?.();
                    setSelectedLeadForAction(null);
                  }
