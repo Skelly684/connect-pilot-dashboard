@@ -34,10 +34,10 @@ serve(async (req) => {
       throw new Error('Missing required fields: user_id, to, subject, body, lead_id');
     }
 
-    // Verify the lead exists before sending
+    // Verify the lead exists and get all lead data for template replacement
     const { data: lead, error: leadError } = await supabase
       .from('leads')
-      .select('id, email_address')
+      .select('id, email_address, first_name, last_name, name, company_name, company, job_title, phone, city_name, state_name, country_name, headline')
       .eq('id', lead_id)
       .single();
 
@@ -45,6 +45,39 @@ serve(async (req) => {
       console.error('Lead not found:', lead_id, leadError);
       throw new Error(`Cannot send email: Lead ${lead_id} does not exist`);
     }
+
+    // Function to replace template variables with lead data
+    const replaceTemplateVariables = (text: string): string => {
+      let result = text;
+      
+      // Replace all common lead variables
+      const replacements: Record<string, string> = {
+        first_name: lead.first_name || '',
+        last_name: lead.last_name || '',
+        name: lead.name || lead.first_name || '',
+        company_name: lead.company_name || lead.company || '',
+        company: lead.company || lead.company_name || '',
+        job_title: lead.job_title || '',
+        email: lead.email_address || '',
+        phone: lead.phone || '',
+        city: lead.city_name || '',
+        state: lead.state_name || '',
+        country: lead.country_name || '',
+        headline: lead.headline || ''
+      };
+
+      // Replace each variable
+      Object.entries(replacements).forEach(([key, value]) => {
+        const regex = new RegExp(`\\{${key}\\}`, 'g');
+        result = result.replace(regex, value);
+      });
+
+      return result;
+    };
+
+    // Replace template variables in subject and body
+    const processedSubject = replaceTemplateVariables(subject);
+    const processedBody = replaceTemplateVariables(body);
 
     // Form the Reply-To address with lead tracking
     const replyTo = `scott+${lead_id}@premiersportsnetwork.com`;
@@ -100,15 +133,15 @@ serve(async (req) => {
       console.log('✅ Token refreshed');
     }
 
-    // Create email in RFC 2822 format with Reply-To tracking
+    // Create email in RFC 2822 format with Reply-To tracking using processed subject/body
     const emailContent = [
       `To: ${to}`,
       `Reply-To: ${replyTo}`,
-      `Subject: ${subject}`,
+      `Subject: ${processedSubject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
       '',
-      body
+      processedBody
     ].join('\r\n');
 
     // Base64url encode the email
@@ -147,7 +180,7 @@ serve(async (req) => {
         success: true,
         message_id: providerMessageId,
         to,
-        subject,
+        subject: processedSubject,
         reply_to: replyTo,
         lead_id
       }),
