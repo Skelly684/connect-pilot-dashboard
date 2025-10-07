@@ -121,9 +121,12 @@ export const MessagingTab = ({
       // Save email steps with their respective templates
       await saveEmailSteps(campaign.id, stepsToSave);
 
-      // Link the first step's template to the campaign for backward compatibility
+      // Link the first step's template to the campaign (both fields for compatibility)
       if (stepsToSave.length > 0) {
-        await onUpdateCampaign(campaign.id, { email_template_id: stepsToSave[0].template_id });
+        await onUpdateCampaign(campaign.id, { 
+          email_template_id: stepsToSave[0].template_id,
+          initial_template_id: stepsToSave[0].template_id  // Required for trigger to work
+        });
       }
     } catch (error) {
       console.error('Error saving messaging:', error);

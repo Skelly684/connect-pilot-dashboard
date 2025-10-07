@@ -39,6 +39,7 @@ export interface Campaign {
   from_email: string;
   from_name: string;
   email_template_id: string | null;
+  initial_template_id?: string | null; // Template used for first email when lead is accepted
   email_daily_cap: number;
   caller_prompt: string;
   call_window_start: number;

@@ -119,6 +119,7 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
         from_email: fromEmail,
         from_name: fromName,
         email_template_id: emailTemplateId,
+        initial_template_id: emailTemplateId, // Set initial_template_id for first email
         email_daily_cap: emailDailyCap,
         caller_prompt: callerConfig.opening_script.trim() || 'Hi, this is Scott from PSN…',
         call_window_start: deliveryRules.call.window_start,
