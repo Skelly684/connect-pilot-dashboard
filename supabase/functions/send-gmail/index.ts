@@ -139,8 +139,27 @@ serve(async (req) => {
     const providerMessageId = gmailResponse.id;
     console.log('✅ Email sent via Gmail, message ID:', providerMessageId);
 
-    // Note: Email logging is handled by mark_email_sent function in email-worker
-    // to avoid duplicate logs and ensure proper step tracking
+    // Log the sent email with lead tracking info
+    const { error: logError } = await supabase
+      .from('email_logs')
+      .insert({
+        lead_id,
+        campaign_id,
+        user_id,
+        to_email: to,
+        subject,
+        body,
+        status: 'sent',
+        provider: 'gmail_api',
+        direction: 'outbound',
+        idem_key: `sent_${lead_id}_${Date.now()}`,
+        created_at: new Date().toISOString()
+      });
+
+    if (logError) {
+      console.error('Warning: Failed to log email send:', logError);
+      // Don't fail the request if logging fails
+    }
 
     return new Response(
       JSON.stringify({
