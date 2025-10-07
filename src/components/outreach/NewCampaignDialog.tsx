@@ -19,7 +19,7 @@ interface NewCampaignDialogProps {
 }
 
 export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps) => {
-  const { createCampaign, createEmailTemplate, saveEmailSteps } = useCampaigns();
+  const { createCampaign, createEmailTemplate, saveEmailSteps, updateCampaign } = useCampaigns();
   const [isLoading, setIsLoading] = useState(false);
   
   // Campaign basic info
@@ -167,6 +167,12 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
 
         if (stepsToSave.length > 0) {
           await saveEmailSteps(newCampaign.id, stepsToSave);
+          
+          // CRITICAL: Update campaign's initial_template_id with first step's template
+          await updateCampaign(newCampaign.id, {
+            initial_template_id: stepsToSave[0].template_id,
+            email_template_id: stepsToSave[0].template_id
+          });
         }
       }
       
