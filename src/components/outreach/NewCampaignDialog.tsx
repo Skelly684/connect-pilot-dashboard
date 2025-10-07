@@ -168,11 +168,13 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
         if (stepsToSave.length > 0) {
           await saveEmailSteps(newCampaign.id, stepsToSave);
           
-          // CRITICAL: Update campaign's initial_template_id with first step's template
-          await updateCampaign(newCampaign.id, {
-            initial_template_id: stepsToSave[0].template_id,
-            email_template_id: stepsToSave[0].template_id
-          });
+          // Only set initial_template_id from first step if no email configuration was provided
+          if (!emailTemplateId) {
+            await updateCampaign(newCampaign.id, {
+              initial_template_id: stepsToSave[0].template_id,
+              email_template_id: stepsToSave[0].template_id
+            });
+          }
         }
       }
       
