@@ -4,7 +4,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { LeadSearch } from "@/components/leads/LeadSearch";
+import { NaturalLanguageLeadSearch } from "@/components/leads/NaturalLanguageLeadSearch";
 import { LeadTable } from "@/components/leads/LeadTable";
 import { AllLeadsSection } from "@/components/leads/AllLeadsSection";
 import { ReviewNewLeadsSection } from "@/components/leads/ReviewNewLeadsSection";
@@ -102,21 +102,7 @@ const Dashboard = () => {
       case "leads":
         return (
           <div className="space-y-6">
-            <LeadSearch 
-              onResults={handleSearchResults}
-              onSearchStart={handleSearchStart}
-              onSearchComplete={handleSearchComplete}
-              onSaveLeads={saveLeads}
-            />
-            <LeadTable 
-              leads={activeTab === "leads" ? (isSearching ? searchResults : leads) : []} 
-              isLoading={isSearching || isLoadingLeads}
-              onDeleteLeads={deleteLeads}
-              onDeleteAllLeads={deleteAllLeads}
-              onUpdateLeadStatus={updateLeadStatus}
-              onRefresh={fetchLeads}
-              tempHighlightLeadId={replyLeadId || tempHighlightLeadId}
-            />
+            <NaturalLanguageLeadSearch />
           </div>
         );
       case "all-leads":
