@@ -6,17 +6,16 @@ import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { CalendarIcon, Clock, Users, Plus, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
+import { CalendarIcon, Clock, AlertCircle, Loader2, List, Calendar as CalendarViewIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { format, parseISO, addDays, startOfDay } from 'date-fns';
-import { appConfig } from '@/lib/appConfig';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { ApiStatusBanner } from '@/components/calendar/ApiStatusBanner';
 import { GoogleCalendarDiagnostics } from '@/components/integrations/GoogleCalendarDiagnostics';
+import { CalendarHeader } from '@/components/calendar/CalendarHeader';
+import { EventCard } from '@/components/calendar/EventCard';
+import { QuickBookForm } from '@/components/calendar/QuickBookForm';
+import { CalendarWeekView } from '@/components/calendar/CalendarWeekView';
 
 
 export interface CalendarEvent {
@@ -54,6 +53,7 @@ const Calendar = () => {
   const [backendHealthy, setBackendHealthy] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   
   // Quick booking form state
   const [formData, setFormData] = useState({
@@ -174,11 +174,23 @@ const Calendar = () => {
         body: JSON.stringify(eventData),
       });
 
+      // Dynamic success toasts
       toast({
-        title: "Event Created",
-        description: "Your calendar event has been successfully created.",
+        title: "✅ Event Created",
+        description: `Event '${formData.summary}' created successfully.`,
         variant: "default",
       });
+
+      // Secondary toast for Google sync confirmation
+      if (googleConnected) {
+        setTimeout(() => {
+          toast({
+            title: "🔄 Synced to Google Calendar",
+            description: "Your event is now visible in Google Calendar.",
+            variant: "default",
+          });
+        }, 1000);
+      }
 
       // Optimistically add event to list
       const newEvent: CalendarEvent = {
@@ -222,26 +234,6 @@ const Calendar = () => {
     await fetchEvents();
   };
 
-  const formatEventTime = (dateTimeString: string) => {
-    try {
-      const date = parseISO(dateTimeString);
-      return format(date, 'MMM dd, h:mm a');
-    } catch {
-      return dateTimeString;
-    }
-  };
-
-  // Status badge component
-  const StatusBadge = () => {
-    if (googleConnected === null) return <Badge variant="secondary">Checking...</Badge>;
-    if (googleLoading) return <Badge variant="secondary">Connecting...</Badge>;
-    
-    const variant = googleConnected ? 'default' : 'destructive';
-    const text = googleConnected ? 'Connected' : 'Not Connected';
-    
-    return <Badge variant={variant}>{text}</Badge>;
-  };
-
   // Get display error message
   const displayError = calendarError || errorMessage;
 
@@ -266,33 +258,12 @@ const Calendar = () => {
               {/* API Status Banner */}
               <ApiStatusBanner />
               
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CalendarIcon className="h-8 w-8 text-primary" />
-                  <div>
-                    <h1 className="text-3xl font-bold">Google Calendar</h1>
-                    <p className="text-muted-foreground">Connect your Google account to view and book follow-ups.</p>
-                    {process.env.NODE_ENV !== 'production' && (
-                      <p className="text-xs text-muted-foreground mt-1">API: <code className="font-mono">{appConfig.getApiBaseUrl()}</code></p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge />
-                  {googleConnected && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRefresh}
-                      disabled={googleLoading}
-                    >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${googleLoading ? 'animate-spin' : ''}`} />
-                      Refresh
-                    </Button>
-                  )}
-                </div>
-              </div>
+              {/* Header with gradient */}
+              <CalendarHeader
+                googleConnected={googleConnected}
+                googleLoading={googleLoading}
+                onRefresh={handleRefresh}
+              />
 
               {/* Error message */}
               {displayError && (
@@ -333,134 +304,81 @@ const Calendar = () => {
               )}
 
               {googleConnected && (
-                <div className="grid lg:grid-cols-2 gap-6">
-                  {/* Upcoming Events */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Clock className="h-5 w-5" />
-                        Upcoming Events
-                      </CardTitle>
-                      <CardDescription>Next 10 events from your calendar</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {googleEvents.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          No upcoming events.
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {googleEvents.slice(0, 10).map((event) => (
-                            <div key={event.id} className="border rounded-lg p-4 space-y-2">
-                              <div className="flex items-start justify-between">
-                                <h4 className="font-medium">{event.summary}</h4>
-                                <Badge variant="outline" className="text-xs">
-                                  {formatEventTime(event.start.dateTime)}
-                                </Badge>
-                              </div>
-                              
-                              {event.description && (
-                                <p className="text-sm text-muted-foreground">
-                                  {event.description}
-                                </p>
-                              )}
-                              
-                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {formatEventTime(event.start.dateTime)} - {formatEventTime(event.end.dateTime)}
-                                </div>
-                                
-                                {event.attendees && event.attendees.length > 0 && (
-                                  <div className="flex items-center gap-1">
-                                    <Users className="h-3 w-3" />
-                                    {event.attendees.length} attendee{event.attendees.length > 1 ? 's' : ''}
-                                  </div>
-                                )}
-                              </div>
+                <>
+                  {/* View toggle */}
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      className="hover:shadow-lg hover:shadow-primary/30 transition-all duration-300"
+                    >
+                      <List className="h-4 w-4 mr-1" />
+                      List View
+                    </Button>
+                    <Button
+                      variant={viewMode === 'calendar' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('calendar')}
+                      className="hover:shadow-lg hover:shadow-primary/30 transition-all duration-300"
+                    >
+                      <CalendarViewIcon className="h-4 w-4 mr-1" />
+                      Calendar View
+                    </Button>
+                  </div>
+
+                  {viewMode === 'list' ? (
+                    <div className="grid lg:grid-cols-2 gap-6">
+                      {/* Upcoming Events */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Clock className="h-5 w-5" />
+                            Upcoming Events
+                          </CardTitle>
+                          <CardDescription>Next 10 events from your calendar</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          {googleLoading ? (
+                            <div className="flex items-center justify-center py-8">
+                              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                              <span className="ml-2 text-muted-foreground">Loading events...</span>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                          ) : googleEvents.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                              No upcoming events.
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {googleEvents.slice(0, 10).map((event) => (
+                                <EventCard key={event.id} event={event} />
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
 
-                  {/* Quick Book Form */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Plus className="h-5 w-5" />
-                        Quick Book
-                      </CardTitle>
-                      <CardDescription>Schedule a new calendar event</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <form onSubmit={handleQuickBook} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="summary">Title *</Label>
-                          <Input
-                            id="summary"
-                            value={formData.summary}
-                            onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                            placeholder="Meeting title"
-                            required
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="description">Notes</Label>
-                          <Input
-                            id="description"
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            placeholder="Meeting notes or agenda"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="startDateTime">Start Time *</Label>
-                            <Input
-                              id="startDateTime"
-                              type="datetime-local"
-                              value={formData.startDateTime}
-                              onChange={(e) => setFormData({ ...formData, startDateTime: e.target.value })}
-                              required
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="endDateTime">End Time *</Label>
-                            <Input
-                              id="endDateTime"
-                              type="datetime-local"
-                              value={formData.endDateTime}
-                              onChange={(e) => setFormData({ ...formData, endDateTime: e.target.value })}
-                              required
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="attendeeEmail">Attendee Email (optional)</Label>
-                          <Input
-                            id="attendeeEmail"
-                            type="email"
-                            value={formData.attendeeEmail}
-                            onChange={(e) => setFormData({ ...formData, attendeeEmail: e.target.value })}
-                            placeholder="attendee@example.com"
-                          />
-                        </div>
-
-                        <Separator />
-
-                        <Button type="submit" className="w-full" disabled={loading || !googleConnected}>
-                          {loading ? 'Creating Event...' : 'Create Event'}
-                        </Button>
-                      </form>
-                    </CardContent>
-                  </Card>
-                </div>
+                      {/* Quick Book Form */}
+                      <QuickBookForm
+                        formData={formData}
+                        setFormData={setFormData}
+                        onSubmit={handleQuickBook}
+                        loading={loading}
+                        googleConnected={googleConnected}
+                      />
+                    </div>
+                  ) : (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Week View</CardTitle>
+                        <CardDescription>Your events organized by day</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <CalendarWeekView events={googleEvents} />
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
               )}
 
               {/* Add diagnostics component in dev mode */}
