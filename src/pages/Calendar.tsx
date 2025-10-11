@@ -160,7 +160,7 @@ const Calendar = () => {
       setLoading(true);
       const eventData = {
         calendarId: 'primary',
-        title: formData.summary,
+        summary: formData.summary,  // Use 'summary' instead of 'title' to match Google Calendar API
         description: formData.description,
         start: new Date(formData.startDateTime).toISOString(),
         end: new Date(formData.endDateTime).toISOString(),
