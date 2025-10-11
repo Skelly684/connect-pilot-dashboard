@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,9 +38,58 @@ export const NaturalLanguageLeadSearch = () => {
   const [lastPrompt, setLastPrompt] = useState("");
   const [lastCount, setLastCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [placeholder, setPlaceholder] = useState("e.g., ");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
 
   const ROWS_PER_PAGE = 50;
+
+  useEffect(() => {
+    const examples = [
+      "Finance Manager in USA",
+      "Lawyer in UK",
+      "Software CEO in Dubai",
+      "Real Estate Agent in Canada",
+      "Marketing Director in Singapore",
+      "Tech Founder in Germany"
+    ];
+
+    let i = 0;
+    let j = 0;
+    let current = "";
+    let deleting = false;
+    let timeoutId: NodeJS.Timeout;
+
+    function typeLoop() {
+      const el = textareaRef.current;
+      if (!el || document.activeElement === el) {
+        timeoutId = setTimeout(typeLoop, 1000);
+        return;
+      }
+
+      if (!deleting && j < examples[i].length) {
+        current += examples[i][j++];
+      } else if (deleting && j > 0) {
+        current = current.slice(0, --j);
+      } else if (!deleting && j === examples[i].length) {
+        deleting = true;
+        timeoutId = setTimeout(typeLoop, 1500);
+        return;
+      } else if (deleting && j === 0) {
+        deleting = false;
+        i = (i + 1) % examples.length;
+      }
+
+      setPlaceholder(`e.g., ${current}`);
+      timeoutId = setTimeout(typeLoop, deleting ? 40 : 80);
+    }
+
+    typeLoop();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, []);
 
   const getLeadName = (lead: Lead): string => {
     return lead.fullName || 
@@ -194,7 +243,8 @@ export const NaturalLanguageLeadSearch = () => {
               <Label htmlFor="nlPrompt">Search prompt</Label>
               <Textarea
                 id="nlPrompt"
-                placeholder='e.g., "Wealth management CEOs in the United States with emails"'
+                ref={textareaRef}
+                placeholder={placeholder}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 required
@@ -214,7 +264,7 @@ export const NaturalLanguageLeadSearch = () => {
                 onChange={(e) => setLeadCount(Number(e.target.value))}
               />
               <p className="text-sm text-muted-foreground">
-                Allowed range: 500–50,000 (we'll clamp if needed).
+                Allowed range: 500–50,000.
               </p>
             </div>
 
