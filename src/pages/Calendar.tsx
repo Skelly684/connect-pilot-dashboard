@@ -161,7 +161,7 @@ const Calendar = () => {
       const eventData = {
         calendarId: 'primary',
         title: formData.summary,
-        description: formData.description || 'Booked from Dashboard',
+        description: formData.description,
         start: new Date(formData.startDateTime).toISOString(),
         end: new Date(formData.endDateTime).toISOString(),
         ...(formData.attendeeEmail && {
@@ -184,7 +184,7 @@ const Calendar = () => {
       const newEvent: CalendarEvent = {
         id: `temp-${Date.now()}`,
         summary: formData.summary,
-        description: 'Booked from Dashboard',
+        description: formData.description,
         start: { dateTime: new Date(formData.startDateTime).toISOString() },
         end: { dateTime: new Date(formData.endDateTime).toISOString() },
         ...(formData.attendeeEmail && {
