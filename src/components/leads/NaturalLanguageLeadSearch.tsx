@@ -30,7 +30,11 @@ interface Lead {
   source?: string;
 }
 
-export const NaturalLanguageLeadSearch = () => {
+interface NaturalLanguageLeadSearchProps {
+  onSaveLeads?: (leads: Lead[]) => Promise<boolean | void>;
+}
+
+export const NaturalLanguageLeadSearch = ({ onSaveLeads }: NaturalLanguageLeadSearchProps) => {
   const [prompt, setPrompt] = useState("");
   const [leadCount, setLeadCount] = useState(1000);
   const [isSearching, setIsSearching] = useState(false);
@@ -172,9 +176,14 @@ export const NaturalLanguageLeadSearch = () => {
           variant: "default",
         });
       } else {
+        // Automatically save leads to database for review
+        if (onSaveLeads && items.length > 0) {
+          await onSaveLeads(items);
+        }
+        
         toast({
           title: "Search Complete",
-          description: `Found ${items.length} lead(s).`,
+          description: `Found ${items.length} lead(s) and saved for review.`,
         });
       }
     } catch (err) {

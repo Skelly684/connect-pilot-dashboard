@@ -102,7 +102,7 @@ const Dashboard = () => {
       case "leads":
         return (
           <div className="space-y-6">
-            <NaturalLanguageLeadSearch />
+            <NaturalLanguageLeadSearch onSaveLeads={saveLeads} />
           </div>
         );
       case "all-leads":
