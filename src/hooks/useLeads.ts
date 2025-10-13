@@ -385,7 +385,7 @@ export const useLeads = () => {
   const saveLeads = async (newLeads: Lead[]) => {
     try {
       console.log('🟢 saveLeads CALLED with:', newLeads.length, 'leads');
-      console.log('🟢 First lead sample:', newLeads[0]);
+      console.log('🟢 First 3 lead samples:', newLeads.slice(0, 3));
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -413,18 +413,31 @@ export const useLeads = () => {
       // Track emails we've seen in this batch to avoid internal duplicates
       const seenEmailsInBatch = new Set<string>();
 
+      console.log('🟢 Existing email addresses in DB:', existingEmailAddresses.size);
+
       // Filter out leads with duplicate email_address values (both against DB and within batch)
       const uniqueLeads = newLeads.filter(lead => {
         // Extract email using all possible field variations (same as insertion logic)
         const emailAddress = lead.email || lead.emailAddress || lead.workEmail || lead.personalEmail;
         
-        if (!emailAddress) return false;
-        if (existingEmailAddresses.has(emailAddress)) return false;
-        if (seenEmailsInBatch.has(emailAddress)) return false;
+        if (!emailAddress) {
+          console.log('🔴 Lead rejected: no email', lead);
+          return false;
+        }
+        if (existingEmailAddresses.has(emailAddress)) {
+          console.log('🟡 Lead rejected: duplicate in DB', emailAddress);
+          return false;
+        }
+        if (seenEmailsInBatch.has(emailAddress)) {
+          console.log('🟡 Lead rejected: duplicate in batch', emailAddress);
+          return false;
+        }
         
         seenEmailsInBatch.add(emailAddress);
         return true;
       });
+
+      console.log('🟢 Unique leads after filtering:', uniqueLeads.length, 'out of', newLeads.length);
 
       if (uniqueLeads.length === 0) {
         toast({
@@ -471,7 +484,8 @@ export const useLeads = () => {
         status: 'new',
       }));
 
-      console.log('Prepared leads for insert:', leadsToInsert);
+      console.log('🟢 Prepared', leadsToInsert.length, 'leads for insert');
+      console.log('🟢 First prepared lead:', leadsToInsert[0]);
 
       const { data, error } = await supabase
         .from('leads')
@@ -479,7 +493,8 @@ export const useLeads = () => {
         .select();
 
       if (error) {
-        console.error('Supabase insert error:', error);
+        console.error('🔴 Supabase insert error:', error);
+        console.error('🔴 Error details:', JSON.stringify(error, null, 2));
         throw error;
       }
 
