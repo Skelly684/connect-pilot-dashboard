@@ -384,6 +384,7 @@ export const useLeads = () => {
 
   const saveLeads = async (newLeads: Lead[]) => {
     try {
+      console.log('🟣🟣🟣 saveLeads CALLED - START OF FUNCTION');
       console.log('🟢 saveLeads CALLED with:', newLeads.length, 'leads');
       console.log('🟢 First 3 lead samples:', newLeads.slice(0, 3));
       

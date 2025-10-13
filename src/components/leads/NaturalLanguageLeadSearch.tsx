@@ -129,7 +129,9 @@ export const NaturalLanguageLeadSearch = ({ onSaveLeads }: NaturalLanguageLeadSe
   };
 
   const handleSearch = async () => {
+    console.log('🟣🟣🟣 handleSearch CALLED');
     const trimmedPrompt = prompt.trim();
+    console.log('🟣 Trimmed prompt:', trimmedPrompt);
     
     if (!trimmedPrompt) {
       toast({
@@ -169,20 +171,30 @@ export const NaturalLanguageLeadSearch = ({ onSaveLeads }: NaturalLanguageLeadSe
       setLastCount(clampedCount);
       setCurrentPage(1);
 
+      console.log('🟣 SEARCH COMPLETE - items.length:', items.length);
+      console.log('🟣 First item:', items[0]);
+      console.log('🟣 onSaveLeads exists?', !!onSaveLeads, typeof onSaveLeads);
+
       if (items.length === 0) {
+        console.log('🟣 No items found - showing toast');
         toast({
           title: "No Results",
           description: "No leads matched. Try broadening the prompt (e.g., include multiple titles or a larger region).",
           variant: "default",
         });
       } else {
+        console.log('🟣 Items found - attempting to save');
         // Automatically save leads to database for review
-        console.log('🔵 NaturalLanguageLeadSearch: About to save', items.length, 'leads');
-        console.log('🔵 onSaveLeads function exists?', !!onSaveLeads);
-        if (onSaveLeads && items.length > 0) {
-          console.log('🔵 Calling onSaveLeads with', items.length, 'leads');
-          const saveResult = await onSaveLeads(items);
-          console.log('🔵 onSaveLeads returned:', saveResult);
+        if (onSaveLeads) {
+          console.log('🟣 onSaveLeads is defined - calling it now with', items.length, 'items');
+          try {
+            const saveResult = await onSaveLeads(items);
+            console.log('🟣 onSaveLeads completed. Result:', saveResult);
+          } catch (saveError) {
+            console.error('🟣 ERROR calling onSaveLeads:', saveError);
+          }
+        } else {
+          console.error('🟣 ERROR: onSaveLeads is NOT defined!');
         }
         
         toast({
