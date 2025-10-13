@@ -179,7 +179,11 @@ const extractPhone = (lead: Lead): string => {
 };
 
 const extractLocation = (lead: Lead): string => {
-  return safeStr(lead.country_name) || "—";
+  const city = safeStr(lead.city_name);
+  const state = safeStr(lead.state_name);
+  const country = safeStr(lead.country_name);
+  const parts = [city, state, country].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : "—";
 };
 
 const extractLinkedIn = (lead: Lead): string | null => {
@@ -670,9 +674,17 @@ export const ReviewNewLeadsSection = ({
                             </Avatar>
                             <div>
                               <div className="font-medium text-gray-900 dark:text-white">{fullName}</div>
-                              <div className="text-sm text-gray-500 dark:text-foreground/80" title={email !== "—" ? email : "Not provided"}>
-                                {email}
-                              </div>
+                              {email !== "—" ? (
+                                <a 
+                                  href={`mailto:${email}`}
+                                  className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                  title={email}
+                                >
+                                  {email}
+                                </a>
+                              ) : (
+                                <div className="text-sm text-gray-500 dark:text-foreground/80">—</div>
+                              )}
                             </div>
                           </div>
                         </TableCell>

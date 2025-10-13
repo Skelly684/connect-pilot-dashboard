@@ -53,7 +53,18 @@ export const useLeads = () => {
     try {
       const { data, error } = await supabase
         .from('leads')
-        .select('*, last_reply_at, last_reply_from, last_reply_subject, last_reply_snippet')
+        .select(`
+          *,
+          first_name, last_name, name,
+          email, email_address,
+          job_title,
+          company_name, company_website,
+          city_name, state_name, country_name,
+          phone,
+          linkedin_url,
+          seniority, functional, industry, company_size, email_status,
+          last_reply_at, last_reply_from, last_reply_subject, last_reply_snippet
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -86,7 +97,18 @@ export const useLeads = () => {
         // Refetch to get updated data
         const { data: updatedData } = await supabase
           .from('leads')
-          .select('*, last_reply_at, last_reply_from, last_reply_subject, last_reply_snippet')
+          .select(`
+            *,
+            first_name, last_name, name,
+            email, email_address,
+            job_title,
+            company_name, company_website,
+            city_name, state_name, country_name,
+            phone,
+            linkedin_url,
+            seniority, functional, industry, company_size, email_status,
+            last_reply_at, last_reply_from, last_reply_subject, last_reply_snippet
+          `)
           .order('created_at', { ascending: false });
 
         setLeads(updatedData || []);
