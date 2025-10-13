@@ -973,7 +973,7 @@ export const AllLeadsSection = ({
                           </TableRow>
                           {expandedRows.has(leadId) && (
                             <TableRow>
-                              <TableCell colSpan={8} className="p-0 border-t-0">
+                              <TableCell colSpan={9} className="p-0 border-t-0">
                                 <div className="px-4 pb-4">
                                   <Activity leadId={leadId} />
                                 </div>
