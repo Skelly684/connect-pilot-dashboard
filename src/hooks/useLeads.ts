@@ -487,9 +487,13 @@ export const useLeads = () => {
       console.log('💾 Prepared', leadsToInsert.length, 'leads for insert');
       console.log('💾 First prepared lead:', leadsToInsert[0]);
 
+      // Use upsert with onConflict to handle any remaining duplicates gracefully
       const { data, error } = await supabase
         .from('leads')
-        .insert(leadsToInsert)
+        .upsert(leadsToInsert, {
+          onConflict: 'user_id,email_address',
+          ignoreDuplicates: true
+        })
         .select();
 
       if (error) {
@@ -498,12 +502,13 @@ export const useLeads = () => {
         throw error;
       }
 
-      console.log('💾 Successfully inserted', data?.length || 0, 'leads');
+      const insertedCount = data?.length || 0;
+      console.log('💾 Successfully inserted', insertedCount, 'leads (skipped', leadsToInsert.length - insertedCount, 'duplicates)');
 
-      const skippedCount = newLeads.length - uniqueLeads.length;
-      let description = `Saved ${uniqueLeads.length} new leads to database for review`;
+      const skippedCount = newLeads.length - (data?.length || 0);
+      let description = `Saved ${data?.length || 0} new leads to database for review`;
       if (skippedCount > 0) {
-        description += `. Skipped ${skippedCount} duplicate leads.`;
+        description += `. Skipped ${skippedCount} duplicate${skippedCount > 1 ? 's' : ''}.`;
       }
 
       toast({
