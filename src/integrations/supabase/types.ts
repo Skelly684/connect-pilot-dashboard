@@ -701,16 +701,21 @@ export type Database = {
           city_name: string | null
           company: string | null
           company_name: string | null
+          company_size: string | null
+          company_website: string | null
           contact_phone_numbers: Json | null
           country_name: string | null
           created_at: string
           email: string | null
           email_address: string | null
           email_sequence_stopped: boolean
+          email_status: string | null
           emailed_at: string | null
           first_name: string | null
+          functional: string | null
           headline: string | null
           id: string
+          industry: string | null
           job_title: string | null
           last_call_status: string | null
           last_email_reply_at: string | null
@@ -720,6 +725,7 @@ export type Database = {
           last_reply_from: string | null
           last_reply_snippet: string | null
           last_reply_subject: string | null
+          linkedin_url: string | null
           location: string | null
           name: string | null
           next_call_at: string | null
@@ -730,6 +736,7 @@ export type Database = {
           raw_address: string | null
           reviewed_at: string | null
           scraped_at: string
+          seniority: string | null
           sent_for_contact_at: string | null
           state_name: string | null
           status: string | null
@@ -743,16 +750,21 @@ export type Database = {
           city_name?: string | null
           company?: string | null
           company_name?: string | null
+          company_size?: string | null
+          company_website?: string | null
           contact_phone_numbers?: Json | null
           country_name?: string | null
           created_at?: string
           email?: string | null
           email_address?: string | null
           email_sequence_stopped?: boolean
+          email_status?: string | null
           emailed_at?: string | null
           first_name?: string | null
+          functional?: string | null
           headline?: string | null
           id?: string
+          industry?: string | null
           job_title?: string | null
           last_call_status?: string | null
           last_email_reply_at?: string | null
@@ -762,6 +774,7 @@ export type Database = {
           last_reply_from?: string | null
           last_reply_snippet?: string | null
           last_reply_subject?: string | null
+          linkedin_url?: string | null
           location?: string | null
           name?: string | null
           next_call_at?: string | null
@@ -772,6 +785,7 @@ export type Database = {
           raw_address?: string | null
           reviewed_at?: string | null
           scraped_at?: string
+          seniority?: string | null
           sent_for_contact_at?: string | null
           state_name?: string | null
           status?: string | null
@@ -785,16 +799,21 @@ export type Database = {
           city_name?: string | null
           company?: string | null
           company_name?: string | null
+          company_size?: string | null
+          company_website?: string | null
           contact_phone_numbers?: Json | null
           country_name?: string | null
           created_at?: string
           email?: string | null
           email_address?: string | null
           email_sequence_stopped?: boolean
+          email_status?: string | null
           emailed_at?: string | null
           first_name?: string | null
+          functional?: string | null
           headline?: string | null
           id?: string
+          industry?: string | null
           job_title?: string | null
           last_call_status?: string | null
           last_email_reply_at?: string | null
@@ -804,6 +823,7 @@ export type Database = {
           last_reply_from?: string | null
           last_reply_snippet?: string | null
           last_reply_subject?: string | null
+          linkedin_url?: string | null
           location?: string | null
           name?: string | null
           next_call_at?: string | null
@@ -814,6 +834,7 @@ export type Database = {
           raw_address?: string | null
           reviewed_at?: string | null
           scraped_at?: string
+          seniority?: string | null
           sent_for_contact_at?: string | null
           state_name?: string | null
           status?: string | null

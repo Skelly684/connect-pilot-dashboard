@@ -16,24 +16,34 @@ import {
 
 interface RecentLead {
   id: string;
-  // New scraper fields
-  fullName?: string;
+  // Database fields (new columns)
+  name?: string;
+  first_name?: string;
+  last_name?: string;
   email?: string;
+  email_address?: string;
+  job_title?: string;
+  company_name?: string;
+  company_website?: string;
+  city_name?: string;
+  state_name?: string;
+  country_name?: string;
+  phone?: string;
+  linkedin_url?: string;
+  seniority?: string;
+  functional?: string;
+  industry?: string;
+  company_size?: string;
+  email_status?: string;
+  // Legacy fields (kept for compatibility)
+  fullName?: string;
   position?: string;
   orgName?: string;
   orgWebsite?: string;
   orgCountry?: string;
   linkedinUrl?: string;
-  // Legacy fields
-  first_name?: string;
-  last_name?: string;
-  job_title?: string;
-  company_name?: string;
-  email_address?: string;
   contact_phone_numbers?: any;
-  city_name?: string;
-  state_name?: string;
-  country_name?: string;
+  // Status and metadata
   status: string;
   created_at: string;
 }
@@ -85,48 +95,32 @@ export function SelfLeadsRecentTable() {
   };
 
   const getFullName = (lead: RecentLead) => {
-    // Prioritize new scraper field
-    if (lead.fullName) return lead.fullName;
-    // Fallback to legacy fields
-    const first = lead.first_name?.trim() || '';
-    const last = lead.last_name?.trim() || '';
-    return `${first} ${last}`.trim() || '—';
+    const name = lead.name?.trim() || [lead.first_name?.trim(), lead.last_name?.trim()].filter(Boolean).join(" ").trim();
+    return name || '—';
   };
 
   const getJobTitle = (lead: RecentLead) => {
-    // Prioritize new scraper field
-    return lead.position?.trim() || lead.job_title?.trim() || '—';
+    return lead.job_title?.trim() || '—';
   };
 
   const getCompanyName = (lead: RecentLead) => {
-    // Prioritize new scraper field
-    return lead.orgName?.trim() || lead.company_name?.trim() || '—';
+    return lead.company_name?.trim() || '—';
   };
 
   const getEmail = (lead: RecentLead) => {
-    // New scraper field 'email' is prioritized
     return lead.email?.trim() || lead.email_address?.trim() || '—';
   };
 
   const getLocation = (lead: RecentLead) => {
-    // Prioritize new scraper field (company country)
-    if (lead.orgCountry?.trim()) return lead.orgCountry;
-    // Fallback to legacy fields
-    const parts = [lead.city_name, lead.state_name, lead.country_name]
-      .filter(part => part && part.trim() && part !== 'N/A');
-    return parts.join(', ') || '—';
+    const city = lead.city_name?.trim();
+    const state = lead.state_name?.trim();
+    const country = lead.country_name?.trim();
+    const parts = [city, state, country].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : "—";
   };
 
   const hasPhone = (lead: RecentLead) => {
-    if (!lead.contact_phone_numbers) return false;
-    try {
-      const phones = typeof lead.contact_phone_numbers === 'string' 
-        ? JSON.parse(lead.contact_phone_numbers)
-        : lead.contact_phone_numbers;
-      return Array.isArray(phones) && phones.length > 0 && phones.some(p => p.rawNumber?.trim());
-    } catch {
-      return false;
-    }
+    return lead.phone && lead.phone.trim() && lead.phone !== '—';
   };
 
   const hasEmail = (lead: RecentLead) => {
@@ -202,10 +196,16 @@ export function SelfLeadsRecentTable() {
                       <div className="font-medium text-foreground" title={getFullName(lead) === '—' ? 'Not provided' : getFullName(lead)}>
                         {getFullName(lead)}
                       </div>
-                      {hasEmail(lead) && (
-                        <div className="text-sm text-muted-foreground" title={getEmail(lead)}>
+                      {hasEmail(lead) ? (
+                        <a 
+                          href={`mailto:${getEmail(lead)}`}
+                          className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                          title={getEmail(lead)}
+                        >
                           {getEmail(lead)}
-                        </div>
+                        </a>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">—</div>
                       )}
                     </div>
                   </div>
@@ -252,9 +252,9 @@ export function SelfLeadsRecentTable() {
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
-                  {lead.linkedinUrl ? (
+                  {lead.linkedin_url ? (
                     <a 
-                      href={lead.linkedinUrl}
+                      href={lead.linkedin_url.startsWith('http') ? lead.linkedin_url : `https://${lead.linkedin_url}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"

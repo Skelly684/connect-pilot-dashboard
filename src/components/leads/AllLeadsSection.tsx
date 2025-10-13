@@ -52,43 +52,51 @@ import * as XLSX from 'xlsx';
 
 interface Lead {
   id?: number | string;
-  // New scraper fields
-  fullName?: string;
+  // Database fields (new columns)
+  name?: string;
+  first_name?: string;
+  last_name?: string;
   email?: string;
+  email_address?: string;
+  job_title?: string;
+  company_name?: string;
+  company_website?: string;
+  city_name?: string;
+  state_name?: string;
+  country_name?: string;
+  phone?: string;
+  linkedin_url?: string;
+  seniority?: string;
+  functional?: string;
+  industry?: string;
+  company_size?: string;
+  email_status?: string;
+  // Legacy fields (kept for compatibility)
+  fullName?: string;
+  firstName?: string;
+  lastName?: string;
   position?: string;
   orgName?: string;
   orgWebsite?: string;
   orgCountry?: string;
   linkedinUrl?: string;
-  // Legacy fields
-  name?: string;
-  firstName?: string;
-  first_name?: string;
-  lastName?: string;
-  last_name?: string;
   jobTitle?: string;
-  job_title?: string;
   headline?: string;
   company?: string;
   companyName?: string;
-  company_name?: string;
   emailAddress?: string;
-  email_address?: string;
-  phone?: string;
   location?: string;
   rawAddress?: string;
   raw_address?: string;
   stateName?: string;
-  state_name?: string;
   cityName?: string;
-  city_name?: string;
   countryName?: string;
-  country_name?: string;
+  contactPhoneNumbers?: Array<{ sanitizedNumber?: string; rawNumber?: string }>;
+  contact_phone_numbers?: string;
+  // Status and metadata
   status?: string;
   lastContact?: string;
   last_contact?: string;
-  contactPhoneNumbers?: Array<{ sanitizedNumber?: string; rawNumber?: string }>;
-  contact_phone_numbers?: string;
   created_at?: string;
   reviewed_at?: string;
   accepted_at?: string;
@@ -147,119 +155,49 @@ const safeToString = (value: any): string => {
 };
 
 const extractFullName = (lead: Lead): string => {
-  // Prioritize new scraper field
-  if (lead.fullName) return safeToString(lead.fullName);
-  // Fallback to legacy fields
-  if (lead.name) return safeToString(lead.name);
-  const firstName = safeToString(lead.firstName || lead.first_name);
-  const lastName = safeToString(lead.lastName || lead.last_name);
-  if (firstName || lastName) {
-    return `${firstName} ${lastName}`.trim();
-  }
-  return '—';
+  const name = safeToString(lead.name) || [safeToString(lead.first_name), safeToString(lead.last_name)].filter(Boolean).join(" ").trim();
+  return name || "—";
 };
 
 const extractJobTitle = (lead: Lead): string => {
-  // Prioritize new scraper field
-  return safeToString(lead.position || lead.jobTitle || lead.job_title || lead.headline) || '—';
+  return safeToString(lead.job_title) || '—';
 };
 
 const extractCompanyInfo = (lead: Lead) => {
-  // Prioritize new scraper fields
-  if (lead.orgName || lead.orgWebsite) {
-    return {
-      name: safeToString(lead.orgName) || '—',
-      website: safeToString(lead.orgWebsite) || '',
-      industry: '',
-      location: '',
-      phone: ''
-    };
-  }
-  
-  // Handle legacy string and object company data
-  let companyData = lead.company || lead.companyName || lead.company_name;
-  
-  if (typeof companyData === 'string') {
-    try {
-      // Try to parse if it's a JSON string
-      companyData = JSON.parse(companyData);
-    } catch (e) {
-      // If parsing fails, treat as simple string
-      return {
-        name: companyData || '—',
-        website: '',
-        industry: '',
-        location: '',
-        phone: ''
-      };
-    }
-  }
-  
-  if (companyData && typeof companyData === 'object') {
-    return {
-      name: safeToString((companyData as any)?.name || (companyData as any)?.companyName || (companyData as any)?.company_name) || '—',
-      website: safeToString((companyData as any)?.website || (companyData as any)?.websiteUrl || (companyData as any)?.url) || '',
-      industry: safeToString((companyData as any)?.industry || (companyData as any)?.industryName) || '',
-      location: safeToString((companyData as any)?.location || (companyData as any)?.address || (companyData as any)?.city) || '',
-      phone: safeToString((companyData as any)?.phone || (companyData as any)?.phoneNumber) || ''
-    };
-  }
-  
   return {
-    name: '—',
-    website: '',
-    industry: '',
+    name: safeToString(lead.company_name) || '—',
+    website: safeToString(lead.company_website) || '',
+    industry: safeToString(lead.industry) || '',
     location: '',
     phone: ''
   };
 };
 
 const extractEmail = (lead: Lead): string => {
-  // New scraper field 'email' is prioritized
-  return safeToString(lead.email || lead.emailAddress || lead.email_address) || '—';
+  return safeToString(lead.email) || safeToString(lead.email_address) || '—';
 };
 
 const extractPhone = (lead: Lead): string => {
-  if (lead.phone) return safeToString(lead.phone);
-  
-  // Handle contact_phone_numbers from database (stored as JSON string)
-  if (lead.contact_phone_numbers) {
-    try {
-      const phoneNumbers = typeof lead.contact_phone_numbers === 'string' 
-        ? JSON.parse(lead.contact_phone_numbers) 
-        : lead.contact_phone_numbers;
-      if (Array.isArray(phoneNumbers) && phoneNumbers.length > 0) {
-        const phoneObj = phoneNumbers[0];
-        return safeToString(phoneObj.sanitizedNumber || phoneObj.rawNumber);
-      }
-    } catch (e) {
-      console.warn('Error parsing contact_phone_numbers:', e);
-    }
-  }
-  
-  // Handle contactPhoneNumbers from API response
-  if (lead.contactPhoneNumbers && lead.contactPhoneNumbers.length > 0) {
-    const phoneObj = lead.contactPhoneNumbers[0];
-    return safeToString(phoneObj.sanitizedNumber || phoneObj.rawNumber);
-  }
-  return '';
+  return safeToString(lead.phone) || '—';
 };
 
 const extractLocation = (lead: Lead): string => {
-  // Prioritize new scraper field (company country)
-  if (lead.orgCountry) return safeToString(lead.orgCountry);
-  
-  // Fallback to legacy fields
-  if (lead.location) return safeToString(lead.location);
-  if (lead.rawAddress || lead.raw_address) return safeToString(lead.rawAddress || lead.raw_address);
-  
-  const parts = [
-    safeToString(lead.cityName || lead.city_name),
-    safeToString(lead.stateName || lead.state_name),
-    safeToString(lead.countryName || lead.country_name)
-  ].filter(part => part && part !== '');
-  
-  return parts.join(', ') || '—';
+  const city = safeToString(lead.city_name);
+  const state = safeToString(lead.state_name);
+  const country = safeToString(lead.country_name);
+  const parts = [city, state, country].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : "—";
+};
+
+const extractLinkedIn = (lead: Lead): string => {
+  const url = safeToString(lead.linkedin_url);
+  if (!url) return '';
+  try {
+    const hasProto = /^https?:\/\//i.test(url);
+    return hasProto ? url : `https://${url}`;
+  } catch {
+    return '';
+  }
 };
 
 const CompanyCell = ({ company }: { company: any }) => {
@@ -825,7 +763,17 @@ export const AllLeadsSection = ({
                                 </Avatar>
                                  <div>
                                    <div className="font-medium text-gray-900 dark:text-white" title={fullName === '—' ? 'Not provided' : fullName}>{fullName}</div>
-                                   <div className="text-sm text-gray-500 dark:text-foreground/80" title={email === '—' ? 'Not provided' : email}>{email}</div>
+                                   {email !== "—" ? (
+                                     <a 
+                                       href={`mailto:${email}`}
+                                       className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                       title={email}
+                                     >
+                                       {email}
+                                     </a>
+                                   ) : (
+                                     <div className="text-sm text-gray-500 dark:text-foreground/80">—</div>
+                                   )}
                                    {lead.status === 'replied' && lead.last_reply_snippet && (
                                      <div className="mt-2 border-l-2 border-emerald-200 dark:border-emerald-600 pl-2">
                                        <div className="flex items-center space-x-1">
@@ -853,7 +801,7 @@ export const AllLeadsSection = ({
                               {jobTitle}
                             </TableCell>
                             <TableCell>
-                              <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
+                              <CompanyCell company={lead} />
                             </TableCell>
                             <TableCell className="text-sm text-gray-500 dark:text-foreground/80" title={location === '—' ? 'Not provided' : location}>{location}</TableCell>
                             <TableCell>
@@ -887,9 +835,9 @@ export const AllLeadsSection = ({
                               {phone}
                             </TableCell>
                             <TableCell className="text-center">
-                              {lead.linkedinUrl ? (
+                              {extractLinkedIn(lead) ? (
                                 <a 
-                                  href={lead.linkedinUrl}
+                                  href={extractLinkedIn(lead)!}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center justify-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
