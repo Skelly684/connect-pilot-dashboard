@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Phone, Eye, MoreHorizontal, Search, Filter, Download, Trash2, Archive, FileSpreadsheet, ExternalLink, Loader2, Reply, FileText, Settings } from "lucide-react";
+import { Mail, Phone, Eye, MoreHorizontal, Search, Filter, Download, Trash2, Archive, FileSpreadsheet, ExternalLink, Loader2, Reply, FileText, Settings, Linkedin } from "lucide-react";
 import { AddNoteDialog } from "./AddNoteDialog";
 import { ChangeStatusDialog } from "./ChangeStatusDialog";
 import { formatRelativeTime } from "@/utils/timeUtils";
@@ -52,6 +52,15 @@ import * as XLSX from 'xlsx';
 
 interface Lead {
   id?: number | string;
+  // New scraper fields
+  fullName?: string;
+  email?: string;
+  position?: string;
+  orgName?: string;
+  orgWebsite?: string;
+  orgCountry?: string;
+  linkedinUrl?: string;
+  // Legacy fields
   name?: string;
   firstName?: string;
   first_name?: string;
@@ -63,7 +72,6 @@ interface Lead {
   company?: string;
   companyName?: string;
   company_name?: string;
-  email?: string;
   emailAddress?: string;
   email_address?: string;
   phone?: string;
@@ -139,21 +147,36 @@ const safeToString = (value: any): string => {
 };
 
 const extractFullName = (lead: Lead): string => {
+  // Prioritize new scraper field
+  if (lead.fullName) return safeToString(lead.fullName);
+  // Fallback to legacy fields
   if (lead.name) return safeToString(lead.name);
   const firstName = safeToString(lead.firstName || lead.first_name);
   const lastName = safeToString(lead.lastName || lead.last_name);
   if (firstName || lastName) {
     return `${firstName} ${lastName}`.trim();
   }
-  return 'N/A';
+  return '—';
 };
 
 const extractJobTitle = (lead: Lead): string => {
-  return safeToString(lead.jobTitle || lead.job_title || lead.headline);
+  // Prioritize new scraper field
+  return safeToString(lead.position || lead.jobTitle || lead.job_title || lead.headline) || '—';
 };
 
 const extractCompanyInfo = (lead: Lead) => {
-  // Handle both string and object company data
+  // Prioritize new scraper fields
+  if (lead.orgName || lead.orgWebsite) {
+    return {
+      name: safeToString(lead.orgName) || '—',
+      website: safeToString(lead.orgWebsite) || '',
+      industry: '',
+      location: '',
+      phone: ''
+    };
+  }
+  
+  // Handle legacy string and object company data
   let companyData = lead.company || lead.companyName || lead.company_name;
   
   if (typeof companyData === 'string') {
@@ -163,7 +186,7 @@ const extractCompanyInfo = (lead: Lead) => {
     } catch (e) {
       // If parsing fails, treat as simple string
       return {
-        name: companyData,
+        name: companyData || '—',
         website: '',
         industry: '',
         location: '',
@@ -174,16 +197,16 @@ const extractCompanyInfo = (lead: Lead) => {
   
   if (companyData && typeof companyData === 'object') {
     return {
-      name: safeToString((companyData as any)?.name || (companyData as any)?.companyName || (companyData as any)?.company_name || ''),
-      website: safeToString((companyData as any)?.website || (companyData as any)?.websiteUrl || (companyData as any)?.url || ''),
-      industry: safeToString((companyData as any)?.industry || (companyData as any)?.industryName || ''),
-      location: safeToString((companyData as any)?.location || (companyData as any)?.address || (companyData as any)?.city || ''),
-      phone: safeToString((companyData as any)?.phone || (companyData as any)?.phoneNumber || '')
+      name: safeToString((companyData as any)?.name || (companyData as any)?.companyName || (companyData as any)?.company_name) || '—',
+      website: safeToString((companyData as any)?.website || (companyData as any)?.websiteUrl || (companyData as any)?.url) || '',
+      industry: safeToString((companyData as any)?.industry || (companyData as any)?.industryName) || '',
+      location: safeToString((companyData as any)?.location || (companyData as any)?.address || (companyData as any)?.city) || '',
+      phone: safeToString((companyData as any)?.phone || (companyData as any)?.phoneNumber) || ''
     };
   }
   
   return {
-    name: safeToString(companyData || ''),
+    name: '—',
     website: '',
     industry: '',
     location: '',
@@ -192,7 +215,8 @@ const extractCompanyInfo = (lead: Lead) => {
 };
 
 const extractEmail = (lead: Lead): string => {
-  return safeToString(lead.email || lead.emailAddress || lead.email_address);
+  // New scraper field 'email' is prioritized
+  return safeToString(lead.email || lead.emailAddress || lead.email_address) || '—';
 };
 
 const extractPhone = (lead: Lead): string => {
@@ -222,6 +246,10 @@ const extractPhone = (lead: Lead): string => {
 };
 
 const extractLocation = (lead: Lead): string => {
+  // Prioritize new scraper field (company country)
+  if (lead.orgCountry) return safeToString(lead.orgCountry);
+  
+  // Fallback to legacy fields
   if (lead.location) return safeToString(lead.location);
   if (lead.rawAddress || lead.raw_address) return safeToString(lead.rawAddress || lead.raw_address);
   
@@ -231,7 +259,7 @@ const extractLocation = (lead: Lead): string => {
     safeToString(lead.countryName || lead.country_name)
   ].filter(part => part && part !== '');
   
-  return parts.join(', ') || '';
+  return parts.join(', ') || '—';
 };
 
 const CompanyCell = ({ company }: { company: any }) => {
@@ -239,19 +267,20 @@ const CompanyCell = ({ company }: { company: any }) => {
   
   return (
     <div className="space-y-1">
-      <div className="font-medium text-gray-900 dark:text-white">
-        {companyInfo.name || '—'}
+      <div className="font-medium text-gray-900 dark:text-white" title={companyInfo.name === '—' ? 'Not provided' : companyInfo.name}>
+        {companyInfo.name}
       </div>
       {companyInfo.website && (
         <div className="flex items-center space-x-1">
+          <ExternalLink className="h-3 w-3 text-blue-600" />
           <a 
             href={companyInfo.website.startsWith('http') ? companyInfo.website : `https://${companyInfo.website}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center space-x-1"
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm truncate max-w-[200px]"
+            title={companyInfo.website}
           >
-            <span>{companyInfo.website}</span>
-            <ExternalLink className="h-3 w-3" />
+            {companyInfo.website.replace(/^https?:\/\/(www\.)?/, '')}
           </a>
         </div>
       )}
@@ -755,6 +784,7 @@ export const AllLeadsSection = ({
                     <TableHead>Location</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Phone</TableHead>
+                    <TableHead className="text-center">LinkedIn</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -794,8 +824,8 @@ export const AllLeadsSection = ({
                                   </AvatarFallback>
                                 </Avatar>
                                  <div>
-                                   <div className="font-medium text-gray-900 dark:text-white">{fullName}</div>
-                                   <div className="text-sm text-gray-500 dark:text-foreground/80">{email || 'No email'}</div>
+                                   <div className="font-medium text-gray-900 dark:text-white" title={fullName === '—' ? 'Not provided' : fullName}>{fullName}</div>
+                                   <div className="text-sm text-gray-500 dark:text-foreground/80" title={email === '—' ? 'Not provided' : email}>{email}</div>
                                    {lead.status === 'replied' && lead.last_reply_snippet && (
                                      <div className="mt-2 border-l-2 border-emerald-200 dark:border-emerald-600 pl-2">
                                        <div className="flex items-center space-x-1">
@@ -819,13 +849,13 @@ export const AllLeadsSection = ({
                                  </div>
                              </div>
                            </TableCell>
-                           <TableCell className="font-medium dark:text-foreground">
-                              {jobTitle || 'N/A'}
+                           <TableCell className="font-medium dark:text-foreground" title={jobTitle === '—' ? 'Not provided' : jobTitle}>
+                              {jobTitle}
                             </TableCell>
                             <TableCell>
                               <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
                             </TableCell>
-                            <TableCell className="text-sm text-gray-500 dark:text-foreground/80">{location || 'N/A'}</TableCell>
+                            <TableCell className="text-sm text-gray-500 dark:text-foreground/80" title={location === '—' ? 'Not provided' : location}>{location}</TableCell>
                             <TableCell>
                                <div className="flex flex-col gap-1">
                                  {/* Only show status if it's not "no-tz" */}
@@ -853,8 +883,25 @@ export const AllLeadsSection = ({
                                  />
                                </div>
                             </TableCell>
-                           <TableCell className="text-sm text-gray-500 dark:text-foreground/80">
-                              {phone || 'N/A'}
+                           <TableCell className="text-sm text-gray-500 dark:text-foreground/80" title={phone === '—' ? 'Not provided' : phone}>
+                              {phone}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {lead.linkedinUrl ? (
+                                <a 
+                                  href={lead.linkedinUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                  title="View LinkedIn profile"
+                                >
+                                  <Linkedin className="h-4 w-4" />
+                                </a>
+                              ) : (
+                                <span className="inline-flex items-center justify-center text-gray-300 dark:text-gray-600" title="No profile">
+                                  <Linkedin className="h-4 w-4" />
+                                </span>
+                              )}
                             </TableCell>
                              <TableCell className="text-right">
                                <div className="flex items-center justify-end space-x-2">

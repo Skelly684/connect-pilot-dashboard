@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -16,15 +16,24 @@ import {
 
 interface RecentLead {
   id: string;
-  first_name: string;
-  last_name: string;
-  job_title: string;
-  company_name: string;
-  email_address: string;
-  contact_phone_numbers: any;
-  city_name: string;
-  state_name: string;
-  country_name: string;
+  // New scraper fields
+  fullName?: string;
+  email?: string;
+  position?: string;
+  orgName?: string;
+  orgWebsite?: string;
+  orgCountry?: string;
+  linkedinUrl?: string;
+  // Legacy fields
+  first_name?: string;
+  last_name?: string;
+  job_title?: string;
+  company_name?: string;
+  email_address?: string;
+  contact_phone_numbers?: any;
+  city_name?: string;
+  state_name?: string;
+  country_name?: string;
   status: string;
   created_at: string;
 }
@@ -63,22 +72,49 @@ export function SelfLeadsRecentTable() {
     }
   };
 
-  const getInitials = (firstName: string, lastName: string) => {
-    const first = firstName?.charAt(0)?.toUpperCase() || '';
-    const last = lastName?.charAt(0)?.toUpperCase() || '';
+  const getInitials = (lead: RecentLead) => {
+    // Try new scraper field first
+    if (lead.fullName) {
+      const names = lead.fullName.split(' ');
+      return names.map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2) || 'LL';
+    }
+    // Fallback to legacy fields
+    const first = lead.first_name?.charAt(0)?.toUpperCase() || '';
+    const last = lead.last_name?.charAt(0)?.toUpperCase() || '';
     return first + last || 'LL';
   };
 
   const getFullName = (lead: RecentLead) => {
+    // Prioritize new scraper field
+    if (lead.fullName) return lead.fullName;
+    // Fallback to legacy fields
     const first = lead.first_name?.trim() || '';
     const last = lead.last_name?.trim() || '';
-    return `${first} ${last}`.trim() || 'N/A';
+    return `${first} ${last}`.trim() || '—';
+  };
+
+  const getJobTitle = (lead: RecentLead) => {
+    // Prioritize new scraper field
+    return lead.position?.trim() || lead.job_title?.trim() || '—';
+  };
+
+  const getCompanyName = (lead: RecentLead) => {
+    // Prioritize new scraper field
+    return lead.orgName?.trim() || lead.company_name?.trim() || '—';
+  };
+
+  const getEmail = (lead: RecentLead) => {
+    // New scraper field 'email' is prioritized
+    return lead.email?.trim() || lead.email_address?.trim() || '—';
   };
 
   const getLocation = (lead: RecentLead) => {
+    // Prioritize new scraper field (company country)
+    if (lead.orgCountry?.trim()) return lead.orgCountry;
+    // Fallback to legacy fields
     const parts = [lead.city_name, lead.state_name, lead.country_name]
       .filter(part => part && part.trim() && part !== 'N/A');
-    return parts.join(', ') || 'N/A';
+    return parts.join(', ') || '—';
   };
 
   const hasPhone = (lead: RecentLead) => {
@@ -94,7 +130,8 @@ export function SelfLeadsRecentTable() {
   };
 
   const hasEmail = (lead: RecentLead) => {
-    return lead.email_address && lead.email_address.trim() && lead.email_address !== 'N/A';
+    const email = getEmail(lead);
+    return email && email !== '—' && email !== 'N/A';
   };
 
   if (isLoading) {
@@ -145,6 +182,7 @@ export function SelfLeadsRecentTable() {
               <TableHead>Location</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-center">Contact Options</TableHead>
+              <TableHead className="text-center">LinkedIn</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -157,37 +195,33 @@ export function SelfLeadsRecentTable() {
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8 ring-2 ring-primary/20">
                       <AvatarFallback className="text-sm bg-gradient-primary text-white font-semibold">
-                        {getInitials(lead.first_name, lead.last_name)}
+                        {getInitials(lead)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-medium text-foreground">{getFullName(lead)}</div>
+                      <div className="font-medium text-foreground" title={getFullName(lead) === '—' ? 'Not provided' : getFullName(lead)}>
+                        {getFullName(lead)}
+                      </div>
                       {hasEmail(lead) && (
-                        <div className="text-sm text-muted-foreground">
-                          {lead.email_address}
+                        <div className="text-sm text-muted-foreground" title={getEmail(lead)}>
+                          {getEmail(lead)}
                         </div>
                       )}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-foreground">
-                    {lead.job_title?.trim() && lead.job_title !== 'N/A' 
-                      ? lead.job_title 
-                      : 'N/A'
-                    }
+                  <span className="text-sm text-foreground" title={getJobTitle(lead) === '—' ? 'Not provided' : getJobTitle(lead)}>
+                    {getJobTitle(lead)}
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className="font-medium text-foreground">
-                    {lead.company_name?.trim() && lead.company_name !== 'N/A'
-                      ? lead.company_name
-                      : 'N/A'
-                    }
+                  <span className="font-medium text-foreground" title={getCompanyName(lead) === '—' ? 'Not provided' : getCompanyName(lead)}>
+                    {getCompanyName(lead)}
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground" title={getLocation(lead) === '—' ? 'Not provided' : getLocation(lead)}>
                     {getLocation(lead)}
                   </span>
                 </TableCell>
@@ -216,6 +250,23 @@ export function SelfLeadsRecentTable() {
                       }`} 
                     />
                   </div>
+                </TableCell>
+                <TableCell className="text-center">
+                  {lead.linkedinUrl ? (
+                    <a 
+                      href={lead.linkedinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                      title="View LinkedIn profile"
+                    >
+                      <Linkedin className="h-4 w-4" />
+                    </a>
+                  ) : (
+                    <span className="inline-flex items-center justify-center text-gray-300 dark:text-gray-600" title="No profile">
+                      <Linkedin className="h-4 w-4" />
+                    </span>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
