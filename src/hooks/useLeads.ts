@@ -384,7 +384,8 @@ export const useLeads = () => {
 
   const saveLeads = async (newLeads: Lead[]) => {
     try {
-      console.log('Starting saveLeads with:', newLeads.length, 'leads');
+      console.log('🟢 saveLeads CALLED with:', newLeads.length, 'leads');
+      console.log('🟢 First lead sample:', newLeads[0]);
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {

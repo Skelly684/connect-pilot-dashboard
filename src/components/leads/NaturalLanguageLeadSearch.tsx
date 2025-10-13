@@ -177,8 +177,12 @@ export const NaturalLanguageLeadSearch = ({ onSaveLeads }: NaturalLanguageLeadSe
         });
       } else {
         // Automatically save leads to database for review
+        console.log('🔵 NaturalLanguageLeadSearch: About to save', items.length, 'leads');
+        console.log('🔵 onSaveLeads function exists?', !!onSaveLeads);
         if (onSaveLeads && items.length > 0) {
-          await onSaveLeads(items);
+          console.log('🔵 Calling onSaveLeads with', items.length, 'leads');
+          const saveResult = await onSaveLeads(items);
+          console.log('🔵 onSaveLeads returned:', saveResult);
         }
         
         toast({
