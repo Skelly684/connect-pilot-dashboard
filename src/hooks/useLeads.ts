@@ -409,11 +409,20 @@ export const useLeads = () => {
         existingLeads?.map(lead => lead.email_address).filter(Boolean) || []
       );
 
-      // Filter out leads with duplicate email_address values
+      // Track emails we've seen in this batch to avoid internal duplicates
+      const seenEmailsInBatch = new Set<string>();
+
+      // Filter out leads with duplicate email_address values (both against DB and within batch)
       const uniqueLeads = newLeads.filter(lead => {
         // Extract email using all possible field variations (same as insertion logic)
         const emailAddress = lead.email || lead.emailAddress || lead.workEmail || lead.personalEmail;
-        return emailAddress && !existingEmailAddresses.has(emailAddress);
+        
+        if (!emailAddress) return false;
+        if (existingEmailAddresses.has(emailAddress)) return false;
+        if (seenEmailsInBatch.has(emailAddress)) return false;
+        
+        seenEmailsInBatch.add(emailAddress);
+        return true;
       });
 
       if (uniqueLeads.length === 0) {
