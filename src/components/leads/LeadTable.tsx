@@ -349,6 +349,9 @@ export const LeadTable = ({ leads = [], isLoading, onDeleteLeads, onDeleteAllLea
   console.log("LeadTable isLoading:", isLoading);
 
   const filteredLeads = leads.filter(lead => {
+    // Always exclude rejected leads
+    if (lead.status === 'rejected') return false;
+    
     if (!searchTerm) return true;
     
     const searchLower = searchTerm.toLowerCase();

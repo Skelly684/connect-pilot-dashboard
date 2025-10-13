@@ -287,6 +287,9 @@ export const AllLeadsSection = ({
 
   // Filter leads based on search and status
   const filteredLeads = leads.filter(lead => {
+    // Always exclude rejected leads from "All Leads"
+    if (lead.status === 'rejected') return false;
+    
     if (!searchTerm && statusFilter === "all") return true;
     
     const searchLower = searchTerm.toLowerCase();
@@ -303,11 +306,6 @@ export const AllLeadsSection = ({
       email.includes(searchLower);
     
     const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
-    
-    // Debug logging for accepted status filter
-    if (statusFilter === "accepted") {
-      console.log(`Lead ${lead.id}: status='${lead.status}', matches=${matchesStatus}`);
-    }
     
     return matchesSearch && matchesStatus;
   });
