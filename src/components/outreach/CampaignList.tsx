@@ -35,7 +35,7 @@ export const CampaignList = ({ campaigns, selectedCampaign, onSelectCampaign }: 
         {filteredCampaigns.map((campaign) => (
           <Card
             key={campaign.id}
-            className={`p-4 cursor-pointer transition-colors hover:bg-primary/10 ${
+            className={`p-4 cursor-pointer transition-all ${
               selectedCampaign?.id === campaign.id ? 'ring-2 ring-primary bg-primary/5' : ''
             }`}
             onClick={() => onSelectCampaign(campaign)}
