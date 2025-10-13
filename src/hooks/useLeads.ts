@@ -227,73 +227,10 @@ export const useLeads = () => {
         }
       }
 
-      // Automatically send accepted leads to backend
-      if (newStatus === 'accepted' && allCurrentLeads.length > 0) {
-        try {
-          // Get campaign details to include emailTemplateId
-          let emailTemplateId: string | undefined = undefined;
-          const leadWithCampaign = allCurrentLeads.find(lead => lead.campaign_id);
-          
-          if (leadWithCampaign?.campaign_id) {
-            const { data: campaign } = await supabase
-              .from('campaigns')
-              .select('email_template_id')
-              .eq('id', leadWithCampaign.campaign_id)
-              .single();
-            
-            emailTemplateId = campaign?.email_template_id || undefined;
-          }
-
-          // Format leads for backend
-          const formattedLeads = allCurrentLeads.map(lead => ({
-            id: lead.id,
-            first_name: lead.first_name || '',
-            last_name: lead.last_name || '',
-            company_name: lead.company_name || lead.company || '',
-            email_address: lead.email_address || lead.email || '',
-            campaign_id: lead.campaign_id || undefined
-          }));
-
-          const payload = {
-            leads: formattedLeads,
-            emailTemplateId: emailTemplateId
-          };
-
-          console.log("Sending to FastAPI backend:", `${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, payload);
-
-          const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ACCEPTED_LEADS}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload)
-          });
-
-          if (!response.ok) {
-            throw new Error(`FastAPI backend returned ${response.status}: ${response.statusText}`);
-          }
-
-          const responseData = await response.json();
-          console.log("FastAPI backend response:", responseData);
-          
-          toast({
-            title: "Success",
-            description: `Accepted ${leadIds.length} lead(s) and sent to backend`,
-          });
-        } catch (backendError) {
-          console.error('Error sending leads to FastAPI backend:', backendError);
-          toast({
-            title: "Warning",
-            description: "Leads accepted but failed to send to backend",
-            variant: "destructive",
-          });
-        }
-      } else {
-        toast({
-          title: "Success",
-          description: `Updated ${leadIds.length} lead(s) status to ${newStatus.replace('_', ' ')}`,
-        });
-      }
+      toast({
+        title: "Success",
+        description: `Updated ${leadIds.length} lead(s) status to ${newStatus.replace('_', ' ')}`,
+      });
 
       await fetchLeads(); // Refresh the list
       return true;
