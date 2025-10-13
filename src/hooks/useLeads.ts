@@ -7,27 +7,58 @@ import { API_BASE_URL, API_ENDPOINTS } from '@/config/api';
 
 interface Lead {
   id?: string;
+  // Database fields (new columns)
   name?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  email_address?: string;
+  email_status?: string;
+  job_title?: string;
+  company_name?: string;
+  company_website?: string;
+  city_name?: string;
+  state_name?: string;
+  country_name?: string;
+  phone?: string;
+  linkedin_url?: string;
+  seniority?: string;
+  functional?: string;
+  industry?: string;
+  company_size?: string;
+  // Legacy/API fields (kept for compatibility)
   firstName?: string;
   lastName?: string;
   jobTitle?: string;
-  job_title?: string;
   headline?: string;
+  position?: string;
   company?: string;
   companyName?: string;
-  email?: string;
+  companyWebsite?: string;
+  orgName?: string;
+  orgWebsite?: string;
+  orgCity?: string;
+  orgState?: string;
+  orgCountry?: string;
+  orgIndustry?: string;
+  orgSize?: string;
   emailAddress?: string;
-  phone?: string;
+  emailStatus?: string;
+  phoneNumber?: string;
+  linkedinUrl?: string;
+  linkedIn?: string;
   location?: string;
   rawAddress?: string;
   stateName?: string;
   cityName?: string;
   countryName?: string;
+  companySize?: string;
   status?: string;
   contactPhoneNumbers?: Array<{ sanitizedNumber?: string; rawNumber?: string }>;
   last_call_status?: string;
   next_call_at?: string | null;
   call_attempts?: number;
+  campaign_id?: string;
 }
 
 export const useLeads = () => {
@@ -106,52 +137,83 @@ export const useLeads = () => {
   };
 
   const updateLeadStatus = async (leadIds: string[], newStatus: string, campaignId?: string) => {
-    console.log('🚀 useLeads.updateLeadStatus CALLED with:', { leadIds, newStatus, campaignId });
+    console.log('🚀 useLeads.updateLeadStatus CALLED with:', { leadIds: leadIds.length, newStatus, campaignId });
+    
+    // Batch processing for large arrays (PostgreSQL has limits on IN clause size)
+    const BATCH_SIZE = 500;
+    const batches: string[][] = [];
+    
+    for (let i = 0; i < leadIds.length; i += BATCH_SIZE) {
+      batches.push(leadIds.slice(i, i + BATCH_SIZE));
+    }
+    
+    console.log(`📦 Processing ${leadIds.length} leads in ${batches.length} batches`);
+    
     try {
-      // Get current lead data to track status changes and for backend API
-      const { data: currentLeads } = await supabase
-        .from('leads')
-        .select('*')
-        .in('id', leadIds);
-
-      console.log('📊 useLeads: Retrieved current leads:', currentLeads);
-
-      const updates: any = { status: newStatus };
+      let allCurrentLeads: any[] = [];
       
-      if (newStatus === 'accepted') {
-        updates.accepted_at = new Date().toISOString();
-        updates.reviewed_at = new Date().toISOString();
-        // Set campaign_id if provided
-        if (campaignId) {
-          updates.campaign_id = campaignId;
+      // Process each batch
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batchIds = batches[batchIndex];
+        console.log(`📦 Processing batch ${batchIndex + 1}/${batches.length} with ${batchIds.length} leads`);
+        
+        // Get current lead data for this batch
+        const { data: batchLeads } = await supabase
+          .from('leads')
+          .select('*')
+          .in('id', batchIds);
+
+        if (batchLeads) {
+          allCurrentLeads = [...allCurrentLeads, ...batchLeads];
         }
-      } else if (newStatus === 'rejected') {
-        updates.reviewed_at = new Date().toISOString();
-      } else if (newStatus === 'sent_for_contact') {
-        updates.sent_for_contact_at = new Date().toISOString();
+
+        const updates: any = { status: newStatus };
+        
+        if (newStatus === 'accepted') {
+          updates.accepted_at = new Date().toISOString();
+          updates.reviewed_at = new Date().toISOString();
+          if (campaignId) {
+            updates.campaign_id = campaignId;
+          }
+        } else if (newStatus === 'rejected') {
+          updates.reviewed_at = new Date().toISOString();
+        } else if (newStatus === 'sent_for_contact') {
+          updates.sent_for_contact_at = new Date().toISOString();
+        }
+
+        const { error } = await supabase
+          .from('leads')
+          .update(updates)
+          .in('id', batchIds);
+
+        if (error) {
+          console.error(`❌ Error in batch ${batchIndex + 1}:`, error);
+          throw error;
+        }
+        
+        console.log(`✅ Batch ${batchIndex + 1}/${batches.length} completed`);
       }
+      
+      console.log('📊 useLeads: Retrieved total leads:', allCurrentLeads.length);
 
-      const { error } = await supabase
-        .from('leads')
-        .update(updates)
-        .in('id', leadIds);
+      console.log('✅ useLeads: All batches completed successfully');
 
-      if (error) throw error;
-
-      console.log('✅ useLeads: Status updated in database successfully');
-
-      // Create notifications for ALL status changes
-      if (currentLeads && currentLeads.length > 0) {
-        console.log('📢 useLeads: Processing notifications for', currentLeads.length, 'leads, newStatus:', newStatus);
-        currentLeads.forEach(lead => {
+      // Create notifications for status changes (limit to avoid overwhelming notifications)
+      if (allCurrentLeads && allCurrentLeads.length > 0) {
+        console.log('📢 useLeads: Processing notifications for', allCurrentLeads.length, 'leads, newStatus:', newStatus);
+        // Only create notifications for the first 10 leads to avoid spam
+        const leadsToNotify = allCurrentLeads.slice(0, 10);
+        leadsToNotify.forEach(lead => {
           const leadName = lead.name || `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown Lead';
           const oldStatus = lead.status || 'unknown';
           console.log(`📢 useLeads: Calling addNotification for "${leadName}" (${lead.id}) from "${oldStatus}" to "${newStatus}"`);
           addNotification(leadName, lead.id, oldStatus, newStatus);
-          console.log('📢 useLeads: addNotification called successfully');
         });
+        if (allCurrentLeads.length > 10) {
+          console.log(`📢 useLeads: Skipped notifications for ${allCurrentLeads.length - 10} more leads`);
+        }
       } else {
-        console.log('⏭️ useLeads: Skipping notifications - newStatus:', newStatus, 'leadsCount:', currentLeads?.length);
+        console.log('⏭️ useLeads: Skipping notifications - no leads found');
       }
 
       // Trigger auto-sync to CRM when leads change to "replied" status
@@ -163,12 +225,12 @@ export const useLeads = () => {
         }
       }
 
-      // Automatically send accepted leads to FastAPI backend
-      if (newStatus === 'accepted' && currentLeads) {
+      // Automatically send accepted leads to backend
+      if (newStatus === 'accepted' && allCurrentLeads.length > 0) {
         try {
           // Get campaign details to include emailTemplateId
           let emailTemplateId: string | undefined = undefined;
-          const leadWithCampaign = currentLeads.find(lead => lead.campaign_id);
+          const leadWithCampaign = allCurrentLeads.find(lead => lead.campaign_id);
           
           if (leadWithCampaign?.campaign_id) {
             const { data: campaign } = await supabase
@@ -180,8 +242,8 @@ export const useLeads = () => {
             emailTemplateId = campaign?.email_template_id || undefined;
           }
 
-          // Format leads for FastAPI backend
-          const formattedLeads = currentLeads.map(lead => ({
+          // Format leads for backend
+          const formattedLeads = allCurrentLeads.map(lead => ({
             id: lead.id,
             first_name: lead.first_name || '',
             last_name: lead.last_name || '',
@@ -362,23 +424,38 @@ export const useLeads = () => {
 
       const leadsToInsert = uniqueLeads.map(lead => ({
         user_id: user.id,
-        name: lead.name || `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || null,
-        first_name: lead.firstName || null,
-        last_name: lead.lastName || null,
-        job_title: lead.jobTitle || lead.job_title || lead.headline || null,
+        // Name fields (prioritize direct fields from backend)
+        name: lead.name || `${lead.first_name || lead.firstName || ''} ${lead.last_name || lead.lastName || ''}`.trim() || null,
+        first_name: lead.first_name || lead.firstName || null,
+        last_name: lead.last_name || lead.lastName || null,
+        // Email fields
+        email: lead.email || lead.emailAddress || null,
+        email_address: lead.email || lead.emailAddress || null,
+        email_status: lead.email_status || lead.emailStatus || null,
+        // Job & Company fields
+        job_title: lead.job_title || lead.jobTitle || lead.position || lead.headline || null,
+        company_name: lead.company_name || lead.companyName || lead.orgName || lead.company || null,
+        company_website: lead.company_website || lead.companyWebsite || lead.orgWebsite || null,
+        // Location fields
+        city_name: lead.city_name || lead.cityName || lead.orgCity || null,
+        state_name: lead.state_name || lead.stateName || lead.orgState || null,
+        country_name: lead.country_name || lead.countryName || lead.orgCountry || null,
+        // Contact fields
+        phone: lead.phone || lead.phoneNumber || null,
+        linkedin_url: lead.linkedin_url || lead.linkedinUrl || lead.linkedIn || null,
+        // Additional enrichment fields
+        seniority: lead.seniority || null,
+        functional: lead.functional || null,
+        industry: lead.industry || lead.orgIndustry || null,
+        company_size: lead.company_size || lead.companySize || lead.orgSize || null,
+        // Legacy fields (kept for compatibility)
         headline: lead.headline || null,
         company: lead.company || lead.companyName || null,
-        company_name: lead.companyName || lead.company || null,
-        email: lead.email || lead.emailAddress || null,
-        email_address: lead.emailAddress || lead.email || null,
-        phone: lead.phone || null,
         location: lead.location || lead.rawAddress || null,
         raw_address: lead.rawAddress || lead.location || null,
-        state_name: lead.stateName || null,
-        city_name: lead.cityName || null,
-        country_name: lead.countryName || null,
-        status: 'pending_review',
         contact_phone_numbers: lead.contactPhoneNumbers || null,
+        // Status
+        status: 'pending_review',
       }));
 
       console.log('Prepared leads for insert:', leadsToInsert);
