@@ -10,12 +10,18 @@ export interface Notification {
   status: string;
 }
 
-export const useNotifications = () => {
+export const useNotifications = (userId: string | undefined) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // Load notifications from localStorage on mount
+  // Load notifications from localStorage on mount (user-specific)
   useEffect(() => {
-    const saved = localStorage.getItem('psn-notifications');
+    if (!userId) {
+      setNotifications([]);
+      return;
+    }
+
+    const storageKey = `psn-notifications-${userId}`;
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -28,13 +34,18 @@ export const useNotifications = () => {
       } catch (error) {
         console.error('Error loading notifications:', error);
       }
+    } else {
+      setNotifications([]);
     }
-  }, []);
+  }, [userId]);
 
-  // Save notifications to localStorage whenever they change
+  // Save notifications to localStorage whenever they change (user-specific)
   useEffect(() => {
-    localStorage.setItem('psn-notifications', JSON.stringify(notifications));
-  }, [notifications]);
+    if (!userId) return;
+    
+    const storageKey = `psn-notifications-${userId}`;
+    localStorage.setItem(storageKey, JSON.stringify(notifications));
+  }, [notifications, userId]);
 
   const addNotification = useCallback((leadName: string, leadId: string, oldStatus: string, newStatus: string) => {
     console.log('🔔 addNotification CALLED:', { leadName, leadId, oldStatus, newStatus });
@@ -67,7 +78,10 @@ export const useNotifications = () => {
     console.log('✅ Creating notification:', notification);
     setNotifications(prev => {
       const newNotifications = [notification, ...prev];
-      localStorage.setItem('psn-notifications', JSON.stringify(newNotifications));
+      if (userId) {
+        const storageKey = `psn-notifications-${userId}`;
+        localStorage.setItem(storageKey, JSON.stringify(newNotifications));
+      }
       window.dispatchEvent(new CustomEvent('notifications-updated', { detail: newNotifications }));
       return newNotifications;
     });

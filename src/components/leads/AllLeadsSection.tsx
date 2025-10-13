@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -256,10 +257,13 @@ export const AllLeadsSection = ({
   const [changeStatusDialogOpen, setChangeStatusDialogOpen] = useState(false);
   const [selectedLeadForAction, setSelectedLeadForAction] = useState<{ id: string; name: string; status: string } | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Track which replied leads should pulse (replied but not yet viewed)
   const unviewedLeads = useMemo(() => {
-    const viewedLeads = JSON.parse(localStorage.getItem('psn-viewed-leads') || '[]');
+    if (!user?.id) return new Set<string>();
+    const storageKey = `psn-viewed-leads-${user.id}`;
+    const viewedLeads = JSON.parse(localStorage.getItem(storageKey) || '[]');
     return new Set(
       leads
         .filter(lead => 
@@ -268,14 +272,16 @@ export const AllLeadsSection = ({
         )
         .map(lead => String(lead.id))
     );
-  }, [leads]);
+  }, [leads, user?.id]);
 
   // Mark lead as viewed
   const markLeadAsViewed = (leadId: string) => {
-    const viewedLeads = JSON.parse(localStorage.getItem('psn-viewed-leads') || '[]');
+    if (!user?.id) return;
+    const storageKey = `psn-viewed-leads-${user.id}`;
+    const viewedLeads = JSON.parse(localStorage.getItem(storageKey) || '[]');
     if (!viewedLeads.includes(leadId)) {
       viewedLeads.push(leadId);
-      localStorage.setItem('psn-viewed-leads', JSON.stringify(viewedLeads));
+      localStorage.setItem(storageKey, JSON.stringify(viewedLeads));
     }
   };
 
