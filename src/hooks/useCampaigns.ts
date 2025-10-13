@@ -50,6 +50,7 @@ export interface Campaign {
   is_default: boolean;
   created_at: string;
   updated_at: string;
+  timezone?: string;
   delivery_rules?: any; // Use any for JSON compatibility with Supabase
   email_template?: EmailTemplate;
 }

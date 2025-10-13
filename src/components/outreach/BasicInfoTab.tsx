@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Campaign, useCampaigns } from '@/hooks/useCampaigns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,6 +18,7 @@ export const BasicInfoTab = ({ campaign, onUpdateCampaign }: BasicInfoTabProps) 
   const [fromEmail, setFromEmail] = useState(campaign.from_email);
   const [fromName, setFromName] = useState(campaign.from_name);
   const [emailDailyCap, setEmailDailyCap] = useState(campaign.email_daily_cap);
+  const [timezone, setTimezone] = useState(campaign.timezone || 'America/New_York');
   const [isActive, setIsActive] = useState(campaign.is_active);
   const [isDefault, setIsDefault] = useState(campaign.is_default);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,6 +31,7 @@ export const BasicInfoTab = ({ campaign, onUpdateCampaign }: BasicInfoTabProps) 
     setFromEmail(campaign.from_email);
     setFromName(campaign.from_name);
     setEmailDailyCap(campaign.email_daily_cap);
+    setTimezone(campaign.timezone || 'America/New_York');
     setIsActive(campaign.is_active);
     setIsDefault(campaign.is_default || false);
   }, [campaign]);
@@ -60,6 +63,7 @@ export const BasicInfoTab = ({ campaign, onUpdateCampaign }: BasicInfoTabProps) 
         from_email: fromEmail.trim(),
         from_name: fromName.trim(),
         email_daily_cap: emailDailyCap,
+        timezone: timezone,
         is_active: isActive,
       });
 
@@ -89,6 +93,7 @@ export const BasicInfoTab = ({ campaign, onUpdateCampaign }: BasicInfoTabProps) 
     fromEmail !== campaign.from_email ||
     fromName !== campaign.from_name ||
     emailDailyCap !== campaign.email_daily_cap ||
+    timezone !== (campaign.timezone || 'America/New_York') ||
     isActive !== campaign.is_active ||
     isDefault !== campaign.is_default; // Check if default status changed
 
@@ -121,6 +126,31 @@ export const BasicInfoTab = ({ campaign, onUpdateCampaign }: BasicInfoTabProps) 
                 onChange={(e) => setEmailDailyCap(parseInt(e.target.value) || 150)}
               />
             </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="timezone">Timezone</Label>
+            <Select value={timezone} onValueChange={setTimezone}>
+              <SelectTrigger id="timezone">
+                <SelectValue placeholder="Select timezone" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Europe/London">GMT/BST (London)</SelectItem>
+                <SelectItem value="UTC">UTC</SelectItem>
+                <SelectItem value="America/New_York">EST/EDT (New York)</SelectItem>
+                <SelectItem value="America/Chicago">CST/CDT (Chicago)</SelectItem>
+                <SelectItem value="America/Denver">MST/MDT (Denver)</SelectItem>
+                <SelectItem value="America/Los_Angeles">PST/PDT (Los Angeles)</SelectItem>
+                <SelectItem value="Europe/Paris">CET/CEST (Paris)</SelectItem>
+                <SelectItem value="Europe/Berlin">CET/CEST (Berlin)</SelectItem>
+                <SelectItem value="Asia/Tokyo">JST (Tokyo)</SelectItem>
+                <SelectItem value="Asia/Shanghai">CST (Shanghai)</SelectItem>
+                <SelectItem value="Australia/Sydney">AEDT (Sydney)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground mt-1">
+              Used for scheduling emails and determining daily caps
+            </p>
           </div>
         </CardContent>
       </Card>
