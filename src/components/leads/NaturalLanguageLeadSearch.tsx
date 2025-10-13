@@ -129,9 +129,7 @@ export const NaturalLanguageLeadSearch = ({ onSaveLeads }: NaturalLanguageLeadSe
   };
 
   const handleSearch = async () => {
-    console.log('🟣🟣🟣 handleSearch CALLED');
     const trimmedPrompt = prompt.trim();
-    console.log('🟣 Trimmed prompt:', trimmedPrompt);
     
     if (!trimmedPrompt) {
       toast({
@@ -171,36 +169,44 @@ export const NaturalLanguageLeadSearch = ({ onSaveLeads }: NaturalLanguageLeadSe
       setLastCount(clampedCount);
       setCurrentPage(1);
 
-      console.log('🟣 SEARCH COMPLETE - items.length:', items.length);
-      console.log('🟣 First item:', items[0]);
-      console.log('🟣 onSaveLeads exists?', !!onSaveLeads, typeof onSaveLeads);
-
       if (items.length === 0) {
-        console.log('🟣 No items found - showing toast');
         toast({
           title: "No Results",
           description: "No leads matched. Try broadening the prompt (e.g., include multiple titles or a larger region).",
           variant: "default",
         });
       } else {
-        console.log('🟣 Items found - attempting to save');
         // Automatically save leads to database for review
+        let saveSuccess: boolean | void = false;
+        let saveError = null;
+        
         if (onSaveLeads) {
-          console.log('🟣 onSaveLeads is defined - calling it now with', items.length, 'items');
           try {
-            const saveResult = await onSaveLeads(items);
-            console.log('🟣 onSaveLeads completed. Result:', saveResult);
-          } catch (saveError) {
-            console.error('🟣 ERROR calling onSaveLeads:', saveError);
+            console.log('💾 Attempting to save', items.length, 'leads to database...');
+            saveSuccess = await onSaveLeads(items);
+            console.log('💾 Save completed. Success:', saveSuccess);
+          } catch (err) {
+            console.error('💾 Save failed with error:', err);
+            saveError = err;
           }
         } else {
-          console.error('🟣 ERROR: onSaveLeads is NOT defined!');
+          console.error('💾 CRITICAL: onSaveLeads function is not defined!');
         }
         
-        toast({
-          title: "Search Complete",
-          description: `Found ${items.length} lead(s) and saved for review.`,
-        });
+        if (saveSuccess) {
+          toast({
+            title: "Success!",
+            description: `Found and saved ${items.length} lead(s) for review.`,
+          });
+        } else {
+          toast({
+            title: "Search Complete",
+            description: saveError 
+              ? `Found ${items.length} lead(s) but failed to save: ${saveError instanceof Error ? saveError.message : 'Unknown error'}`
+              : `Found ${items.length} lead(s) but save failed. Check console for details.`,
+            variant: saveError ? "destructive" : "default",
+          });
+        }
       }
     } catch (err) {
       toast({

@@ -384,13 +384,12 @@ export const useLeads = () => {
 
   const saveLeads = async (newLeads: Lead[]) => {
     try {
-      console.log('🟣🟣🟣 saveLeads CALLED - START OF FUNCTION');
-      console.log('🟢 saveLeads CALLED with:', newLeads.length, 'leads');
-      console.log('🟢 First 3 lead samples:', newLeads.slice(0, 3));
+      console.log('💾 saveLeads: Starting with', newLeads.length, 'leads');
+      console.log('💾 First lead sample:', newLeads[0]);
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.error('No authenticated user found');
+        console.error('💾 No authenticated user found');
         toast({
           title: "Authentication Required",
           description: "Please log in to save leads",
@@ -399,7 +398,7 @@ export const useLeads = () => {
         return false;
       }
 
-      console.log('User authenticated:', user.id);
+      console.log('💾 User authenticated:', user.id);
 
       // Get existing email_address values for this user to avoid duplicates
       const { data: existingLeads } = await supabase
@@ -414,7 +413,7 @@ export const useLeads = () => {
       // Track emails we've seen in this batch to avoid internal duplicates
       const seenEmailsInBatch = new Set<string>();
 
-      console.log('🟢 Existing email addresses in DB:', existingEmailAddresses.size);
+      console.log('💾 Existing emails in DB:', existingEmailAddresses.size);
 
       // Filter out leads with duplicate email_address values (both against DB and within batch)
       const uniqueLeads = newLeads.filter(lead => {
@@ -422,15 +421,15 @@ export const useLeads = () => {
         const emailAddress = lead.email || lead.emailAddress || lead.workEmail || lead.personalEmail;
         
         if (!emailAddress) {
-          console.log('🔴 Lead rejected: no email', lead);
+          console.log('💾 Skipping lead without email:', lead.name || lead.first_name);
           return false;
         }
         if (existingEmailAddresses.has(emailAddress)) {
-          console.log('🟡 Lead rejected: duplicate in DB', emailAddress);
+          console.log('💾 Skipping duplicate email (DB):', emailAddress);
           return false;
         }
         if (seenEmailsInBatch.has(emailAddress)) {
-          console.log('🟡 Lead rejected: duplicate in batch', emailAddress);
+          console.log('💾 Skipping duplicate email (batch):', emailAddress);
           return false;
         }
         
@@ -438,7 +437,7 @@ export const useLeads = () => {
         return true;
       });
 
-      console.log('🟢 Unique leads after filtering:', uniqueLeads.length, 'out of', newLeads.length);
+      console.log('💾 Unique leads after filtering:', uniqueLeads.length, 'out of', newLeads.length);
 
       if (uniqueLeads.length === 0) {
         toast({
@@ -485,8 +484,8 @@ export const useLeads = () => {
         status: 'new',
       }));
 
-      console.log('🟢 Prepared', leadsToInsert.length, 'leads for insert');
-      console.log('🟢 First prepared lead:', leadsToInsert[0]);
+      console.log('💾 Prepared', leadsToInsert.length, 'leads for insert');
+      console.log('💾 First prepared lead:', leadsToInsert[0]);
 
       const { data, error } = await supabase
         .from('leads')
@@ -494,12 +493,12 @@ export const useLeads = () => {
         .select();
 
       if (error) {
-        console.error('🔴 Supabase insert error:', error);
-        console.error('🔴 Error details:', JSON.stringify(error, null, 2));
+        console.error('💾 Supabase insert error:', error);
+        console.error('💾 Error details:', JSON.stringify(error, null, 2));
         throw error;
       }
 
-      console.log('Successfully inserted leads:', data);
+      console.log('💾 Successfully inserted', data?.length || 0, 'leads');
 
       const skippedCount = newLeads.length - uniqueLeads.length;
       let description = `Saved ${uniqueLeads.length} new leads to database for review`;
