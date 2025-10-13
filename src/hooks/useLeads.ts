@@ -14,6 +14,8 @@ interface Lead {
   email?: string;
   email_address?: string;
   email_status?: string;
+  workEmail?: string;
+  personalEmail?: string;
   job_title?: string;
   company_name?: string;
   company_website?: string;
@@ -409,7 +411,8 @@ export const useLeads = () => {
 
       // Filter out leads with duplicate email_address values
       const uniqueLeads = newLeads.filter(lead => {
-        const emailAddress = lead.emailAddress || lead.email;
+        // Extract email using all possible field variations (same as insertion logic)
+        const emailAddress = lead.email || lead.emailAddress || lead.workEmail || lead.personalEmail;
         return emailAddress && !existingEmailAddresses.has(emailAddress);
       });
 
@@ -429,8 +432,8 @@ export const useLeads = () => {
         first_name: lead.first_name || lead.firstName || null,
         last_name: lead.last_name || lead.lastName || null,
         // Email fields
-        email: lead.email || lead.emailAddress || null,
-        email_address: lead.email || lead.emailAddress || null,
+        email: lead.email || lead.emailAddress || lead.workEmail || lead.personalEmail || null,
+        email_address: lead.email || lead.emailAddress || lead.workEmail || lead.personalEmail || null,
         email_status: lead.email_status || lead.emailStatus || null,
         // Job & Company fields
         job_title: lead.job_title || lead.jobTitle || lead.position || lead.headline || null,
@@ -455,7 +458,7 @@ export const useLeads = () => {
         raw_address: lead.rawAddress || lead.location || null,
         contact_phone_numbers: lead.contactPhoneNumbers || null,
         // Status
-        status: 'pending_review',
+        status: 'new',
       }));
 
       console.log('Prepared leads for insert:', leadsToInsert);
