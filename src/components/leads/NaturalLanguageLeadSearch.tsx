@@ -171,10 +171,14 @@ export const NaturalLanguageLeadSearch = ({ onSaveLeads }: NaturalLanguageLeadSe
 
       if (items.length === 0) {
         toast({
-          title: "No Results",
-          description: "No leads matched. Try broadening the prompt (e.g., include multiple titles or a larger region).",
-          variant: "default",
+          title: "Error",
+          description: "No leads found. Try adjusting your search criteria.",
+          variant: "destructive",
         });
+        setLeads([]);
+        setLastPrompt(trimmedPrompt);
+        setLastCount(clampedCount);
+        setCurrentPage(1);
       } else {
         // Automatically save leads to database for review
         let saveSuccess: boolean | void = false;
@@ -388,16 +392,12 @@ export const NaturalLanguageLeadSearch = ({ onSaveLeads }: NaturalLanguageLeadSe
             </div>
           )}
 
-          {/* Empty State - Tips */}
+          {/* Error Alert */}
           {leads.length === 0 && !isSearching && lastPrompt && (
-            <Alert>
+            <Alert variant="destructive">
               <AlertDescription>
-                <p className="font-medium mb-2">No results found. Try these tips:</p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Broaden titles (e.g., CEO OR President).</li>
-                  <li>Loosen geography (e.g., United States instead of a specific city).</li>
-                  <li>Try adding a function/department word (e.g., Finance, Marketing).</li>
-                </ul>
+                <p className="font-medium">Error: No leads found</p>
+                <p className="text-sm mt-1">Please try adjusting your search criteria.</p>
               </AlertDescription>
             </Alert>
           )}
