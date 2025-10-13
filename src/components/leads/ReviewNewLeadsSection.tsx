@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Phone, CheckCircle, XCircle, Send, Eye, MoreHorizontal, ExternalLink, Loader2 } from "lucide-react";
+import { Mail, Phone, CheckCircle, XCircle, Send, Eye, MoreHorizontal, ExternalLink, Loader2, Linkedin } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -47,6 +47,8 @@ interface Lead {
   jobTitle?: string;
   job_title?: string;
   headline?: string;
+  title?: string;
+  position?: string;
   company?: string;
   companyName?: string;
   company_name?: string;
@@ -54,6 +56,7 @@ interface Lead {
   emailAddress?: string;
   email_address?: string;
   phone?: string;
+  phone_number?: string;
   location?: string;
   rawAddress?: string;
   raw_address?: string;
@@ -69,6 +72,16 @@ interface Lead {
   contactPhoneNumbers?: Array<{ sanitizedNumber?: string; rawNumber?: string }>;
   contact_phone_numbers?: string;
   created_at?: string;
+  // New scraper fields
+  fullName?: string;
+  orgName?: string;
+  orgWebsite?: string;
+  orgCountry?: string;
+  orgCity?: string;
+  orgState?: string;
+  company_website?: string;
+  linkedinUrl?: string;
+  linkedin_url?: string;
 }
 
 interface ReviewNewLeadsSectionProps {
@@ -80,6 +93,49 @@ interface ReviewNewLeadsSectionProps {
   onRefresh: () => void;
 }
 
+const safeStr = (v?: string | null): string => {
+  return (v ?? "").toString().trim();
+};
+
+const firstAvailable = (...vals: Array<string | null | undefined>): string => {
+  for (const v of vals) {
+    const s = safeStr(v);
+    if (s) return s;
+  }
+  return "";
+};
+
+const formatLocation = (lead: Lead): string => {
+  const city = firstAvailable(lead.city_name, lead.cityName, lead.orgCity);
+  const state = firstAvailable(lead.state_name, lead.stateName, lead.orgState);
+  const country = firstAvailable(lead.country_name, lead.countryName, lead.orgCountry);
+  const parts = [city, state, country].filter(Boolean);
+  return parts.length ? parts.join(", ") : "—";
+};
+
+const extractDomain = (url?: string | null): string => {
+  const raw = safeStr(url);
+  if (!raw) return "";
+  try {
+    const u = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
+    return u.hostname.replace(/^www\./, "");
+  } catch {
+    return raw.replace(/^https?:\/\//, "").replace(/^www\./, "");
+  }
+};
+
+const ensureHref = (url?: string | null): string | null => {
+  const raw = safeStr(url);
+  if (!raw) return null;
+  try {
+    const hasProto = /^https?:\/\//i.test(raw);
+    return hasProto ? raw : `https://${raw}`;
+  } catch {
+    return null;
+  }
+};
+
+// Legacy compatibility
 const safeToString = (value: any): string => {
   if (value === null || value === undefined) return '';
   return String(value);
@@ -111,64 +167,61 @@ const getStatusColor = (status: string) => {
 };
 
 const extractFullName = (lead: Lead): string => {
-  if (lead.name) return safeToString(lead.name);
-  const firstName = safeToString(lead.firstName || lead.first_name);
-  const lastName = safeToString(lead.lastName || lead.last_name);
-  if (firstName || lastName) {
-    return `${firstName} ${lastName}`.trim();
-  }
-  return 'N/A';
+  if (lead.fullName) return safeStr(lead.fullName);
+  if (lead.name) return safeStr(lead.name);
+  const firstName = safeStr(lead.first_name || lead.firstName);
+  const lastName = safeStr(lead.last_name || lead.lastName);
+  const parts = [firstName, lastName].filter(Boolean);
+  return parts.length ? parts.join(" ").trim() : "—";
 };
 
 const extractJobTitle = (lead: Lead): string => {
-  return safeToString(lead.jobTitle || lead.job_title || lead.headline);
+  return firstAvailable(lead.job_title, lead.jobTitle, lead.position, lead.title, lead.headline) || "—";
 };
 
 const extractCompanyInfo = (lead: Lead) => {
-  // Handle both string and object company data
-  let companyData = lead.company || lead.companyName || lead.company_name;
+  const companyName = firstAvailable(lead.company_name, lead.companyName, lead.orgName);
+  const companySite = firstAvailable(lead.company_website, lead.orgWebsite);
   
+  // Handle legacy object-based company data
+  let companyData = lead.company;
   if (typeof companyData === 'string') {
     try {
-      // Try to parse if it's a JSON string
       companyData = JSON.parse(companyData);
     } catch (e) {
-      // If parsing fails, treat as simple string
+      // Not JSON, treat as company name
       return {
-        name: companyData,
-        website: '',
-        industry: '',
-        location: '',
-        phone: ''
+        name: companyName || companyData || "—",
+        domain: extractDomain(companySite),
+        href: ensureHref(companySite),
       };
     }
   }
   
   if (companyData && typeof companyData === 'object') {
+    const legacyName = safeStr((companyData as any)?.name || (companyData as any)?.companyName);
+    const legacyWebsite = safeStr((companyData as any)?.website || (companyData as any)?.websiteUrl || (companyData as any)?.url);
     return {
-      name: safeToString((companyData as any)?.name || (companyData as any)?.companyName || (companyData as any)?.company_name || ''),
-      website: safeToString((companyData as any)?.website || (companyData as any)?.websiteUrl || (companyData as any)?.url || ''),
-      industry: safeToString((companyData as any)?.industry || (companyData as any)?.industryName || ''),
-      location: safeToString((companyData as any)?.location || (companyData as any)?.address || (companyData as any)?.city || ''),
-      phone: safeToString((companyData as any)?.phone || (companyData as any)?.phoneNumber || '')
+      name: companyName || legacyName || "—",
+      domain: extractDomain(companySite || legacyWebsite),
+      href: ensureHref(companySite || legacyWebsite),
     };
   }
   
   return {
-    name: safeToString(companyData || ''),
-    website: '',
-    industry: '',
-    location: '',
-    phone: ''
+    name: companyName || "—",
+    domain: extractDomain(companySite),
+    href: ensureHref(companySite),
   };
 };
 
 const extractEmail = (lead: Lead): string => {
-  return safeToString(lead.email || lead.emailAddress || lead.email_address);
+  return firstAvailable(lead.email_address, lead.emailAddress, lead.email) || "—";
 };
 
 const extractPhone = (lead: Lead): string => {
-  if (lead.phone) return safeToString(lead.phone);
+  const phone = firstAvailable(lead.phone_number, lead.phone);
+  if (phone) return phone;
   
   // Handle contact_phone_numbers from database (stored as JSON string)
   if (lead.contact_phone_numbers) {
@@ -178,7 +231,7 @@ const extractPhone = (lead: Lead): string => {
         : lead.contact_phone_numbers;
       if (Array.isArray(phoneNumbers) && phoneNumbers.length > 0) {
         const phoneObj = phoneNumbers[0];
-        return safeToString(phoneObj.sanitizedNumber || phoneObj.rawNumber);
+        return safeStr(phoneObj.sanitizedNumber || phoneObj.rawNumber) || "—";
       }
     } catch (e) {
       console.warn('Error parsing contact_phone_numbers:', e);
@@ -188,53 +241,39 @@ const extractPhone = (lead: Lead): string => {
   // Handle contactPhoneNumbers from API response
   if (lead.contactPhoneNumbers && lead.contactPhoneNumbers.length > 0) {
     const phoneObj = lead.contactPhoneNumbers[0];
-    return safeToString(phoneObj.sanitizedNumber || phoneObj.rawNumber);
+    return safeStr(phoneObj.sanitizedNumber || phoneObj.rawNumber) || "—";
   }
-  return '';
+  return "—";
 };
 
 const extractLocation = (lead: Lead): string => {
-  if (lead.location) return safeToString(lead.location);
-  if (lead.rawAddress || lead.raw_address) return safeToString(lead.rawAddress || lead.raw_address);
-  
-  const parts = [
-    safeToString(lead.cityName || lead.city_name),
-    safeToString(lead.stateName || lead.state_name),
-    safeToString(lead.countryName || lead.country_name)
-  ].filter(part => part && part !== '');
-  
-  return parts.join(', ') || '';
+  return formatLocation(lead);
 };
 
-const CompanyCell = ({ company }: { company: any }) => {
-  const companyInfo = extractCompanyInfo({ company });
+const extractLinkedIn = (lead: Lead): string | null => {
+  return ensureHref(firstAvailable(lead.linkedin_url, lead.linkedinUrl));
+};
+
+const CompanyCell = ({ lead }: { lead: Lead }) => {
+  const companyInfo = extractCompanyInfo(lead);
   
   return (
     <div className="space-y-1">
       <div className="font-medium text-gray-900 dark:text-white">
-        {companyInfo.name || '—'}
+        {companyInfo.name}
       </div>
-      {companyInfo.website && (
+      {companyInfo.href && companyInfo.domain && (
         <div className="flex items-center space-x-1">
           <a 
-            href={companyInfo.website.startsWith('http') ? companyInfo.website : `https://${companyInfo.website}`}
+            href={companyInfo.href}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
           >
-            <span>{companyInfo.website}</span>
+            <span>{companyInfo.domain}</span>
             <ExternalLink className="h-3 w-3" />
           </a>
         </div>
-      )}
-      {companyInfo.industry && (
-        <div className="text-sm text-gray-600 dark:text-foreground/80">{companyInfo.industry}</div>
-      )}
-      {companyInfo.location && (
-        <div className="text-sm text-gray-500 dark:text-foreground/80">{companyInfo.location}</div>
-      )}
-      {companyInfo.phone && (
-        <div className="text-sm text-gray-500 dark:text-foreground/80">{companyInfo.phone}</div>
       )}
     </div>
   );
@@ -664,6 +703,7 @@ export const ReviewNewLeadsSection = ({
                     <TableHead>Job Title</TableHead>
                     <TableHead className="w-64">Company</TableHead>
                     <TableHead>Location</TableHead>
+                    <TableHead>LinkedIn</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -677,6 +717,7 @@ export const ReviewNewLeadsSection = ({
                     const email = extractEmail(lead);
                     const phone = extractPhone(lead);
                     const location = extractLocation(lead);
+                    const linkedinHref = extractLinkedIn(lead);
                     const status = safeToString(lead.status || 'new');
 
                     return (
@@ -692,29 +733,50 @@ export const ReviewNewLeadsSection = ({
                             <Avatar className="h-8 w-8">
                               <AvatarImage src={`/avatars/${leadId}.png`} />
                               <AvatarFallback>
-                                {fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'N'}
+                                {fullName !== "—" ? fullName.split(' ').map(n => n[0]).join('').toUpperCase() : 'N'}
                               </AvatarFallback>
                             </Avatar>
                             <div>
                               <div className="font-medium text-gray-900 dark:text-white">{fullName}</div>
-                              <div className="text-sm text-gray-500 dark:text-foreground/80">{email || 'No email'}</div>
+                              <div className="text-sm text-gray-500 dark:text-foreground/80" title={email !== "—" ? email : "Not provided"}>
+                                {email}
+                              </div>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium dark:text-foreground">
-                          {jobTitle || 'N/A'}
+                        <TableCell className="font-medium dark:text-foreground" title={jobTitle !== "—" ? jobTitle : "Not provided"}>
+                          {jobTitle}
                         </TableCell>
                         <TableCell>
-                          <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
+                          <CompanyCell lead={lead} />
                         </TableCell>
-                        <TableCell className="text-sm text-gray-500 dark:text-foreground/80">{location || 'N/A'}</TableCell>
+                        <TableCell className="text-sm text-gray-500 dark:text-foreground/80" title={location !== "—" ? location : "Not provided"}>
+                          {location}
+                        </TableCell>
+                        <TableCell>
+                          {linkedinHref ? (
+                            <a 
+                              href={linkedinHref} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              title="Open LinkedIn profile"
+                              className="inline-flex items-center justify-center h-9 w-9 rounded-md text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            >
+                              <Linkedin className="h-5 w-5" />
+                            </a>
+                          ) : (
+                            <span className="inline-flex items-center justify-center h-9 w-9 text-gray-400 cursor-not-allowed" title="No profile">
+                              <Linkedin className="h-5 w-5" />
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(status)}>
                              {status?.replace('_', ' ') || 'new'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-gray-500 dark:text-foreground/80">
-                          {phone || 'N/A'}
+                        <TableCell className="text-sm text-gray-500 dark:text-foreground/80" title={phone !== "—" ? phone : "Not provided"}>
+                          {phone}
                         </TableCell>
                          <TableCell className="text-right">
                            <div className="flex items-center justify-end space-x-2">
@@ -782,6 +844,7 @@ export const ReviewNewLeadsSection = ({
                     <TableHead>Job Title</TableHead>
                     <TableHead className="w-64">Company</TableHead>
                     <TableHead>Location</TableHead>
+                    <TableHead>LinkedIn</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -795,6 +858,7 @@ export const ReviewNewLeadsSection = ({
                     const email = extractEmail(lead);
                     const phone = extractPhone(lead);
                     const location = extractLocation(lead);
+                    const linkedinHref = extractLinkedIn(lead);
                     const status = safeToString(lead.status || 'accepted');
 
                     return (
@@ -804,29 +868,50 @@ export const ReviewNewLeadsSection = ({
                             <Avatar className="h-8 w-8">
                               <AvatarImage src={`/avatars/${leadId}.png`} />
                               <AvatarFallback>
-                                {fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'N'}
+                                {fullName !== "—" ? fullName.split(' ').map(n => n[0]).join('').toUpperCase() : 'N'}
                               </AvatarFallback>
                             </Avatar>
                             <div>
                               <div className="font-medium text-gray-900 dark:text-white">{fullName}</div>
-                              <div className="text-sm text-gray-500 dark:text-foreground/80">{email || 'No email'}</div>
+                              <div className="text-sm text-gray-500 dark:text-foreground/80" title={email !== "—" ? email : "Not provided"}>
+                                {email}
+                              </div>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium dark:text-foreground">
-                          {jobTitle || 'N/A'}
+                        <TableCell className="font-medium dark:text-foreground" title={jobTitle !== "—" ? jobTitle : "Not provided"}>
+                          {jobTitle}
                         </TableCell>
                         <TableCell>
-                          <CompanyCell company={lead.company || lead.companyName || lead.company_name} />
+                          <CompanyCell lead={lead} />
                         </TableCell>
-                        <TableCell className="text-sm text-gray-500 dark:text-foreground/80">{location || 'N/A'}</TableCell>
+                        <TableCell className="text-sm text-gray-500 dark:text-foreground/80" title={location !== "—" ? location : "Not provided"}>
+                          {location}
+                        </TableCell>
+                        <TableCell>
+                          {linkedinHref ? (
+                            <a 
+                              href={linkedinHref} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              title="Open LinkedIn profile"
+                              className="inline-flex items-center justify-center h-9 w-9 rounded-md text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            >
+                              <Linkedin className="h-5 w-5" />
+                            </a>
+                          ) : (
+                            <span className="inline-flex items-center justify-center h-9 w-9 text-gray-400 cursor-not-allowed" title="No profile">
+                              <Linkedin className="h-5 w-5" />
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(status)}>
                             {status?.replace('_', ' ') || 'new'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-gray-500 dark:text-foreground/80">
-                          {phone || 'N/A'}
+                        <TableCell className="text-sm text-gray-500 dark:text-foreground/80" title={phone !== "—" ? phone : "Not provided"}>
+                          {phone}
                         </TableCell>
                          <TableCell className="text-right">
                            <div className="flex items-center justify-end space-x-2">
