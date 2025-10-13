@@ -97,22 +97,6 @@ const safeStr = (v?: string | null): string => {
   return (v ?? "").toString().trim();
 };
 
-const firstAvailable = (...vals: Array<string | null | undefined>): string => {
-  for (const v of vals) {
-    const s = safeStr(v);
-    if (s) return s;
-  }
-  return "";
-};
-
-const formatLocation = (lead: Lead): string => {
-  const city = firstAvailable(lead.city_name, lead.cityName, lead.orgCity);
-  const state = firstAvailable(lead.state_name, lead.stateName, lead.orgState);
-  const country = firstAvailable(lead.country_name, lead.countryName, lead.orgCountry);
-  const parts = [city, state, country].filter(Boolean);
-  return parts.length ? parts.join(", ") : "—";
-};
-
 const extractDomain = (url?: string | null): string => {
   const raw = safeStr(url);
   if (!raw) return "";
@@ -167,46 +151,17 @@ const getStatusColor = (status: string) => {
 };
 
 const extractFullName = (lead: Lead): string => {
-  if (lead.fullName) return safeStr(lead.fullName);
-  if (lead.name) return safeStr(lead.name);
-  const firstName = safeStr(lead.first_name || lead.firstName);
-  const lastName = safeStr(lead.last_name || lead.lastName);
-  const parts = [firstName, lastName].filter(Boolean);
-  return parts.length ? parts.join(" ").trim() : "—";
+  const name = safeStr(lead.name) || [safeStr(lead.first_name), safeStr(lead.last_name)].filter(Boolean).join(" ").trim();
+  return name || "—";
 };
 
 const extractJobTitle = (lead: Lead): string => {
-  return firstAvailable(lead.job_title, lead.jobTitle, lead.position, lead.title, lead.headline) || "—";
+  return safeStr(lead.job_title) || "—";
 };
 
 const extractCompanyInfo = (lead: Lead) => {
-  const companyName = firstAvailable(lead.company_name, lead.companyName, lead.orgName);
-  const companySite = firstAvailable(lead.company_website, lead.orgWebsite);
-  
-  // Handle legacy object-based company data
-  let companyData = lead.company;
-  if (typeof companyData === 'string') {
-    try {
-      companyData = JSON.parse(companyData);
-    } catch (e) {
-      // Not JSON, treat as company name
-      return {
-        name: companyName || companyData || "—",
-        domain: extractDomain(companySite),
-        href: ensureHref(companySite),
-      };
-    }
-  }
-  
-  if (companyData && typeof companyData === 'object') {
-    const legacyName = safeStr((companyData as any)?.name || (companyData as any)?.companyName);
-    const legacyWebsite = safeStr((companyData as any)?.website || (companyData as any)?.websiteUrl || (companyData as any)?.url);
-    return {
-      name: companyName || legacyName || "—",
-      domain: extractDomain(companySite || legacyWebsite),
-      href: ensureHref(companySite || legacyWebsite),
-    };
-  }
+  const companyName = safeStr(lead.company_name);
+  const companySite = safeStr(lead.company_website);
   
   return {
     name: companyName || "—",
@@ -216,42 +171,19 @@ const extractCompanyInfo = (lead: Lead) => {
 };
 
 const extractEmail = (lead: Lead): string => {
-  return firstAvailable(lead.email_address, lead.emailAddress, lead.email) || "—";
+  return safeStr(lead.email) || safeStr(lead.email_address) || "—";
 };
 
 const extractPhone = (lead: Lead): string => {
-  const phone = firstAvailable(lead.phone_number, lead.phone);
-  if (phone) return phone;
-  
-  // Handle contact_phone_numbers from database (stored as JSON string)
-  if (lead.contact_phone_numbers) {
-    try {
-      const phoneNumbers = typeof lead.contact_phone_numbers === 'string' 
-        ? JSON.parse(lead.contact_phone_numbers) 
-        : lead.contact_phone_numbers;
-      if (Array.isArray(phoneNumbers) && phoneNumbers.length > 0) {
-        const phoneObj = phoneNumbers[0];
-        return safeStr(phoneObj.sanitizedNumber || phoneObj.rawNumber) || "—";
-      }
-    } catch (e) {
-      console.warn('Error parsing contact_phone_numbers:', e);
-    }
-  }
-  
-  // Handle contactPhoneNumbers from API response
-  if (lead.contactPhoneNumbers && lead.contactPhoneNumbers.length > 0) {
-    const phoneObj = lead.contactPhoneNumbers[0];
-    return safeStr(phoneObj.sanitizedNumber || phoneObj.rawNumber) || "—";
-  }
-  return "—";
+  return safeStr(lead.phone) || "—";
 };
 
 const extractLocation = (lead: Lead): string => {
-  return formatLocation(lead);
+  return safeStr(lead.country_name) || "—";
 };
 
 const extractLinkedIn = (lead: Lead): string | null => {
-  return ensureHref(firstAvailable(lead.linkedin_url, lead.linkedinUrl));
+  return ensureHref(lead.linkedin_url);
 };
 
 const CompanyCell = ({ lead }: { lead: Lead }) => {
