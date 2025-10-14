@@ -50,8 +50,10 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
     // Set up realtime subscription to detect when user is blocked
     if (user) {
+      console.log('🔒 Setting up realtime subscription for blocked status monitoring');
+      
       const subscription = supabase
-        .channel(`profile_${user.id}`)
+        .channel(`profile_changes_${user.id}`)
         .on(
           'postgres_changes',
           {
@@ -61,19 +63,23 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
             filter: `id=eq.${user.id}`
           },
           async (payload) => {
-            console.log('Profile update detected:', payload);
+            console.log('🔔 Profile update detected in realtime:', payload);
+            console.log('🔔 New blocked status:', payload.new?.is_blocked);
             const newBlocked = payload.new?.is_blocked || false;
-            setIsBlocked(newBlocked);
             
             if (newBlocked) {
-              console.log('User was blocked in real-time, signing out...');
+              console.log('⛔ User was blocked in real-time, signing out immediately...');
+              setIsBlocked(true);
               await signOut();
             }
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('🔒 Realtime subscription status:', status);
+        });
 
       return () => {
+        console.log('🔒 Cleaning up realtime subscription');
         subscription.unsubscribe();
       };
     }
