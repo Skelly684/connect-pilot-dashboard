@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [isBlocked, setIsBlocked] = useState(false);
   const [checkingBlock, setCheckingBlock] = useState(true);
 
@@ -30,7 +30,13 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         if (error) {
           console.error('Error checking blocked status:', error);
         } else {
-          setIsBlocked(data?.is_blocked || false);
+          const blocked = data?.is_blocked || false;
+          setIsBlocked(blocked);
+          
+          // Automatically sign out blocked users
+          if (blocked) {
+            await signOut();
+          }
         }
       } catch (error) {
         console.error('Error checking blocked status:', error);
@@ -40,7 +46,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     };
 
     checkBlockedStatus();
-  }, [user]);
+  }, [user, signOut]);
 
   if (loading || checkingBlock) {
     return (
@@ -63,7 +69,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         <Alert variant="destructive" className="max-w-md">
           <AlertDescription className="text-center">
             <p className="font-semibold mb-2">Account Blocked</p>
-            <p>Your account has been temporarily blocked. Please contact the administrator for assistance.</p>
+            <p>Your account has been temporarily blocked. You have been signed out. Please contact the administrator for assistance.</p>
           </AlertDescription>
         </Alert>
       </div>
