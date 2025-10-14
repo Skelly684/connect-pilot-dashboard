@@ -858,6 +858,7 @@ export type Database = {
           email_mode: string | null
           id: string
           is_admin: boolean
+          is_blocked: boolean
           smtp_host: string | null
           smtp_password_ciphertext: string | null
           smtp_port: number | null
@@ -873,6 +874,7 @@ export type Database = {
           email_mode?: string | null
           id: string
           is_admin?: boolean
+          is_blocked?: boolean
           smtp_host?: string | null
           smtp_password_ciphertext?: string | null
           smtp_port?: number | null
@@ -888,6 +890,7 @@ export type Database = {
           email_mode?: string | null
           id?: string
           is_admin?: boolean
+          is_blocked?: boolean
           smtp_host?: string | null
           smtp_password_ciphertext?: string | null
           smtp_port?: number | null

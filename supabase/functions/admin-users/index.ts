@@ -60,7 +60,7 @@ serve(async (req) => {
       // Get all users
       const { data: profiles, error } = await supabaseAdmin
         .from('profiles')
-        .select('id, email, created_at, is_admin')
+        .select('id, email, created_at, is_admin, is_blocked')
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -162,7 +162,7 @@ serve(async (req) => {
     }
 
     if (req.method === 'PATCH') {
-      const { userId, action, newPassword } = await req.json()
+      const { userId, action, newPassword, isBlocked } = await req.json()
 
       if (action === 'reset_password') {
         console.log('Resetting password for user:', userId)
@@ -181,6 +181,30 @@ serve(async (req) => {
         }
 
         console.log('Password reset successfully')
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (action === 'toggle_blocked') {
+        console.log('Toggling blocked status for user:', userId, 'to:', isBlocked)
+
+        // Update user blocked status
+        const { error: profileError } = await supabaseAdmin
+          .from('profiles')
+          .update({ is_blocked: isBlocked })
+          .eq('id', userId)
+
+        if (profileError) {
+          console.error('Toggle blocked error:', profileError)
+          return new Response(JSON.stringify({ error: profileError.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        console.log('Blocked status toggled successfully')
 
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }

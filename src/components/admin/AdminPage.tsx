@@ -20,6 +20,7 @@ interface User {
   email: string;
   created_at: string;
   is_admin: boolean;
+  is_blocked: boolean;
   name?: string;
   googleConnected?: boolean;
 }
@@ -266,6 +267,42 @@ export const AdminPage = () => {
       toast({
         title: "Error",
         description: `Failed to reset password: ${error.message || error}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const toggleBlockedStatus = async (userId: string, isBlocked: boolean) => {
+    if (!user) return;
+
+    try {
+      console.log('Toggling blocked status for user:', userId, 'to:', isBlocked);
+      
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        method: 'PATCH',
+        body: { userId, action: 'toggle_blocked', isBlocked },
+        headers: {
+          'X-User-Id': user.id,
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: `User access ${isBlocked ? 'blocked' : 'unblocked'} successfully`
+      });
+
+      fetchUsers();
+    } catch (error) {
+      console.error('Error toggling blocked status:', error);
+      toast({
+        title: "Error",
+        description: `Failed to update blocked status: ${error.message || error}`,
         variant: "destructive"
       });
     }
@@ -676,7 +713,7 @@ export const AdminPage = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Created At</TableHead>
-                <TableHead>Admin Status</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Google</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -690,7 +727,12 @@ export const AdminPage = () => {
                     {new Date(userData.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    {userData.is_admin ? 'Admin' : 'User'}
+                    <div className="flex flex-col gap-1">
+                      <div>{userData.is_admin ? 'Admin' : 'User'}</div>
+                      {userData.is_blocked && (
+                        <Badge variant="destructive" className="w-fit">Blocked</Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -713,11 +755,22 @@ export const AdminPage = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={userData.is_admin}
-                        onCheckedChange={(checked) => toggleAdminStatus(userData.id, checked)}
-                      />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs">Admin</Label>
+                        <Switch
+                          checked={userData.is_admin}
+                          onCheckedChange={(checked) => toggleAdminStatus(userData.id, checked)}
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs">Block</Label>
+                        <Switch
+                          checked={userData.is_blocked}
+                          onCheckedChange={(checked) => toggleBlockedStatus(userData.id, checked)}
+                        />
+                      </div>
                       
                       <Button
                         onClick={() => openConnectLink(userData.id)}
