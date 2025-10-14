@@ -35,6 +35,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           
           // Automatically sign out blocked users
           if (blocked) {
+            console.log('User is blocked, signing out...');
             await signOut();
           }
         }
@@ -46,6 +47,36 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     };
 
     checkBlockedStatus();
+
+    // Set up realtime subscription to detect when user is blocked
+    if (user) {
+      const subscription = supabase
+        .channel(`profile_${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${user.id}`
+          },
+          async (payload) => {
+            console.log('Profile update detected:', payload);
+            const newBlocked = payload.new?.is_blocked || false;
+            setIsBlocked(newBlocked);
+            
+            if (newBlocked) {
+              console.log('User was blocked in real-time, signing out...');
+              await signOut();
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
   }, [user, signOut]);
 
   if (loading || checkingBlock) {
