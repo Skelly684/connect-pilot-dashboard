@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Search, Filter, Download, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import AdvancedLeadFilters, { AdvancedFilterPayload } from "./AdvancedLeadFilters";
 
 interface LeadSearchProps {
   onResults: (leads: any[]) => void;
@@ -32,6 +33,7 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
   const [isSearching, setIsSearching] = useState(false);
   const [lastSearchResults, setLastSearchResults] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilterPayload>({});
   const { toast } = useToast();
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -40,30 +42,36 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
     onSearchStart();
     
     console.log("Search filters:", filters);
+    console.log("Advanced filters:", advancedFilters);
     
     try {
-      const requestBody = {
-        jobTitle: filters.jobTitle,
-        industry: filters.industry,
-        location: filters.location,
-        companyName: filters.company,
-        seniorityLevel: filters.seniorityLevel,
-        department: filters.department,
-        companySize: filters.companySize,
-        currentCompanyOnly: filters.currentCompanyOnly,
-        yearsExperience: filters.yearsOfExperience[0],
-        count: filters.numberOfLeads[0],
+      // Build the complete filter payload matching SearchLeads API format
+      const filterPayload = {
+        filter: {
+          // Merge basic filters with advanced filters
+          ...(filters.jobTitle && { person_titles: [filters.jobTitle] }),
+          ...(filters.location && { person_locations: [filters.location] }),
+          ...(filters.company && { q_organization_keyword_tags: [filters.company] }),
+          ...(filters.industry && { organization_industry_display_name: [filters.industry] }),
+          ...(filters.seniorityLevel && { person_seniorities: [filters.seniorityLevel.toLowerCase()] }),
+          ...(filters.department && { person_department_or_subdepartments: [filters.department] }),
+          ...(filters.companySize && { organization_num_employees_ranges: [filters.companySize] }),
+          // Merge advanced filters - they override basic if both are set
+          ...advancedFilters,
+        },
+        noOfLeads: filters.numberOfLeads[0],
+        fileName: "lead_export"
       };
 
-      console.log("Sending API request to:", "https://leads-automation-apel.onrender.com/api/scrape-leads");
-      console.log("Request body:", requestBody);
+      console.log("Sending API request to SearchLeads API");
+      console.log("Request payload:", JSON.stringify(filterPayload, null, 2));
 
-      const response = await fetch("https://leads-automation-apel.onrender.com/api/scrape-leads", {
+      const response = await fetch("https://apis.searchleads.co/api/export", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(filterPayload),
       });
 
       if (!response.ok) {
@@ -212,6 +220,7 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
   ];
 
   return (
+    <>
     <Card className="border-0 shadow-sm">
       <CardHeader>
         <CardTitle className="flex items-center">
@@ -407,5 +416,10 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
         </form>
       </CardContent>
     </Card>
+    
+    <div className="mt-6">
+      <AdvancedLeadFilters onFiltersChange={setAdvancedFilters} />
+    </div>
+    </>
   );
 };
