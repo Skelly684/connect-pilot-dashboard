@@ -4,7 +4,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { LeadSearch } from "@/components/leads/LeadSearch";
+import AdvancedLeadFilters from "./AdvancedLeadFilters";
 import { AllLeadsSection } from "@/components/leads/AllLeadsSection";
 import { ReviewNewLeadsSection } from "@/components/leads/ReviewNewLeadsSection";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
@@ -101,12 +101,7 @@ const Dashboard = () => {
       case "leads":
         return (
           <div className="space-y-6">
-            <LeadSearch 
-              onResults={handleSearchResults}
-              onSearchStart={handleSearchStart}
-              onSearchComplete={handleSearchComplete}
-              onSaveLeads={saveLeads}
-            />
+            <AdvancedLeadFilters />
           </div>
         );
       case "all-leads":
