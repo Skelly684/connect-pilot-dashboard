@@ -693,6 +693,42 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_export_files: {
+        Row: {
+          created_at: string
+          export_source: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          leads_count: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          export_source?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          leads_count?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          export_source?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          leads_count?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           accepted_at: string | null
@@ -899,6 +935,45 @@ export type Database = {
           vapi_assistant_id?: string | null
           vapi_phone_number_id?: string | null
           voice_provider?: string | null
+        }
+        Relationships: []
+      }
+      searchleads_jobs: {
+        Row: {
+          created_at: string | null
+          csv_path: string | null
+          error: string | null
+          file_name: string | null
+          log_id: string
+          status: string | null
+          summary: Json | null
+          updated_at: string | null
+          url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          csv_path?: string | null
+          error?: string | null
+          file_name?: string | null
+          log_id: string
+          status?: string | null
+          summary?: Json | null
+          updated_at?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          csv_path?: string | null
+          error?: string | null
+          file_name?: string | null
+          log_id?: string
+          status?: string | null
+          summary?: Json | null
+          updated_at?: string | null
+          url?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

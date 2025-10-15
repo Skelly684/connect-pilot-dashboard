@@ -36,6 +36,7 @@ import { useNavigate } from "react-router-dom";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { LeadQuickActions } from "./LeadQuickActions";
 import { supabase } from "@/integrations/supabase/client";
+import { LeadExportFilesSection } from "./LeadExportFilesSection";
 
 interface Lead {
   id?: number | string;
@@ -890,6 +891,9 @@ export const ReviewNewLeadsSection = ({
           </CardContent>
         </Card>
       )}
+
+      {/* CSV Export Files Section */}
+      <LeadExportFilesSection />
     </div>
   );
 };
