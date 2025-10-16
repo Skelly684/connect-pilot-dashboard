@@ -219,7 +219,7 @@ export const useSearchLeadsExport = () => {
     }
   }, [pollExportStatus]);
 
-  // Retrieve results for a completed export by log_id
+  // Retrieve results for a completed export by log_id using edge function
   const retrieveCompletedExport = async (logId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -230,56 +230,24 @@ export const useSearchLeadsExport = () => {
         description: `Fetching data for export ${logId}...`,
       });
 
-      // Fetch the export data
-      const exportData = await getExportData(logId);
-      console.log("Export data received:", exportData);
-      
-      // Extract relevant data from response (structure may vary)
-      const csvUrl = exportData.file_csv || exportData.url || exportData.csv_url || exportData.log?.file_csv || null;
-      const summary = exportData.summary || exportData.log?.summary || null;
-      const status = exportData.log?.status || exportData.status || "completed";
-      
-      // Check if already in database
-      const { data: existing } = await supabase
-        .from("searchleads_jobs")
-        .select("*")
-        .eq("log_id", logId)
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // Call edge function to retrieve export (it will try multiple endpoints)
+      const { data, error } = await supabase.functions.invoke('retrieve-searchleads-export', {
+        body: { logId }
+      });
 
-      const dbUpdate = {
-        status: status,
-        csv_url: csvUrl,
-        summary: summary,
-        url: csvUrl, // Save URL in url field too
-      };
-
-      if (existing) {
-        // Update existing record
-        const { error } = await supabase
-          .from("searchleads_jobs")
-          .update(dbUpdate)
-          .eq("log_id", logId)
-          .eq("user_id", user.id);
-          
-        if (error) {
-          console.error("Database update error:", error);
-        }
-      } else {
-        // Create new record
-        const { error } = await supabase.from("searchleads_jobs").insert({
-          log_id: logId,
-          file_name: exportData.fileName || "Retrieved Export",
-          user_id: user.id,
-          ...dbUpdate,
-        });
-        
-        if (error) {
-          console.error("Database insert error:", error);
-        }
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to retrieve export");
       }
 
-      if (csvUrl) {
+      console.log("Edge function response:", data);
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to retrieve export");
+      }
+
+      // Show appropriate message based on results
+      if (data.has_results && data.csv_url) {
         toast({
           title: "Export Retrieved! ✅",
           description: `Export ${logId} is ready. Check "Lead Export Files" tab to download.`,
@@ -287,9 +255,9 @@ export const useSearchLeadsExport = () => {
         });
       } else {
         toast({
-          title: "Export Status: " + status,
-          description: exportData.log?.summary || "Export data retrieved but no download URL available yet.",
-          variant: status === "failed" ? "destructive" : "default",
+          title: `Export Status: ${data.status}`,
+          description: data.error || "Export retrieved but no download URL available yet. It may still be processing.",
+          variant: data.status === "failed" ? "destructive" : "default",
           duration: 7000,
         });
       }
@@ -297,7 +265,7 @@ export const useSearchLeadsExport = () => {
       console.error("Retrieve completed export error:", error);
       toast({
         title: "Retrieval Failed",
-        description: error instanceof Error ? error.message : "Failed to retrieve export. Check console for details.",
+        description: error instanceof Error ? error.message : "Failed to retrieve export. The SearchLeads API endpoint may have changed.",
         variant: "destructive",
       });
       throw error;
