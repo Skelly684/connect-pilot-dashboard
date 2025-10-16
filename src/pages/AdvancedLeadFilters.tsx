@@ -47,7 +47,7 @@ const INDUSTRIES = [
 
 export default function AdvancedLeadFilters() {
   const { toast } = useToast();
-  const { createExport, pollExistingExport } = useSearchLeadsExport();
+  const { createExport, pollExistingExport, retrieveCompletedExport } = useSearchLeadsExport();
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [lastExportLogId, setLastExportLogId] = useState<string | null>(null);
@@ -238,6 +238,26 @@ export default function AdvancedLeadFilters() {
       await pollExistingExport(manualLogId.trim());
     } catch (error) {
       console.error("Poll error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRetrieveCompleted = async () => {
+    if (!manualLogId.trim()) {
+      toast({
+        title: "Missing Log ID",
+        description: "Please enter a log ID to retrieve",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await retrieveCompletedExport(manualLogId.trim());
+    } catch (error) {
+      console.error("Retrieve error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -690,15 +710,27 @@ export default function AdvancedLeadFilters() {
                 placeholder="e.g., abc123def456..."
               />
             </div>
-            <Button
-              onClick={handlePollExisting}
-              disabled={isLoading || !manualLogId.trim()}
-              className="w-full"
-            >
-              Poll & Retrieve Export
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleRetrieveCompleted}
+                disabled={isLoading || !manualLogId.trim()}
+                className="flex-1"
+                variant="default"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Retrieve Completed Export
+              </Button>
+              <Button
+                onClick={handlePollExisting}
+                disabled={isLoading || !manualLogId.trim()}
+                className="flex-1"
+                variant="outline"
+              >
+                Poll & Check Status
+              </Button>
+            </div>
             <p className="text-sm text-muted-foreground">
-              Enter a log_id from a previous export to check its status and retrieve results
+              If your export is complete on SearchLeads, use "Retrieve Completed Export" to download the results immediately
             </p>
           </div>
         </CardContent>

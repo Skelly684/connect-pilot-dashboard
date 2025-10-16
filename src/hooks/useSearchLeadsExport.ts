@@ -224,6 +224,65 @@ export const useSearchLeadsExport = () => {
     }
   }, [pollExportStatus]);
 
+  // Retrieve results for a completed export by log_id
+  const retrieveCompletedExport = async (logId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      toast({
+        title: "Retrieving Results",
+        description: `Fetching data for export ${logId}...`,
+      });
+
+      // Try to retrieve results directly
+      const csvResult = await retrieveExportResult(logId, "csv");
+      
+      // Check if already in database
+      const { data: existing } = await supabase
+        .from("searchleads_jobs")
+        .select("*")
+        .eq("log_id", logId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing record
+        await supabase
+          .from("searchleads_jobs")
+          .update({
+            status: "completed",
+            csv_url: csvResult.url || null,
+            summary: csvResult.summary || null,
+          })
+          .eq("log_id", logId)
+          .eq("user_id", user.id);
+      } else {
+        // Create new record
+        await supabase.from("searchleads_jobs").insert({
+          log_id: logId,
+          file_name: "Retrieved Export",
+          status: "completed",
+          user_id: user.id,
+          csv_url: csvResult.url || null,
+          summary: csvResult.summary || null,
+        });
+      }
+
+      toast({
+        title: "Export Retrieved",
+        description: `Export ${logId} is ready to download!`,
+      });
+    } catch (error) {
+      console.error("Retrieve completed export error:", error);
+      toast({
+        title: "Retrieval Failed",
+        description: error instanceof Error ? error.message : "Failed to retrieve export",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Poll for existing log_id (for CEO_UK case)
   const pollExistingExport = async (logId: string) => {
     try {
@@ -236,7 +295,7 @@ export const useSearchLeadsExport = () => {
         .select("*")
         .eq("log_id", logId)
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (!existing) {
         // Add to database
@@ -281,6 +340,7 @@ export const useSearchLeadsExport = () => {
     retrieveExportResult,
     pollExportStatus,
     pollExistingExport,
+    retrieveCompletedExport,
     pendingExports,
     isPolling,
   };
