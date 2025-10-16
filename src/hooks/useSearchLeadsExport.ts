@@ -87,49 +87,44 @@ export const useSearchLeadsExport = () => {
     }
   };
 
-  // Check status of a specific export
-  const checkExportStatus = async (logId: string) => {
+  // Check status and get export data
+  const getExportData = async (logId: string) => {
     try {
-      const response = await fetch(`${SEARCHLEADS_API_BASE}/export/${logId}/status`, {
+      const response = await fetch(`${SEARCHLEADS_API_BASE}/export/${logId}`, {
         headers: {
           "authorization": `Bearer ${SEARCHLEADS_API_KEY}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error(`Status check failed: ${response.status}`);
+        console.error(`Export fetch failed: ${response.status}`);
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error(`Export fetch failed: ${response.status}`);
       }
 
       const data = await response.json();
-      return data.log?.status || "pending";
+      return data;
+    } catch (error) {
+      console.error("Get export data error:", error);
+      throw error;
+    }
+  };
+
+  // Legacy method kept for compatibility
+  const checkExportStatus = async (logId: string) => {
+    try {
+      const data = await getExportData(logId);
+      return data.log?.status || data.status || "pending";
     } catch (error) {
       console.error("Check status error:", error);
       return "failed";
     }
   };
 
-  // Retrieve completed export results
+  // Legacy method kept for compatibility
   const retrieveExportResult = async (logId: string, outputFormat: "json" | "csv" = "json") => {
-    try {
-      const response = await fetch(
-        `${SEARCHLEADS_API_BASE}/export/${logId}/result?outputFileFormat=${outputFormat}`,
-        {
-          headers: {
-            "authorization": `Bearer ${SEARCHLEADS_API_KEY}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Result retrieval failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Retrieve result error:", error);
-      throw error;
-    }
+    return await getExportData(logId);
   };
 
   // Poll a specific export until complete
@@ -235,8 +230,14 @@ export const useSearchLeadsExport = () => {
         description: `Fetching data for export ${logId}...`,
       });
 
-      // Try to retrieve results directly
-      const csvResult = await retrieveExportResult(logId, "csv");
+      // Fetch the export data
+      const exportData = await getExportData(logId);
+      console.log("Export data received:", exportData);
+      
+      // Extract relevant data from response (structure may vary)
+      const csvUrl = exportData.file_csv || exportData.url || exportData.csv_url || exportData.log?.file_csv || null;
+      const summary = exportData.summary || exportData.log?.summary || null;
+      const status = exportData.log?.status || exportData.status || "completed";
       
       // Check if already in database
       const { data: existing } = await supabase
@@ -246,40 +247,60 @@ export const useSearchLeadsExport = () => {
         .eq("user_id", user.id)
         .maybeSingle();
 
+      const dbUpdate = {
+        status: status,
+        csv_url: csvUrl,
+        summary: summary,
+        url: csvUrl, // Save URL in url field too
+      };
+
       if (existing) {
         // Update existing record
-        await supabase
+        const { error } = await supabase
           .from("searchleads_jobs")
-          .update({
-            status: "completed",
-            csv_url: csvResult.url || null,
-            summary: csvResult.summary || null,
-          })
+          .update(dbUpdate)
           .eq("log_id", logId)
           .eq("user_id", user.id);
+          
+        if (error) {
+          console.error("Database update error:", error);
+        }
       } else {
         // Create new record
-        await supabase.from("searchleads_jobs").insert({
+        const { error } = await supabase.from("searchleads_jobs").insert({
           log_id: logId,
-          file_name: "Retrieved Export",
-          status: "completed",
+          file_name: exportData.fileName || "Retrieved Export",
           user_id: user.id,
-          csv_url: csvResult.url || null,
-          summary: csvResult.summary || null,
+          ...dbUpdate,
         });
+        
+        if (error) {
+          console.error("Database insert error:", error);
+        }
       }
 
-      toast({
-        title: "Export Retrieved",
-        description: `Export ${logId} is ready to download!`,
-      });
+      if (csvUrl) {
+        toast({
+          title: "Export Retrieved! ✅",
+          description: `Export ${logId} is ready. Check "Lead Export Files" tab to download.`,
+          duration: 7000,
+        });
+      } else {
+        toast({
+          title: "Export Status: " + status,
+          description: exportData.log?.summary || "Export data retrieved but no download URL available yet.",
+          variant: status === "failed" ? "destructive" : "default",
+          duration: 7000,
+        });
+      }
     } catch (error) {
       console.error("Retrieve completed export error:", error);
       toast({
         title: "Retrieval Failed",
-        description: error instanceof Error ? error.message : "Failed to retrieve export",
+        description: error instanceof Error ? error.message : "Failed to retrieve export. Check console for details.",
         variant: "destructive",
       });
+      throw error;
     }
   };
 
