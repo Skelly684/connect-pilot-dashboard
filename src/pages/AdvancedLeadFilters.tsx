@@ -11,6 +11,7 @@ import { X, Plus, ChevronDown, ChevronUp, Search, Download } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
+import { useSearchLeadsExport } from "@/hooks/useSearchLeadsExport";
 import {
   Table,
   TableBody,
@@ -46,9 +47,11 @@ const INDUSTRIES = [
 
 export default function AdvancedLeadFilters() {
   const { toast } = useToast();
+  const { createExport, pollExistingExport } = useSearchLeadsExport();
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [lastExportLogId, setLastExportLogId] = useState<string | null>(null);
+  const [manualLogId, setManualLogId] = useState("");
   const [expandedSections, setExpandedSections] = useState({
     person: true,
     company: false,
@@ -178,59 +181,34 @@ export default function AdvancedLeadFilters() {
   const handleExport = async () => {
     setIsLoading(true);
     try {
-      const payload = buildPayload(true);
+      const payload = buildPayload(false);
+      const logId = await createExport(payload.filter, noOfLeads, fileName);
       
-      // Get current user ID from Supabase
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("User not authenticated");
+      if (logId) {
+        setLastExportLogId(logId);
       }
-
-      console.log("🚀 Making export request to backend");
-      console.log("📦 Payload:", payload);
-      console.log("🔑 User ID:", user.id);
-
-      const response = await fetch("https://leads-automation-apel.onrender.com/api/searchleads/export", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-Id": user.id,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      console.log("📡 Response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Export failed:", response.status, errorText);
-        throw new Error(`Backend returned ${response.status}: ${errorText || 'Server error. Your Render backend may be sleeping or unavailable.'}`);
-      }
-
-      const data = await response.json();
-      console.log("📦 Export Response Data:", data);
-      
-      // Capture log_id from response
-      if (data.log_id) {
-        setLastExportLogId(data.log_id);
-        console.log("🔑 Captured log_id:", data.log_id);
-      }
-      
-      setResults(data);
-      
-      toast({
-        title: "Export Started",
-        description: data.log_id 
-          ? `Export queued successfully. Log ID: ${data.log_id}`
-          : data.message || "Your export has been queued and will be ready shortly.",
-      });
     } catch (error) {
       console.error("Export error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePollExisting = async () => {
+    if (!manualLogId.trim()) {
       toast({
-        title: "Export Failed",
-        description: error instanceof Error ? error.message : "Failed to export leads",
+        title: "Missing Log ID",
+        description: "Please enter a log ID to poll",
         variant: "destructive",
       });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await pollExistingExport(manualLogId.trim());
+    } catch (error) {
+      console.error("Poll error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -653,6 +631,35 @@ export default function AdvancedLeadFilters() {
           </CardContent>
         </Card>
       )}
+
+      {/* Poll Existing Export */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🔄 Retrieve Existing Export</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Enter Export Log ID</Label>
+              <Input
+                value={manualLogId}
+                onChange={(e) => setManualLogId(e.target.value)}
+                placeholder="e.g., abc123def456..."
+              />
+            </div>
+            <Button
+              onClick={handlePollExisting}
+              disabled={isLoading || !manualLogId.trim()}
+              className="w-full"
+            >
+              Poll & Retrieve Export
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              Enter a log_id from a previous export to check its status and retrieve results
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Results Display */}
       {results && (

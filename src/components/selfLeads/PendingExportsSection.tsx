@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import { apiFetch } from "@/lib/apiFetch";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PendingJob {
   log_id: string;
@@ -27,8 +27,19 @@ export const PendingExportsSection = () => {
 
   const fetchPendingJobs = async () => {
     try {
-      const response = await apiFetch("/searchleads/jobs?status=pending&limit=50&page=1");
-      setPendingJobs(response?.items || []);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("searchleads_jobs")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setPendingJobs(data || []);
     } catch (error) {
       console.error("Error fetching pending jobs:", error);
       toast({

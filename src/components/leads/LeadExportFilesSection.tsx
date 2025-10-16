@@ -12,17 +12,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import { apiFetch } from "@/lib/apiFetch";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ExportJob {
   log_id: string;
   file_name: string;
-  csv_url: string;
-  summary: {
-    total_rows?: number;
-    [key: string]: any;
-  };
+  csv_url: string | null;
+  result_data: any;
   created_at: string;
+  no_of_leads?: number;
 }
 
 export const LeadExportFilesSection = () => {
@@ -32,8 +30,19 @@ export const LeadExportFilesSection = () => {
 
   const fetchExportJobs = async () => {
     try {
-      const response = await apiFetch("/searchleads/jobs?status=completed&limit=50&page=1");
-      setExportJobs(response?.items || []);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("searchleads_jobs")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "completed")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setExportJobs(data || []);
     } catch (error) {
       console.error("Error fetching export jobs:", error);
       toast({
@@ -108,20 +117,28 @@ export const LeadExportFilesSection = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {job.summary?.total_rows ? `${job.summary.total_rows} leads` : "—"}
+                      {job.result_data?.leads?.length 
+                        ? `${job.result_data.leads.length} leads` 
+                        : job.no_of_leads 
+                        ? `${job.no_of_leads} leads`
+                        : "—"}
                     </TableCell>
                     <TableCell>
                       {format(new Date(job.created_at), "MMM d, yyyy HH:mm")}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownload(job.csv_url, job.file_name || "export.csv")}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download CSV
-                      </Button>
+                      {job.csv_url ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDownload(job.csv_url!, job.file_name || "export.csv")}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download CSV
+                        </Button>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">No CSV available</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
