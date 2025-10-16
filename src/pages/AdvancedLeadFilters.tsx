@@ -131,8 +131,8 @@ export default function AdvancedLeadFilters() {
     const payload: any = { filter: cleanedFilters };
     
     if (includeMeta) {
-      payload.noOfLeads = noOfLeads;
-      payload.fileName = fileName;
+      payload.no_of_leads = noOfLeads;
+      payload.file_name = fileName;
     }
 
     return payload;
