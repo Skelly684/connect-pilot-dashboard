@@ -105,11 +105,13 @@ Deno.serve(async (req) => {
     }
 
     // Extract relevant data from response
-    const csvUrl = exportData.file_csv || exportData.url || exportData.csv_url || exportData.log?.file_csv || null;
+    const csvUrl = exportData.log?.url || exportData.log?.data || exportData.url || exportData.data || exportData.file_csv || exportData.csv_url || null;
     const summary = exportData.summary || exportData.log?.summary || null;
     const status = exportData.log?.status || exportData.status || "unknown";
+    const leadsEnriched = exportData.log?.leadsEnriched || null;
+    const creditsUsed = exportData.log?.creditsUsed || null;
 
-    console.log('Extracted data:', { csvUrl, status, successfulEndpoint });
+    console.log('Extracted data:', { csvUrl, status, leadsEnriched, creditsUsed, successfulEndpoint });
 
     // Update or insert in database
     const { data: existing } = await supabaseClient
@@ -122,8 +124,8 @@ Deno.serve(async (req) => {
     const dbUpdate = {
       status: status,
       csv_url: csvUrl,
-      summary: summary,
       url: csvUrl,
+      summary: summary || (leadsEnriched ? `${leadsEnriched} leads enriched, ${creditsUsed} credits used` : null),
     };
 
     if (existing) {
