@@ -85,7 +85,7 @@ export default function SelfLeads() {
               </div>
             </div>
 
-            {/* CSV Upload Section */}
+            {/* CSV Upload Section - Top */}
             <div className="mb-6">
               <CsvUpload />
             </div>
@@ -111,7 +111,7 @@ export default function SelfLeads() {
               </div>
             </div>
 
-            {/* Recent Leads Table */}
+            {/* Accepted Leads Queue - Bottom */}
             <div className="mt-8">
               <SelfLeadsRecentTable />
             </div>
