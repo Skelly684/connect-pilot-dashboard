@@ -17,10 +17,10 @@ import { supabase } from "@/integrations/supabase/client";
 interface ExportJob {
   log_id: string;
   file_name: string;
-  csv_url: string | null;
-  result_data: any;
+  csv_path: string | null;
+  summary: any;
   created_at: string;
-  no_of_leads?: number;
+  status: string;
 }
 
 export const LeadExportFilesSection = () => {
@@ -117,21 +117,19 @@ export const LeadExportFilesSection = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {job.result_data?.leads?.length 
-                        ? `${job.result_data.leads.length} leads` 
-                        : job.no_of_leads 
-                        ? `${job.no_of_leads} leads`
+                      {job.summary?.leads?.length 
+                        ? `${job.summary.leads.length} leads` 
                         : "—"}
                     </TableCell>
                     <TableCell>
                       {format(new Date(job.created_at), "MMM d, yyyy HH:mm")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {job.csv_url ? (
+                      {job.csv_path ? (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDownload(job.csv_url!, job.file_name || "export.csv")}
+                          onClick={() => handleDownload(job.csv_path!, job.file_name || "export.csv")}
                         >
                           <Download className="h-4 w-4 mr-2" />
                           Download CSV
