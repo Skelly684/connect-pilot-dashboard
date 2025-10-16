@@ -17,8 +17,10 @@ import { supabase } from "@/integrations/supabase/client";
 interface ExportJob {
   log_id: string;
   file_name: string;
-  csv_path: string | null;
-  summary: any;
+  csv_path?: string | null;
+  url?: string | null;
+  csv_url?: string | null;
+  summary?: any;
   created_at: string;
   status: string;
 }
@@ -66,14 +68,9 @@ export const LeadExportFilesSection = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleDownload = (csvUrl: string, fileName: string) => {
-    const a = document.createElement("a");
-    a.href = csvUrl;
-    a.download = fileName;
-    a.target = "_blank";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleDownload = (url: string, fileName: string) => {
+    // Open in new tab (works for both CSV and Google Sheets)
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -123,25 +120,32 @@ export const LeadExportFilesSection = () => {
                       </code>
                     </TableCell>
                     <TableCell>
-                      {job.summary?.leads?.length 
-                        ? `${job.summary.leads.length} leads` 
-                        : "—"}
+                      {typeof job.summary === 'string' 
+                        ? job.summary
+                        : job.summary?.leads?.length 
+                          ? `${job.summary.leads.length} leads` 
+                          : "—"}
                     </TableCell>
                     <TableCell>
                       {format(new Date(job.created_at), "MMM d, yyyy HH:mm")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {job.csv_path ? (
+                      {(job.url || job.csv_url || job.csv_path) ? (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDownload(job.csv_path!, job.file_name || "export.csv")}
+                          onClick={() => handleDownload(
+                            job.url || job.csv_url || job.csv_path!, 
+                            job.file_name || "export"
+                          )}
                         >
                           <Download className="h-4 w-4 mr-2" />
-                          Download CSV
+                          {(job.url || job.csv_url)?.includes('google.com') 
+                            ? 'Open Google Sheets' 
+                            : 'Download CSV'}
                         </Button>
                       ) : (
-                        <span className="text-sm text-muted-foreground">No CSV available</span>
+                        <span className="text-sm text-muted-foreground">Processing...</span>
                       )}
                     </TableCell>
                   </TableRow>
