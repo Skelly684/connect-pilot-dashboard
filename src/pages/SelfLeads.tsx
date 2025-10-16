@@ -7,6 +7,7 @@ import { SelfLeadForm } from "@/components/selfLeads/SelfLeadForm";
 import { SelfLeadPreview } from "@/components/selfLeads/SelfLeadPreview";
 import { SelfLeadsRecentTable } from "@/components/selfLeads/SelfLeadsRecentTable";
 import { CsvUpload } from "@/components/selfLeads/CsvUpload";
+import { PendingExportsSection } from "@/components/selfLeads/PendingExportsSection";
 
 export default function SelfLeads() {
   const navigate = useNavigate();
@@ -87,6 +88,11 @@ export default function SelfLeads() {
             {/* CSV Upload Section */}
             <div className="mb-6">
               <CsvUpload />
+            </div>
+
+            {/* Pending Exports Section */}
+            <div className="mb-6">
+              <PendingExportsSection />
             </div>
 
             <div className="grid lg:grid-cols-3 gap-6">
