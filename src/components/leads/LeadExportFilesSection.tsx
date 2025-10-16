@@ -102,6 +102,7 @@ export const LeadExportFilesSection = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>File Name</TableHead>
+                  <TableHead>Log ID</TableHead>
                   <TableHead>Summary</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -115,6 +116,11 @@ export const LeadExportFilesSection = () => {
                         <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
                         {job.file_name || "Export"}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-xs bg-muted px-2 py-1 rounded">
+                        {job.log_id}
+                      </code>
                     </TableCell>
                     <TableCell>
                       {job.summary?.leads?.length 
