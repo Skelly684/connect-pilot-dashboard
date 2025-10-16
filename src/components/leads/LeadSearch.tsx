@@ -74,6 +74,9 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
         throw new Error("User not authenticated");
       }
 
+      console.log("🚀 Making request to:", "https://leads-automation-apel.onrender.com/api/searchleads/export");
+      console.log("🔑 User ID:", user.id);
+
       const response = await fetch("https://leads-automation-apel.onrender.com/api/searchleads/export", {
         method: "POST",
         headers: {
@@ -83,10 +86,13 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
         body: JSON.stringify(filterPayload),
       });
 
+      console.log("📡 Response status:", response.status);
+      console.log("📡 Response headers:", Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("API request failed:", response.status, errorText);
-        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+        console.error("❌ API request failed:", response.status, errorText);
+        throw new Error(`Backend returned ${response.status}: ${errorText || 'Server error. Your Render backend may be sleeping or the endpoint is not available.'}`);
       }
 
       const data = await response.json();

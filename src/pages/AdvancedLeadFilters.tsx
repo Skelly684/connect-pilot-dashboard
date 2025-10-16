@@ -186,6 +186,10 @@ export default function AdvancedLeadFilters() {
         throw new Error("User not authenticated");
       }
 
+      console.log("🚀 Making export request to backend");
+      console.log("📦 Payload:", payload);
+      console.log("🔑 User ID:", user.id);
+
       const response = await fetch("https://leads-automation-apel.onrender.com/api/searchleads/export", {
         method: "POST",
         headers: {
@@ -195,8 +199,12 @@ export default function AdvancedLeadFilters() {
         body: JSON.stringify(payload),
       });
 
+      console.log("📡 Response status:", response.status);
+
       if (!response.ok) {
-        throw new Error(`Export failed: ${response.status}`);
+        const errorText = await response.text();
+        console.error("❌ Export failed:", response.status, errorText);
+        throw new Error(`Backend returned ${response.status}: ${errorText || 'Server error. Your Render backend may be sleeping or unavailable.'}`);
       }
 
       const data = await response.json();
