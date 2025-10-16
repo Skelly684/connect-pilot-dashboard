@@ -34,6 +34,9 @@ verify_jwt = false
 [functions.send-gmail]
 verify_jwt = false
 
+[functions.retrieve-searchleads-export]
+verify_jwt = true
+
 [db]
 enabled = true
 port = 54322
