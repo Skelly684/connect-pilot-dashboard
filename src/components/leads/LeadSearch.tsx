@@ -32,6 +32,7 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
   });
   const [isSearching, setIsSearching] = useState(false);
   const [lastSearchResults, setLastSearchResults] = useState<any[]>([]);
+  const [lastExportLogId, setLastExportLogId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilterPayload>({});
   const { toast } = useToast();
@@ -82,6 +83,12 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
 
       const data = await response.json();
       console.log("API response:", data);
+      
+      // Capture log_id from response
+      if (data.log_id) {
+        setLastExportLogId(data.log_id);
+        console.log("🔑 Captured log_id:", data.log_id);
+      }
 
       // Handle different response formats
       let leads = [];
@@ -221,6 +228,41 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
 
   return (
     <>
+    {/* Export Log ID Display */}
+    {lastExportLogId && (
+      <Card className="border-2 border-primary mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            🔑 Latest Export Job ID
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-muted p-4 rounded-lg font-mono text-sm break-all">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-semibold text-foreground">log_id:</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(lastExportLogId);
+                  toast({
+                    title: "Copied!",
+                    description: "Log ID copied to clipboard",
+                  });
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+            <div className="text-primary font-bold text-base">{lastExportLogId}</div>
+          </div>
+          <p className="text-sm text-muted-foreground mt-3">
+            Use this log_id to track your export job status in the backend
+          </p>
+        </CardContent>
+      </Card>
+    )}
+    
     <Card className="border-0 shadow-sm">
       <CardHeader>
         <CardTitle className="flex items-center">

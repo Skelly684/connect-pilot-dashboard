@@ -47,6 +47,7 @@ export default function AdvancedLeadFilters() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const [lastExportLogId, setLastExportLogId] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState({
     person: true,
     company: false,
@@ -192,11 +193,21 @@ export default function AdvancedLeadFilters() {
       }
 
       const data = await response.json();
+      console.log("📦 Export Response Data:", data);
+      
+      // Capture log_id from response
+      if (data.log_id) {
+        setLastExportLogId(data.log_id);
+        console.log("🔑 Captured log_id:", data.log_id);
+      }
+      
       setResults(data);
       
       toast({
         title: "Export Started",
-        description: data.message || "Your export has been queued and will be ready shortly.",
+        description: data.log_id 
+          ? `Export queued successfully. Log ID: ${data.log_id}`
+          : data.message || "Your export has been queued and will be ready shortly.",
       });
     } catch (error) {
       console.error("Export error:", error);
@@ -592,6 +603,41 @@ export default function AdvancedLeadFilters() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Export Log ID Display */}
+      {lastExportLogId && (
+        <Card className="border-2 border-primary">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              🔑 Latest Export Job ID
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-muted p-4 rounded-lg font-mono text-sm break-all">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-foreground">log_id:</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(lastExportLogId);
+                    toast({
+                      title: "Copied!",
+                      description: "Log ID copied to clipboard",
+                    });
+                  }}
+                >
+                  Copy
+                </Button>
+              </div>
+              <div className="text-primary font-bold text-base">{lastExportLogId}</div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-3">
+              Use this log_id to track your export job status in the backend
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Results Display */}
       {results && (
