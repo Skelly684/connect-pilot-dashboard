@@ -28,7 +28,7 @@ export const PendingExportsSection = () => {
   const fetchPendingJobs = async () => {
     try {
       const response = await apiFetch("/searchleads/jobs?status=pending&limit=50&page=1");
-      setPendingJobs(response || []);
+      setPendingJobs(response?.items || []);
     } catch (error) {
       console.error("Error fetching pending jobs:", error);
       toast({

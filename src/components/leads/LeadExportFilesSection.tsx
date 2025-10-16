@@ -33,7 +33,7 @@ export const LeadExportFilesSection = () => {
   const fetchExportJobs = async () => {
     try {
       const response = await apiFetch("/searchleads/jobs?status=completed&limit=50&page=1");
-      setExportJobs(response || []);
+      setExportJobs(response?.items || []);
     } catch (error) {
       console.error("Error fetching export jobs:", error);
       toast({
