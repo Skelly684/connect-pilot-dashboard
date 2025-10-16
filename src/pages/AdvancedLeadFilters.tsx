@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -63,6 +63,35 @@ export default function AdvancedLeadFilters() {
 
   const [noOfLeads, setNoOfLeads] = useState(100);
   const [fileName, setFileName] = useState("lead_export");
+
+  const handleTestCEOUK = async () => {
+    try {
+      setIsLoading(true);
+      const filter = {
+        person_seniorities: ["c-suite", "owner"],
+        person_titles: ["CEO", "Chief Executive Officer"],
+        organization_locations: ["United Kingdom"]
+      };
+      
+      const logId = await createExport(filter, 100, "CEO_UK");
+      setLastExportLogId(logId);
+      
+      toast({
+        title: "Export Created ✅",
+        description: `CEO_UK export created with log_id: ${logId}. This will take a few hours to complete. We'll poll for results automatically.`,
+        duration: 10000,
+      });
+    } catch (error) {
+      console.error("Failed to create CEO_UK export:", error);
+      toast({
+        title: "Export Failed",
+        description: error instanceof Error ? error.message : "Failed to create export",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Filter state
   const [filters, setFilters] = useState<any>({
@@ -294,8 +323,22 @@ export default function AdvancedLeadFilters() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
+      <div className="space-y-6">
+        <Card className="border-0 shadow-sm">
+          <CardHeader>
+            <CardTitle>Quick Test: CEO UK Export</CardTitle>
+            <CardDescription>
+              Create a test export for CEOs in the United Kingdom (100 leads)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={handleTestCEOUK} className="w-full">
+              Create CEO_UK Export
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
         <CardHeader>
           <CardTitle>Advanced Lead Filters</CardTitle>
         </CardHeader>
