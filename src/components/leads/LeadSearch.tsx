@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -49,28 +50,35 @@ export const LeadSearch = ({ onResults, onSearchStart, onSearchComplete, onSaveL
       // Build the complete filter payload matching SearchLeads API format
       const filterPayload = {
         filter: {
-          // Merge basic filters with advanced filters
+          // Person filters
           ...(filters.jobTitle && { person_titles: [filters.jobTitle] }),
           ...(filters.location && { person_locations: [filters.location] }),
-          ...(filters.company && { q_organization_keyword_tags: [filters.company] }),
+          
+          // Company filters
           ...(filters.industry && { organization_industry_display_name: [filters.industry] }),
-          ...(filters.seniorityLevel && { person_seniorities: [filters.seniorityLevel.toLowerCase()] }),
-          ...(filters.department && { person_department_or_subdepartments: [filters.department] }),
-          ...(filters.companySize && { organization_num_employees_ranges: [filters.companySize] }),
+          ...(filters.companySize && { organization_num_employees_enum: [filters.companySize] }),
+          
           // Merge advanced filters - they override basic if both are set
           ...advancedFilters,
         },
-        noOfLeads: filters.numberOfLeads[0],
-        fileName: "lead_export"
+        no_of_leads: filters.numberOfLeads[0],
+        file_name: "lead_export"
       };
 
-      console.log("Sending API request to SearchLeads API");
+      console.log("Sending API request to backend");
       console.log("Request payload:", JSON.stringify(filterPayload, null, 2));
 
-      const response = await fetch("https://apis.searchleads.co/api/export", {
+      // Get current user ID from Supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      const response = await fetch("https://leads-automation-apel.onrender.com/api/searchleads/export", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-User-Id": user.id,
         },
         body: JSON.stringify(filterPayload),
       });

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -179,11 +180,17 @@ export default function AdvancedLeadFilters() {
     try {
       const payload = buildPayload(true);
       
-      const response = await fetch("https://apis.searchleads.co/api/export", {
+      // Get current user ID from Supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      const response = await fetch("https://leads-automation-apel.onrender.com/api/searchleads/export", {
         method: "POST",
         headers: {
-          "authorization": "Bearer 5823d0aa-0a51-4fbd-9bed-2050e5c08453",
-          "content-type": "application/json",
+          "Content-Type": "application/json",
+          "X-User-Id": user.id,
         },
         body: JSON.stringify(payload),
       });
