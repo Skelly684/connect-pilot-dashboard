@@ -13,6 +13,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AppSidebarProps {
   activeTab: string;
@@ -35,6 +36,9 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const { isAdmin } = useAdminCheck();
+  const { user } = useAuth();
+  
+  const isSpecialUser = user?.email === 'scttskelly@gmail.com';
 
   const adminMenuItems = [
     { id: "admin", title: "Admin", icon: Shield },
@@ -49,8 +53,8 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
           <div className="flex justify-center">
             <div className="relative">
               <img 
-                src="/lovable-uploads/7c5cb75c-bf84-4a68-9e78-2fd787db361e.png" 
-                alt="PSN Logo" 
+                src={isSpecialUser ? "/assets/leadm8-logo.png" : "/lovable-uploads/7c5cb75c-bf84-4a68-9e78-2fd787db361e.png"}
+                alt={isSpecialUser ? "LeadM8 Logo" : "PSN Logo"}
                 className="w-16 h-16 rounded-2xl shadow-primary transition-transform duration-300 hover:scale-105"
               />
               <div className="absolute -inset-0.5 bg-gradient-primary rounded-2xl opacity-20 blur"></div>
@@ -58,7 +62,9 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
           </div>
           {!isCollapsed && (
             <div className="text-center mt-4 animate-fade-in">
-              <h2 className="text-lg font-semibold text-sidebar-foreground">PSN Dashboard</h2>
+              <h2 className={`text-lg font-semibold ${isSpecialUser ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 bg-clip-text text-transparent animate-pulse' : 'text-sidebar-foreground'}`}>
+                {isSpecialUser ? 'Nexus' : 'PSN Dashboard'}
+              </h2>
               <p className="text-sm text-sidebar-foreground/70">Lead Management System</p>
             </div>
           )}

@@ -55,19 +55,23 @@ export const DashboardHeader = () => {
     user.email.split('@')[0].substring(0, 2).toUpperCase() : 
     'UN';
 
+  const isSpecialUser = user?.email === 'scttskelly@gmail.com';
+
   return (
     <header className="h-16 bg-gradient-card backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6 sticky top-0 z-50 shadow-md">
       <div className="flex items-center space-x-4">
         <div className="relative">
           <img 
-            src="/assets/psn-logo.png" 
-            alt="PSN Logo" 
+            src={isSpecialUser ? "/assets/leadm8-logo.png" : "/assets/psn-logo.png"}
+            alt={isSpecialUser ? "LeadM8 Logo" : "PSN Logo"}
             className="w-9 h-9 rounded-xl shadow-sm transition-transform duration-300 hover:scale-110"
           />
           <div className="absolute -inset-0.5 bg-gradient-primary rounded-xl opacity-20 blur-sm"></div>
         </div>
         <div className="hidden md:block">
-          <h1 className="text-lg font-semibold text-foreground">PSN Dashboard</h1>
+          <h1 className={`text-lg font-semibold ${isSpecialUser ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 bg-clip-text text-transparent animate-pulse' : 'text-foreground'}`}>
+            {isSpecialUser ? 'Nexus' : 'PSN Dashboard'}
+          </h1>
           <p className="text-xs text-muted-foreground">Lead Management System</p>
         </div>
       </div>
