@@ -67,7 +67,7 @@ export const DashboardHeader = () => {
           <img 
             src={isSpecialUser ? "/assets/leadm8-logo.png" : "/assets/psn-logo.png"}
             alt={isSpecialUser ? "LeadM8 Logo" : "PSN Logo"}
-            className={`w-full h-full ${isSpecialUser ? '' : 'rounded-xl shadow-sm'} transition-transform duration-300 hover:scale-110 relative z-10`}
+            className={`w-full h-full rounded-xl ${isSpecialUser ? '' : 'shadow-sm'} transition-transform duration-300 hover:scale-110 relative z-10`}
             style={isSpecialUser ? { objectFit: 'contain', objectPosition: 'center' } : {}}
           />
           {!isSpecialUser && (
