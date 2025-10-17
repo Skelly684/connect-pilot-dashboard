@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, ChevronDown, ChevronUp, Search, Download } from "lucide-react";
+import { X, Plus, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
@@ -130,41 +130,6 @@ export default function AdvancedLeadFilters() {
     return payload;
   };
 
-  const handlePreview = async () => {
-    setIsLoading(true);
-    try {
-      const payload = buildPayload(false);
-      
-      const response = await fetch("https://apis.searchleads.co/api/noofleadscheck", {
-        method: "POST",
-        headers: {
-          "authorization": "Bearer 5823d0aa-0a51-4fbd-9bed-2050e5c08453",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      toast({
-        title: "Preview Complete",
-        description: `Found ${data.total || 0} leads (${data.valid_emails || 0} with valid emails)`,
-      });
-    } catch (error) {
-      console.error("Preview error:", error);
-      toast({
-        title: "Preview Failed",
-        description: error instanceof Error ? error.message : "Failed to preview leads",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleExport = async () => {
     setIsLoading(true);
@@ -524,8 +489,8 @@ export default function AdvancedLeadFilters() {
                   type="number"
                   value={noOfLeads}
                   onChange={(e) => setNoOfLeads(parseInt(e.target.value) || 100)}
-                  min={1}
-                  max={10000}
+                  min={100}
+                  max={1000}
                 />
               </div>
 
@@ -544,24 +509,13 @@ export default function AdvancedLeadFilters() {
           {/* Action Buttons */}
           <div className="flex gap-4 pt-4">
             <Button
-              onClick={handlePreview}
-              disabled={isLoading}
-              variant="outline"
-              className="flex-1"
-              size="lg"
-            >
-              <Search className="mr-2 h-5 w-5" />
-              {isLoading ? "Loading..." : "🔍 Preview 100 Free Leads"}
-            </Button>
-
-            <Button
               onClick={handleExport}
               disabled={isLoading}
               className="flex-1"
               size="lg"
             >
               <Download className="mr-2 h-5 w-5" />
-              {isLoading ? "Processing..." : "💼 Get 100 Paid Leads"}
+              {isLoading ? "Processing..." : "Get Leads"}
             </Button>
           </div>
         </CardContent>
