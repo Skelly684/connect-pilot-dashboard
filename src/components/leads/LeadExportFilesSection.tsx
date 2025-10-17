@@ -24,6 +24,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useCampaigns } from "@/hooks/useCampaigns";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 interface ExportJob {
   log_id: string;
@@ -75,6 +76,7 @@ export const LeadExportFilesSection = () => {
   const isOperatingRef = useRef(false);
   const { toast } = useToast();
   const { campaigns, getDefaultCampaign } = useCampaigns();
+  const { isAdmin } = useAdminCheck();
   
   // Recently reviewed leads state
   const [reviewedLeads, setReviewedLeads] = useState<any[]>([]);
@@ -662,17 +664,19 @@ export const LeadExportFilesSection = () => {
                             <Eye className="h-4 w-4 mr-2" />
                             Review
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDownload(
-                              job.url || job.csv_path!, 
-                              job.file_name || "export"
-                            )}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download CSV
-                          </Button>
+                          {isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDownload(
+                                job.url || job.csv_path!, 
+                                job.file_name || "export"
+                              )}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download CSV
+                            </Button>
+                          )}
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">Processing...</span>
