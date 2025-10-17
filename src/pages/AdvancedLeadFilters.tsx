@@ -39,7 +39,7 @@ const INDUSTRIES = [
 
 export default function AdvancedLeadFilters() {
   const { toast } = useToast();
-  const { createExport } = useSearchLeadsExport();
+  const { createExport, pendingExports } = useSearchLeadsExport();
   const [isLoading, setIsLoading] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     person: true,
@@ -171,6 +171,12 @@ export default function AdvancedLeadFilters() {
     try {
       const payload = buildPayload(false);
       await createExport(payload.filter, noOfLeads, fileName);
+      
+      toast({
+        title: "Export Created ✅",
+        description: `${fileName} export created. This will take a few hours to complete. Check the "Pending Exports" section below.`,
+        duration: 10000,
+      });
     } catch (error) {
       console.error("Export error:", error);
     } finally {
@@ -258,6 +264,7 @@ export default function AdvancedLeadFilters() {
   };
 
   return (
+    <>
       <Card>
         <CardHeader>
           <CardTitle>Advanced Lead Filters</CardTitle>
@@ -559,5 +566,70 @@ export default function AdvancedLeadFilters() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pending Exports Section */}
+      {pendingExports.length > 0 && (
+        <Card className="border-0 shadow-sm mt-6">
+          <CardHeader>
+            <CardTitle>Pending Exports</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Lead searches currently being processed by SearchLeads
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {pendingExports.map((job) => (
+                <div 
+                  key={job.log_id} 
+                  className="p-4 border rounded-lg bg-muted/50 space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="animate-pulse">
+                        Processing
+                      </Badge>
+                      <span className="font-semibold">{job.file_name}</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(job.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  
+                  {job.summary && typeof job.summary === 'object' && (
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-medium">Filters:</span>
+                      <div className="mt-1 space-y-1">
+                        {Object.entries(job.summary as Record<string, any>).map(([key, value]) => {
+                          if (Array.isArray(value) && value.length > 0) {
+                            return (
+                              <div key={key} className="flex gap-2">
+                                <span className="text-muted-foreground/70">{key.replace(/_/g, ' ')}:</span>
+                                <span>{value.join(', ')}</span>
+                              </div>
+                            );
+                          } else if (typeof value === 'string' && value) {
+                            return (
+                              <div key={key} className="flex gap-2">
+                                <span className="text-muted-foreground/70">{key.replace(/_/g, ' ')}:</span>
+                                <span>{value}</span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="text-xs font-mono text-muted-foreground">
+                    log_id: {job.log_id}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </>
   );
 }

@@ -61,6 +61,7 @@ export const useSearchLeadsExport = () => {
           file_name: fileName,
           status: "pending",
           user_id: user.id,
+          summary: filter, // Store the filters for display
         });
 
       if (dbError) {
