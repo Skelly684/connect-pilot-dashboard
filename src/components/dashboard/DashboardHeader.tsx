@@ -60,7 +60,7 @@ export const DashboardHeader = () => {
   return (
     <header className="h-16 bg-gradient-card backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6 sticky top-0 z-50 shadow-md">
       <div className="flex items-center space-x-4">
-        <div className="relative w-14 h-14">
+        <div className="relative w-10 h-10">
           {isSpecialUser ? (
             <div className="absolute -inset-1 bg-purple-500/30 opacity-60 blur-lg -z-10 dark:bg-purple-500/50 dark:opacity-80 dark:blur-xl"></div>
           ) : (
