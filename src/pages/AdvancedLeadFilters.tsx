@@ -1,25 +1,16 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, ChevronDown, ChevronUp, Search, Download, Upload, Loader2 } from "lucide-react";
+import { X, Plus, ChevronDown, ChevronUp, Search, Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchLeadsExport } from "@/hooks/useSearchLeadsExport";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 const SENIORITIES = ["owner", "founder", "c-suite", "vp", "director", "manager", "senior", "entry"];
 const EMPLOYEE_RANGES = ["1,10", "11,50", "51,200", "201,500", "501,1000", "1001,5000", "5001,10000", "10001+"];
@@ -48,14 +39,8 @@ const INDUSTRIES = [
 
 export default function AdvancedLeadFilters() {
   const { toast } = useToast();
-  const { createExport, pollExistingExport } = useSearchLeadsExport();
+  const { createExport } = useSearchLeadsExport();
   const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState<any>(null);
-  const [lastExportLogId, setLastExportLogId] = useState<string | null>(null);
-  const [trackLogId, setTrackLogId] = useState("");
-  const [importUrl, setImportUrl] = useState("");
-  const [importFileName, setImportFileName] = useState("");
-  const [isImporting, setIsImporting] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     person: true,
     company: false,
@@ -67,175 +52,6 @@ export default function AdvancedLeadFilters() {
 
   const [noOfLeads, setNoOfLeads] = useState(100);
   const [fileName, setFileName] = useState("lead_export");
-
-  // Auto-track Test_1 on mount
-  useEffect(() => {
-    const trackTest1 = async () => {
-      const logId = "d103a4d5-4e40-4ba8-8563-ef3583183639";
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: job } = await supabase
-        .from("searchleads_jobs")
-        .select("*")
-        .eq("log_id", logId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (job && job.status === "failed") {
-        // Reset failed status and retry
-        await supabase
-          .from("searchleads_jobs")
-          .update({ status: "pending" })
-          .eq("log_id", logId)
-          .eq("user_id", user.id);
-        
-        await pollExistingExport(logId);
-      } else if (!job) {
-        // Create and track
-        await supabase.from("searchleads_jobs").insert({
-          log_id: logId,
-          file_name: "Test_1",
-          status: "pending",
-          user_id: user.id,
-        });
-        await pollExistingExport(logId);
-      }
-    };
-    
-    trackTest1();
-  }, [pollExistingExport]);
-
-  const handleTrackExistingExport = async () => {
-    if (!trackLogId.trim()) {
-      toast({
-        title: "Missing Log ID",
-        description: "Please enter a log ID to track",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      await pollExistingExport(trackLogId.trim());
-      setTrackLogId("");
-    } catch (error) {
-      console.error("Failed to track export:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDirectImport = async () => {
-    if (!importUrl.trim() || !importFileName.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide both URL and file name",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsImporting(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      // Convert Google Sheets URL to CSV export format if needed
-      let csvUrl = importUrl.trim();
-      if (csvUrl.includes('docs.google.com/spreadsheets')) {
-        const spreadsheetId = csvUrl.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1];
-        if (spreadsheetId) {
-          csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv`;
-        }
-      }
-
-      toast({
-        title: "Importing...",
-        description: "Downloading and saving your export",
-      });
-
-      // Download the CSV
-      const response = await fetch(csvUrl);
-      if (!response.ok) throw new Error("Failed to download CSV");
-      
-      const csvBlob = await response.blob();
-      const fileName = importFileName.endsWith('.csv') ? importFileName : `${importFileName}.csv`;
-      const filePath = `${user.id}/${fileName}`;
-
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from('exports')
-        .upload(filePath, csvBlob, {
-          contentType: 'text/csv',
-          upsert: true
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('exports')
-        .getPublicUrl(filePath);
-
-      // Create job record
-      await supabase.from('searchleads_jobs').insert({
-        log_id: `manual_${Date.now()}`,
-        file_name: fileName,
-        status: 'completed',
-        user_id: user.id,
-        csv_path: publicUrl,
-        url: importUrl,
-      });
-
-      toast({
-        title: "Import Successful!",
-        description: `${fileName} is ready in "Lead Export Files"`,
-      });
-
-      setImportUrl("");
-      setImportFileName("");
-    } catch (error) {
-      console.error("Import error:", error);
-      toast({
-        title: "Import Failed",
-        description: error instanceof Error ? error.message : "Failed to import export",
-        variant: "destructive",
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  const handleTestCEOUK = async () => {
-    try {
-      setIsLoading(true);
-      const filter = {
-        person_seniorities: ["c-suite", "owner"],
-        person_titles: ["CEO", "Chief Executive Officer"],
-        organization_locations: ["United Kingdom"]
-      };
-      
-      const logId = await createExport(filter, 100, "CEO_UK");
-      setLastExportLogId(logId);
-      
-      toast({
-        title: "Export Created ✅",
-        description: `CEO_UK export created with log_id: ${logId}. This will take a few hours to complete. We'll poll for results automatically.`,
-        duration: 10000,
-      });
-    } catch (error) {
-      console.error("Failed to create CEO_UK export:", error);
-      toast({
-        title: "Export Failed",
-        description: error instanceof Error ? error.message : "Failed to create export",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Filter state
   const [filters, setFilters] = useState<any>({
@@ -333,7 +149,6 @@ export default function AdvancedLeadFilters() {
       }
 
       const data = await response.json();
-      setResults(data);
       
       toast({
         title: "Preview Complete",
@@ -355,11 +170,7 @@ export default function AdvancedLeadFilters() {
     setIsLoading(true);
     try {
       const payload = buildPayload(false);
-      const logId = await createExport(payload.filter, noOfLeads, fileName);
-      
-      if (logId) {
-        setLastExportLogId(logId);
-      }
+      await createExport(payload.filter, noOfLeads, fileName);
     } catch (error) {
       console.error("Export error:", error);
     } finally {
@@ -447,72 +258,7 @@ export default function AdvancedLeadFilters() {
   };
 
   return (
-      <div className="space-y-6">
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle>Quick Test: CEO UK Export</CardTitle>
-            <CardDescription>
-              Create a test export for CEOs in the United Kingdom (100 leads)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleTestCEOUK} className="w-full">
-              Create CEO_UK Export
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Manual Import Card */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Import Completed Export
-            </CardTitle>
-            <CardDescription>
-              Paste the Google Sheets or CSV URL from SearchLeads to import your completed export directly
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="import-url">Google Sheets / CSV URL</Label>
-              <Input
-                id="import-url"
-                placeholder="https://docs.google.com/spreadsheets/d/..."
-                value={importUrl}
-                onChange={(e) => setImportUrl(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="import-filename">File Name</Label>
-              <Input
-                id="import-filename"
-                placeholder="Test_1"
-                value={importFileName}
-                onChange={(e) => setImportFileName(e.target.value)}
-              />
-            </div>
-            <Button 
-              onClick={handleDirectImport} 
-              disabled={isImporting || !importUrl.trim() || !importFileName.trim()}
-              className="w-full"
-            >
-              {isImporting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Import Now
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
+      <Card>
         <CardHeader>
           <CardTitle>Advanced Lead Filters</CardTitle>
         </CardHeader>
@@ -813,144 +559,5 @@ export default function AdvancedLeadFilters() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Export Log ID Display */}
-      {lastExportLogId && (
-        <Card className="border-2 border-primary">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              🔑 Latest Export Job ID
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-muted p-4 rounded-lg font-mono text-sm break-all">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-foreground">log_id:</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(lastExportLogId);
-                    toast({
-                      title: "Copied!",
-                      description: "Log ID copied to clipboard",
-                    });
-                  }}
-                >
-                  Copy
-                </Button>
-              </div>
-              <div className="text-primary font-bold text-base">{lastExportLogId}</div>
-            </div>
-            <p className="text-sm text-muted-foreground mt-3">
-              Use this log_id to track your export job status in the backend
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Track Existing Export */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Download className="h-5 w-5" />
-            Track Existing Export
-          </CardTitle>
-          <CardDescription>
-            Enter a log_id from SearchLeads to track and retrieve an export that was created outside this system
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Enter log_id (e.g., d103a4d5-4e40-4ba8-8563-ef3583183639)"
-              value={trackLogId}
-              onChange={(e) => setTrackLogId(e.target.value)}
-              className="flex-1"
-            />
-            <Button
-              onClick={handleTrackExistingExport}
-              disabled={isLoading || !trackLogId.trim()}
-            >
-              Track & Retrieve
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Results Display */}
-      {results && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Results</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {results.total && (
-              <div className="mb-4 p-4 bg-muted rounded-lg">
-                <p className="text-sm">
-                  <strong>Total Leads:</strong> {results.total || 0}
-                </p>
-                <p className="text-sm">
-                  <strong>Valid Emails:</strong> {results.valid_emails || 0}
-                </p>
-              </div>
-            )}
-
-            {results.rows && results.rows.length > 0 && (
-              <>
-                <ScrollArea className="h-[400px] w-full">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Company</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {results.rows.slice(0, 10).map((lead: any, index: number) => (
-                        <TableRow key={index}>
-                          <TableCell>{lead.person_name || lead.name || "N/A"}</TableCell>
-                          <TableCell>{lead.title || lead.person_title || "N/A"}</TableCell>
-                          <TableCell>{lead.company_name || lead.organization_name || "N/A"}</TableCell>
-                          <TableCell>{lead.email || lead.person_email || "N/A"}</TableCell>
-                          <TableCell>{lead.email_status || "Unknown"}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-                <p className="text-sm text-muted-foreground mt-4">
-                  Showing first 10 of {results.rows.length} leads
-                </p>
-              </>
-            )}
-
-            {results.file_csv && (
-              <div className="mt-4">
-                <Button asChild>
-                  <a href={results.file_csv} download>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Full CSV
-                  </a>
-                </Button>
-              </div>
-            )}
-
-            {results.sheet_url && (
-              <div className="mt-4">
-                <Button asChild variant="outline">
-                  <a href={results.sheet_url} target="_blank" rel="noopener noreferrer">
-                    Open Google Sheet
-                  </a>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
   );
 }
