@@ -139,7 +139,7 @@ export default function AdvancedLeadFilters() {
       
       toast({
         title: "Export Created ✅",
-        description: `${fileName} export created. This will take a few hours to complete. Check the "Pending Exports" section below.`,
+        description: `${fileName} export created. Check the "Pending Exports" section below.`,
         duration: 10000,
       });
     } catch (error) {
