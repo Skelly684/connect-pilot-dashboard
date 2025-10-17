@@ -264,7 +264,7 @@ export const useSearchLeadsExport = () => {
       } else {
         toast({
           title: `Export Status: ${data.status}`,
-          description: data.error || "Export retrieved but no download URL available yet. It may still be processing.",
+          description: data.status === "failed" ? (data.error || "Export failed") : "Still loading leads. Please check back in a few minutes.",
           variant: data.status === "failed" ? "destructive" : "default",
           duration: 7000,
         });
