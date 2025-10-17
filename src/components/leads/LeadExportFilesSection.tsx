@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useSearchLeadsExport } from "@/hooks/useSearchLeadsExport";
 
 interface ExportJob {
   log_id: string;
@@ -77,6 +78,7 @@ export const LeadExportFilesSection = () => {
   const { toast } = useToast();
   const { campaigns, getDefaultCampaign } = useCampaigns();
   const { isAdmin } = useAdminCheck();
+  const { retrieveCompletedExport } = useSearchLeadsExport();
   
   // Recently reviewed leads state
   const [reviewedLeads, setReviewedLeads] = useState<any[]>([]);
@@ -92,7 +94,7 @@ export const LeadExportFilesSection = () => {
         .from("searchleads_jobs")
         .select("*")
         .eq("user_id", user.id)
-        .eq("status", "completed")
+        .in("status", ["completed", "failed"])
         .order("created_at", { ascending: false })
         .limit(50);
 
@@ -601,6 +603,7 @@ export const LeadExportFilesSection = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>File Name</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Log ID</TableHead>
                   <TableHead>Summary</TableHead>
                   <TableHead>Date</TableHead>
@@ -615,6 +618,15 @@ export const LeadExportFilesSection = () => {
                         <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
                         {job.file_name || "Export"}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={job.status === 'completed' ? 'default' : 'destructive'}
+                        className={job.status === 'completed' ? 'bg-green-500' : ''}
+                      >
+                        {job.status === 'completed' ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                        {job.status}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <code className="text-xs bg-muted px-2 py-1 rounded">
@@ -653,7 +665,23 @@ export const LeadExportFilesSection = () => {
                       {format(new Date(job.created_at), "MMM d, yyyy HH:mm")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {(job.url || job.csv_path) ? (
+                      {job.status === 'failed' ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            toast({
+                              title: "Retrying Export",
+                              description: "Attempting to retrieve export results...",
+                            });
+                            await retrieveCompletedExport(job.log_id);
+                            await fetchExportJobs();
+                          }}
+                        >
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                          Retry
+                        </Button>
+                      ) : (job.url || job.csv_path) ? (
                         <div className="flex items-center justify-end gap-2">
                           <Button
                             variant="outline"
