@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Download, FileSpreadsheet, Loader2, Eye, CheckCircle, XCircle, ExternalLink } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, Eye, CheckCircle, XCircle, ExternalLink, RotateCcw, Filter } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -75,6 +75,11 @@ export const LeadExportFilesSection = () => {
   const isOperatingRef = useRef(false);
   const { toast } = useToast();
   const { campaigns, getDefaultCampaign } = useCampaigns();
+  
+  // Recently reviewed leads state
+  const [reviewedLeads, setReviewedLeads] = useState<any[]>([]);
+  const [isLoadingReviewed, setIsLoadingReviewed] = useState(true);
+  const [reviewedFilter, setReviewedFilter] = useState<'all' | 'accepted' | 'rejected'>('all');
 
   const fetchExportJobs = async () => {
     try {
@@ -103,12 +108,38 @@ export const LeadExportFilesSection = () => {
     }
   };
 
+  const fetchReviewedLeads = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+      const { data, error } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("user_id", user.id)
+        .in("status", ["accepted", "rejected"])
+        .gte("reviewed_at", twentyFourHoursAgo)
+        .order("reviewed_at", { ascending: false });
+
+      if (error) throw error;
+      setReviewedLeads(data || []);
+    } catch (error) {
+      console.error("Error fetching reviewed leads:", error);
+    } finally {
+      setIsLoadingReviewed(false);
+    }
+  };
+
   useEffect(() => {
     fetchExportJobs();
+    fetchReviewedLeads();
 
     // Poll every 60 seconds
     const interval = setInterval(() => {
       fetchExportJobs();
+      fetchReviewedLeads();
     }, 60000);
 
     return () => clearInterval(interval);
@@ -439,6 +470,8 @@ export const LeadExportFilesSection = () => {
         country_name: lead.country_name,
         status: 'accepted',
         campaign_id: campaignId,
+        reviewed_at: new Date().toISOString(),
+        accepted_at: new Date().toISOString(),
       }));
 
       const { error } = await supabase
@@ -497,14 +530,57 @@ export const LeadExportFilesSection = () => {
     }
   };
 
+  const handleUndoReview = async (leadId: string, newStatus: string) => {
+    if (isOperatingRef.current || isProcessing) return;
+    
+    isOperatingRef.current = true;
+    setIsProcessing(true);
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ 
+          status: newStatus,
+          reviewed_at: null 
+        })
+        .eq('id', leadId);
+
+      if (error) throw error;
+
+      // Refresh the reviewed leads list
+      await fetchReviewedLeads();
+      
+      toast({
+        title: "Success",
+        description: `Lead status changed to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Error updating lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update lead status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+      isOperatingRef.current = false;
+    }
+  };
+
+  const filteredReviewedLeads = reviewedLeads.filter(lead => {
+    if (reviewedFilter === 'all') return true;
+    return lead.status === reviewedFilter;
+  });
+
   return (
-    <Card className="border-0 shadow-sm">
-      <CardHeader>
-        <CardTitle>Completed Lead Exports</CardTitle>
-        <CardDescription>
-          Recent completed exports from lead searches
-        </CardDescription>
-      </CardHeader>
+    <div className="space-y-6">
+      {/* Completed Lead Exports Section */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <CardTitle>Completed Lead Exports</CardTitle>
+          <CardDescription>
+            Recent completed exports from lead searches
+          </CardDescription>
+        </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -588,6 +664,146 @@ export const LeadExportFilesSection = () => {
           </div>
         )}
       </CardContent>
+      </Card>
+
+      {/* Recently Reviewed Leads Section */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Recently Reviewed Leads</CardTitle>
+              <CardDescription>
+                Leads reviewed in the last 24 hours • Can be modified before auto-deletion
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Button
+                variant={reviewedFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setReviewedFilter('all')}
+              >
+                All ({reviewedLeads.length})
+              </Button>
+              <Button
+                variant={reviewedFilter === 'accepted' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setReviewedFilter('accepted')}
+              >
+                Accepted ({reviewedLeads.filter(l => l.status === 'accepted').length})
+              </Button>
+              <Button
+                variant={reviewedFilter === 'rejected' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setReviewedFilter('rejected')}
+              >
+                Rejected ({reviewedLeads.filter(l => l.status === 'rejected').length})
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoadingReviewed ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredReviewedLeads.length === 0 ? (
+            <div className="text-center py-8">
+              <Eye className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">
+                No reviewed leads in the last 24 hours
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Job Title</TableHead>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Reviewed At</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredReviewedLeads.map((lead) => {
+                    const companyDomain = extractDomain(lead.company_website);
+                    const companyHref = ensureHref(lead.company_website);
+
+                    return (
+                      <TableRow key={lead.id}>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium">
+                              {lead.name || [lead.first_name, lead.last_name].filter(Boolean).join(' ') || '—'}
+                            </div>
+                            {lead.email_address && (
+                              <Badge variant="secondary" className="font-mono text-xs">
+                                {lead.email_address}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {lead.job_title || '—'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium">
+                              {lead.company_name || '—'}
+                            </div>
+                            {companyHref && companyDomain && (
+                              <div className="flex items-center space-x-1">
+                                <a 
+                                  href={companyHref}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
+                                >
+                                  <span>{companyDomain}</span>
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={lead.status === 'accepted' ? 'default' : 'secondary'}
+                            className={lead.status === 'accepted' ? 'bg-green-500' : 'bg-red-500'}
+                          >
+                            {lead.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {lead.reviewed_at ? format(new Date(lead.reviewed_at), "MMM d, HH:mm") : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUndoReview(
+                              lead.id, 
+                              lead.status === 'accepted' ? 'rejected' : 'accepted'
+                            )}
+                            disabled={isProcessing}
+                            className="flex items-center gap-2"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            Change to {lead.status === 'accepted' ? 'Rejected' : 'Accepted'}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
         <DialogContent className="max-w-7xl max-h-[85vh] overflow-hidden flex flex-col">
@@ -731,6 +947,6 @@ export const LeadExportFilesSection = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 };
