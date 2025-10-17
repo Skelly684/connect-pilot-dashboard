@@ -1,186 +1,166 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2'
-
-const SEARCHLEADS_API_BASE = "https://apis.searchleads.co/api";
-const SEARCHLEADS_API_KEY = "5823d0aa-0a51-4fbd-9bed-2050e5c08453";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
+
+const SEARCHLEADS_API_BASE = "https://apis.searchleads.co/api";
+const SEARCHLEADS_API_KEY = "5823d0aa-0a51-4fbd-9bed-2050e5c08453";
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Create Supabase client
-    const supabaseClient = createClient(
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    )
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser()
+    const authHeader = req.headers.get('Authorization')!;
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
 
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Parse request body
-    const { logId } = await req.json()
+    const { logId } = await req.json();
+    console.log(`📥 Retrieving export for log_id: ${logId}`);
 
-    if (!logId) {
-      return new Response(JSON.stringify({ error: 'logId is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    console.log('Retrieving SearchLeads export:', logId)
-
-    // Try different endpoint patterns to find the correct one
-    const endpointsToTry = [
-      `/export/${logId}`,
-      `/exports/${logId}`,
-      `/log/${logId}`,
-      `/logs/${logId}`,
-      `/export/${logId}/result`,
-      `/export/${logId}/status`,
+    const endpoints = [
+      `${SEARCHLEADS_API_BASE}/export/${logId}`,
+      `${SEARCHLEADS_API_BASE}/exports/${logId}`,
+      `${SEARCHLEADS_API_BASE}/export/status/${logId}`,
     ];
 
-    let exportData = null;
-    let successfulEndpoint = null;
+    let exportData: any = null;
 
-    for (const endpoint of endpointsToTry) {
+    for (const endpoint of endpoints) {
       try {
-        console.log(`Trying endpoint: ${SEARCHLEADS_API_BASE}${endpoint}`);
-        
-        const response = await fetch(`${SEARCHLEADS_API_BASE}${endpoint}`, {
-          method: "GET",
-          headers: {
-            "authorization": `Bearer ${SEARCHLEADS_API_KEY}`,
-            "content-type": "application/json",
-          },
+        console.log(`🔍 Trying endpoint: ${endpoint}`);
+        const response = await fetch(endpoint, {
+          headers: { "authorization": `Bearer ${SEARCHLEADS_API_KEY}` },
         });
 
         if (response.ok) {
           exportData = await response.json();
-          successfulEndpoint = endpoint;
-          console.log(`Success with endpoint: ${endpoint}`, exportData);
+          console.log(`✅ Success with endpoint: ${endpoint}`);
           break;
-        } else {
-          const errorText = await response.text();
-          console.log(`Failed with ${endpoint}: ${response.status} - ${errorText}`);
         }
-      } catch (error) {
-        console.log(`Error trying ${endpoint}:`, error);
+      } catch (err) {
+        console.log(`❌ Error with endpoint: ${endpoint}`, err);
       }
     }
 
     if (!exportData) {
       return new Response(
-        JSON.stringify({
-          error: 'Could not retrieve export from SearchLeads API. All endpoint patterns failed.',
-          tried: endpointsToTry,
-          suggestion: 'Please check SearchLeads dashboard or contact SearchLeads support for API documentation.'
-        }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+        JSON.stringify({ success: false, error: 'Failed to retrieve export' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Extract relevant data from response
-    let csvUrl = exportData.log?.url || exportData.log?.data || exportData.url || exportData.data || exportData.file_csv || exportData.csv_url || null;
-    const summary = exportData.summary || exportData.log?.summary || null;
-    const status = exportData.log?.status || exportData.status || "unknown";
-    const leadsEnriched = exportData.log?.leadsEnriched || null;
-    const creditsUsed = exportData.log?.creditsUsed || null;
+    const log = exportData.log || exportData;
+    const status = log.status || exportData.status || 'unknown';
+    let csvUrl = log.url || exportData.url || exportData.csvUrl;
+    const summary = log.summary || exportData.summary;
 
-    // Convert Google Sheets URL to CSV export URL
     if (csvUrl && csvUrl.includes('docs.google.com/spreadsheets')) {
-      // Extract the spreadsheet ID
-      const match = csvUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      if (match && match[1]) {
-        const spreadsheetId = match[1];
+      const spreadsheetId = csvUrl.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1];
+      if (spreadsheetId) {
         csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv`;
-        console.log('Converted Google Sheets URL to CSV export:', csvUrl);
       }
     }
 
-    console.log('Extracted data:', { csvUrl, status, leadsEnriched, creditsUsed, successfulEndpoint });
-
-    // Update or insert in database
-    const { data: existing } = await supabaseClient
-      .from("searchleads_jobs")
-      .select("*")
-      .eq("log_id", logId)
-      .eq("user_id", user.id)
+    const { data: existingJob } = await supabase
+      .from('searchleads_jobs')
+      .select('*')
+      .eq('log_id', logId)
+      .eq('user_id', user.id)
       .maybeSingle();
 
-    const dbUpdate = {
+    let csvPath: string | null = null;
+    let hasResults = false;
+
+    if (csvUrl && status === 'completed') {
+      try {
+        console.log('📥 Downloading CSV from:', csvUrl);
+        const csvResponse = await fetch(csvUrl);
+        
+        if (csvResponse.ok) {
+          const csvBlob = await csvResponse.blob();
+          const fileName = existingJob?.file_name || `export_${logId}.csv`;
+          csvPath = `${user.id}/${fileName}`;
+
+          console.log('💾 Uploading to storage:', csvPath);
+
+          const { error: uploadError } = await supabase.storage
+            .from('exports')
+            .upload(csvPath, csvBlob, {
+              contentType: 'text/csv',
+              upsert: true
+            });
+
+          if (uploadError) throw uploadError;
+          
+          console.log('✅ CSV uploaded successfully');
+          hasResults = true;
+        }
+      } catch (err) {
+        console.error('❌ Error downloading/uploading CSV:', err);
+      }
+    }
+
+    const jobData = {
+      log_id: logId,
+      user_id: user.id,
+      file_name: existingJob?.file_name || `export_${logId}.csv`,
       status: status,
+      csv_path: csvPath,
+      summary: summary,
       url: csvUrl,
-      summary: summary || (leadsEnriched ? `${leadsEnriched} leads enriched, ${creditsUsed} credits used` : null),
+      updated_at: new Date().toISOString(),
     };
 
-    if (existing) {
-      await supabaseClient
-        .from("searchleads_jobs")
-        .update(dbUpdate)
-        .eq("log_id", logId)
-        .eq("user_id", user.id);
+    if (existingJob) {
+      await supabase
+        .from('searchleads_jobs')
+        .update(jobData)
+        .eq('log_id', logId)
+        .eq('user_id', user.id);
     } else {
-      await supabaseClient
-        .from("searchleads_jobs")
-        .insert({
-          log_id: logId,
-          file_name: exportData.fileName || "Retrieved Export",
-          user_id: user.id,
-          ...dbUpdate,
-        });
+      await supabase
+        .from('searchleads_jobs')
+        .insert(jobData);
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        log_id: logId,
-        endpoint: successfulEndpoint,
-        status: status,
+        status,
+        has_results: hasResults,
         csv_url: csvUrl,
-        has_results: !!csvUrl,
-        data: exportData
+        csv_path: csvPath,
+        summary,
       }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (error) {
-    console.error('Error retrieving export:', error)
+    console.error('❌ Function error:', error);
     return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : 'Failed to retrieve export',
+      JSON.stringify({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Internal server error' 
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
-})
+});
