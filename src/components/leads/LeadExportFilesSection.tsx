@@ -163,11 +163,19 @@ export const LeadExportFilesSection = () => {
     const headers = parseCSVLine(lines[0]);
     const leads: any[] = [];
 
-    console.log('CSV Headers:', headers);
-    console.log('Expected columns:', headers.length);
+    console.log('CSV Headers with indices:', headers.map((h, i) => `${i}: ${h}`));
+    console.log('Total header count:', headers.length);
 
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i]);
+      
+      // Log the first few problem rows in detail
+      if (i === 8 || i === 11) {
+        console.log(`\n=== DEBUG ROW ${i} ===`);
+        console.log('Raw line:', lines[i].substring(0, 200));
+        console.log('Parsed values count:', values.length);
+        console.log('First 10 values:', values.slice(0, 10));
+      }
       
       // Skip if row doesn't have enough values
       if (values.length < headers.length - 2) {
@@ -178,31 +186,50 @@ export const LeadExportFilesSection = () => {
       const rawLead: any = {};
 
       headers.forEach((header, index) => {
-        rawLead[header] = values[index] || '';
+        const value = values[index] || '';
+        rawLead[header] = value;
       });
 
-      console.log(`Row ${i} parsed:`, {
-        name: rawLead.Name,
-        email: rawLead.email,
-        title: rawLead.title,
-        org: rawLead.organization_name,
-        valueCount: values.length
-      });
+      // Debug specific problematic rows
+      if (i === 8 || i === 11) {
+        console.log('Raw lead object keys:', Object.keys(rawLead).slice(0, 10));
+        console.log('Name field value:', rawLead.Name, 'Type:', typeof rawLead.Name);
+        console.log('email field value:', rawLead.email, 'Type:', typeof rawLead.email);
+        console.log('Full rawLead:', rawLead);
+      }
+
+      // Extract values as strings, ensuring no objects
+      const getName = () => {
+        const nameVal = rawLead.Name || rawLead.name || '';
+        return typeof nameVal === 'string' ? nameVal : String(nameVal || '');
+      };
+
+      const getEmail = () => {
+        const emailVal = rawLead.email || rawLead.Email || '';
+        return typeof emailVal === 'string' ? emailVal : String(emailVal || '');
+      };
 
       // Map CSV columns to Lead interface with normalized field names
       const lead = {
         tempId: i,
-        name: rawLead.Name || rawLead.name || '',
-        email: rawLead.email || rawLead.Email || '',
-        company_website: rawLead.organization_primary_domain || rawLead.organization_website || '',
-        linkedin_url: rawLead.Linkdeln_url || rawLead.linkedin_url || rawLead.LinkedIn_url || '',
-        job_title: rawLead.title || rawLead.Title || rawLead.job_title || '',
-        company_name: rawLead.organization_name || rawLead.company_name || rawLead.Company || '',
-        country_name: rawLead.country || rawLead.Country || '',
-        state_name: rawLead.state || rawLead.State || '',
-        phone: rawLead.phone_number || rawLead.Phone || rawLead.phone || '',
-        industry: rawLead.Industry || rawLead.industry || '',
+        name: getName(),
+        email: getEmail(),
+        company_website: String(rawLead.organization_primary_domain || rawLead.organization_website || ''),
+        linkedin_url: String(rawLead.Linkdeln_url || rawLead.linkedin_url || rawLead.LinkedIn_url || ''),
+        job_title: String(rawLead.title || rawLead.Title || rawLead.job_title || ''),
+        company_name: String(rawLead.organization_name || rawLead.company_name || rawLead.Company || ''),
+        country_name: String(rawLead.country || rawLead.Country || ''),
+        state_name: String(rawLead.state || rawLead.State || ''),
+        phone: String(rawLead.phone_number || rawLead.Phone || rawLead.phone || ''),
+        industry: String(rawLead.Industry || rawLead.industry || ''),
       };
+
+      console.log(`Row ${i} final lead:`, {
+        name: lead.name,
+        email: lead.email,
+        title: lead.job_title,
+        org: lead.company_name
+      });
 
       // Only add if we have at least name or email
       if (lead.name || lead.email) {
