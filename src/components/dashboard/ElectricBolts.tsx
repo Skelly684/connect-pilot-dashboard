@@ -33,62 +33,62 @@ export const ElectricBolts = () => {
       {/* Screen flash effect */}
       <div className="absolute inset-0 bg-white animate-lightning-flash"></div>
       
-      {/* Thick Electric bolts - Vertical */}
-      <div className="absolute top-0 left-1/6 w-3 h-full bg-gradient-to-b from-purple-300 via-purple-500 to-purple-300 opacity-0 animate-bolt-1">
-        <div className="absolute inset-0 bg-purple-400 blur-2xl"></div>
-        <div className="absolute inset-0 bg-white blur-sm"></div>
-      </div>
-      
-      <div className="absolute top-0 left-1/4 w-4 h-full bg-gradient-to-b from-blue-200 via-blue-400 to-blue-200 opacity-0 animate-bolt-2" style={{ animationDelay: '0.15s' }}>
-        <div className="absolute inset-0 bg-blue-300 blur-2xl"></div>
-        <div className="absolute inset-0 bg-white blur-sm"></div>
-      </div>
-      
-      <div className="absolute top-0 right-1/3 w-3 h-full bg-gradient-to-b from-violet-200 via-violet-500 to-violet-200 opacity-0 animate-bolt-3" style={{ animationDelay: '0.3s' }}>
-        <div className="absolute inset-0 bg-violet-400 blur-2xl"></div>
-        <div className="absolute inset-0 bg-white blur-sm"></div>
-      </div>
-      
-      <div className="absolute top-0 left-2/3 w-4 h-full bg-gradient-to-b from-purple-200 via-purple-600 to-purple-200 opacity-0 animate-bolt-4" style={{ animationDelay: '0.45s' }}>
-        <div className="absolute inset-0 bg-purple-500 blur-2xl"></div>
-        <div className="absolute inset-0 bg-white blur-sm"></div>
-      </div>
-      
-      <div className="absolute top-0 right-1/4 w-3 h-full bg-gradient-to-b from-blue-300 via-blue-500 to-blue-300 opacity-0 animate-bolt-1" style={{ animationDelay: '0.6s' }}>
-        <div className="absolute inset-0 bg-blue-400 blur-2xl"></div>
-        <div className="absolute inset-0 bg-white blur-sm"></div>
-      </div>
-      
-      <div className="absolute top-0 left-1/2 w-5 h-full bg-gradient-to-b from-white via-purple-400 to-white opacity-0 animate-bolt-2" style={{ animationDelay: '0.75s' }}>
-        <div className="absolute inset-0 bg-purple-300 blur-3xl"></div>
-        <div className="absolute inset-0 bg-white blur-md"></div>
-      </div>
-      
-      {/* Thick Diagonal bolts */}
-      <div className="absolute top-0 left-0 w-full h-full">
-        <div className="absolute top-1/4 -left-1/4 w-[150%] h-2 bg-gradient-to-r from-transparent via-purple-400 to-transparent opacity-0 animate-bolt-diagonal-1 rotate-45 origin-center">
-          <div className="absolute inset-0 bg-purple-300 blur-2xl"></div>
-          <div className="absolute inset-0 bg-white blur-lg"></div>
+      {/* Main lightning bolt - diagonal from top left to bottom right */}
+      <div className="absolute top-0 left-[10%] w-full h-full opacity-0 animate-main-lightning">
+        {/* Core bolt */}
+        <div className="absolute top-0 left-0 w-2 h-[150%] bg-white origin-top rotate-[35deg] shadow-[0_0_40px_10px_rgba(147,51,234,0.8),0_0_80px_20px_rgba(147,51,234,0.5)]">
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-purple-200 to-white blur-sm"></div>
         </div>
-      </div>
-      
-      <div className="absolute top-0 left-0 w-full h-full">
-        <div className="absolute top-2/3 -right-1/4 w-[150%] h-2 bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-0 animate-bolt-diagonal-2 -rotate-45 origin-center" style={{ animationDelay: '0.4s' }}>
-          <div className="absolute inset-0 bg-blue-300 blur-2xl"></div>
-          <div className="absolute inset-0 bg-white blur-lg"></div>
+        
+        {/* Branch 1 - upper left */}
+        <div className="absolute top-[15%] left-[5%] w-1.5 h-[35%] bg-white origin-top rotate-[15deg] opacity-0 animate-branch-1">
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-blue-200 to-transparent blur-sm shadow-[0_0_30px_8px_rgba(147,51,234,0.7)]"></div>
         </div>
-      </div>
-      
-      <div className="absolute top-0 left-0 w-full h-full">
-        <div className="absolute top-1/2 -left-1/4 w-[150%] h-2 bg-gradient-to-r from-transparent via-violet-500 to-transparent opacity-0 animate-bolt-diagonal-1 -rotate-45 origin-center" style={{ animationDelay: '0.8s' }}>
-          <div className="absolute inset-0 bg-violet-400 blur-2xl"></div>
-          <div className="absolute inset-0 bg-white blur-lg"></div>
+        
+        {/* Branch 2 - upper middle */}
+        <div className="absolute top-[20%] left-[8%] w-1 h-[25%] bg-white origin-top rotate-[55deg] opacity-0 animate-branch-2">
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-purple-300 to-transparent blur-sm shadow-[0_0_25px_6px_rgba(147,51,234,0.6)]"></div>
+        </div>
+        
+        {/* Branch 3 - middle left long */}
+        <div className="absolute top-[35%] left-[15%] w-1.5 h-[45%] bg-white origin-top rotate-[25deg] opacity-0 animate-branch-3">
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-violet-200 to-transparent blur-sm shadow-[0_0_35px_9px_rgba(147,51,234,0.75)]"></div>
+        </div>
+        
+        {/* Branch 4 - middle right */}
+        <div className="absolute top-[40%] left-[20%] w-1 h-[30%] bg-white origin-top rotate-[50deg] opacity-0 animate-branch-4">
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-blue-300 to-transparent blur-sm shadow-[0_0_28px_7px_rgba(147,51,234,0.65)]"></div>
+        </div>
+        
+        {/* Branch 5 - lower left large */}
+        <div className="absolute top-[55%] left-[28%] w-2 h-[40%] bg-white origin-top rotate-[20deg] opacity-0 animate-branch-5">
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-purple-200 to-transparent blur-sm shadow-[0_0_40px_10px_rgba(147,51,234,0.8)]"></div>
+        </div>
+        
+        {/* Branch 6 - lower middle */}
+        <div className="absolute top-[60%] left-[32%] w-1 h-[28%] bg-white origin-top rotate-[60deg] opacity-0 animate-branch-6">
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-violet-300 to-transparent blur-sm shadow-[0_0_30px_8px_rgba(147,51,234,0.7)]"></div>
+        </div>
+        
+        {/* Branch 7 - lower right */}
+        <div className="absolute top-[70%] left-[38%] w-1.5 h-[35%] bg-white origin-top rotate-[40deg] opacity-0 animate-branch-7">
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-blue-200 to-transparent blur-sm shadow-[0_0_32px_8px_rgba(147,51,234,0.72)]"></div>
+        </div>
+        
+        {/* Branch 8 - far right */}
+        <div className="absolute top-[48%] left-[25%] w-1 h-[30%] bg-white origin-top rotate-[65deg] opacity-0 animate-branch-8">
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-purple-300 to-transparent blur-sm shadow-[0_0_26px_6px_rgba(147,51,234,0.6)]"></div>
+        </div>
+        
+        {/* Branch 9 - upper right small */}
+        <div className="absolute top-[25%] left-[12%] w-0.5 h-[20%] bg-white origin-top rotate-[70deg] opacity-0 animate-branch-9">
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-blue-300 to-transparent blur-sm shadow-[0_0_20px_5px_rgba(147,51,234,0.55)]"></div>
         </div>
       </div>
       
       {/* Intense pulsing glow effect */}
       <div className="absolute inset-0 bg-purple-400/20 animate-pulse-intense"></div>
-      <div className="absolute inset-0 bg-gradient-radial from-purple-500/30 via-transparent to-transparent animate-pulse-intense"></div>
+      <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-gradient-radial from-purple-500/40 via-transparent to-transparent animate-pulse-intense"></div>
     </div>
   );
 };
