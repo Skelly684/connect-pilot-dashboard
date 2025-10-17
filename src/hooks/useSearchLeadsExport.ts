@@ -129,7 +129,7 @@ export const useSearchLeadsExport = () => {
 
   // Poll a specific export until complete
   const pollExportStatus = useCallback(async (logId: string) => {
-    const maxAttempts = 60; // 5 minutes with 5-second intervals
+    const maxAttempts = 30; // 60 minutes with 2-minute intervals
     let attempts = 0;
 
     const poll = async () => {
@@ -142,31 +142,38 @@ export const useSearchLeadsExport = () => {
       const status = await checkExportStatus(logId);
 
       if (status === "completed") {
-        // Retrieve results
+        // Automatically retrieve and save the CSV file
         try {
-          const jsonResult = await retrieveExportResult(logId, "json");
-          const csvResult = await retrieveExportResult(logId, "csv");
+          console.log(`✅ Export ${logId} completed! Automatically retrieving CSV...`);
+          
+          // Call edge function to retrieve and save the export
+          const { data, error } = await supabase.functions.invoke('retrieve-searchleads-export', {
+            body: { logId }
+          });
 
-          // Update database with results
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase
-              .from("searchleads_jobs")
-              .update({
-                status: "completed",
-                result_data: jsonResult,
-                csv_url: csvResult.url || null,
-              })
-              .eq("log_id", logId)
-              .eq("user_id", user.id);
+          if (error) {
+            console.error("Edge function error:", error);
+            throw new Error(error.message || "Failed to retrieve export");
           }
 
-          toast({
-            title: "Export Complete",
-            description: `Export ${logId} is ready to download!`,
-          });
+          if (data?.success && data?.csv_url) {
+            toast({
+              title: "Export Retrieved! ✅",
+              description: `CSV file is ready. Check "Lead Export Files" tab to review leads.`,
+              duration: 7000,
+            });
+          } else {
+            console.warn(`Export ${logId} completed but CSV not yet available:`, data);
+            // Continue polling in case CSV becomes available later
+            setTimeout(poll, 120000); // Check again in 2 minutes
+          }
         } catch (error) {
-          console.error("Failed to retrieve results:", error);
+          console.error("Failed to retrieve completed export:", error);
+          toast({
+            title: "Retrieval Failed",
+            description: `Export completed but failed to download CSV. Log ID: ${logId}`,
+            variant: "destructive",
+          });
         }
       } else if (status === "failed") {
         // Update database with failed status
@@ -185,8 +192,9 @@ export const useSearchLeadsExport = () => {
           variant: "destructive",
         });
       } else {
-        // Still pending, check again
-        setTimeout(poll, 5000); // Check every 5 seconds
+        // Still pending, check again in 2 minutes
+        console.log(`Export ${logId} still pending (attempt ${attempts}/${maxAttempts})`);
+        setTimeout(poll, 120000); // Check every 2 minutes
       }
     };
 
@@ -318,7 +326,7 @@ export const useSearchLeadsExport = () => {
     fetchAndPollPendingExports();
     
     // Set up periodic check for new pending exports
-    const interval = setInterval(fetchAndPollPendingExports, 30000); // Every 30 seconds
+    const interval = setInterval(fetchAndPollPendingExports, 120000); // Every 2 minutes
     
     return () => clearInterval(interval);
   }, [fetchAndPollPendingExports]);

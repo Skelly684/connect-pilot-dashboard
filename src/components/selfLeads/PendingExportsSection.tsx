@@ -55,10 +55,10 @@ export const PendingExportsSection = () => {
   useEffect(() => {
     fetchPendingJobs();
 
-    // Poll every 60 seconds
+    // Poll every 2 minutes to match the export polling interval
     const interval = setInterval(() => {
       fetchPendingJobs();
-    }, 60000);
+    }, 120000);
 
     return () => clearInterval(interval);
   }, []);
