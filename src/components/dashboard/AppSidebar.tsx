@@ -51,19 +51,19 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
       <SidebarContent className="bg-gradient-sidebar backdrop-blur-xl border-sidebar-border/50 shadow-lg">
         <div className="p-6 border-b border-sidebar-border/50">
           <div className="flex justify-center">
-            <div className="relative">
+            <div className="relative w-20 h-20">
               <img 
                 src={isSpecialUser ? "/assets/leadm8-logo.png" : "/lovable-uploads/7c5cb75c-bf84-4a68-9e78-2fd787db361e.png"}
                 alt={isSpecialUser ? "LeadM8 Logo" : "PSN Logo"}
-                className="w-16 h-16 rounded-2xl shadow-primary transition-transform duration-300 hover:scale-105"
+                className="w-full h-full rounded-2xl shadow-primary transition-transform duration-300 hover:scale-105 object-cover"
               />
               <div className="absolute -inset-0.5 bg-gradient-primary rounded-2xl opacity-20 blur"></div>
             </div>
           </div>
           {!isCollapsed && (
             <div className="text-center mt-4 animate-fade-in">
-              <h2 className={`text-lg font-semibold ${isSpecialUser ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 bg-clip-text text-transparent animate-pulse' : 'text-sidebar-foreground'}`}>
-                {isSpecialUser ? 'Nexus' : 'PSN Dashboard'}
+              <h2 className={`text-lg font-semibold ${isSpecialUser ? 'font-russo italic bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 bg-clip-text text-transparent animate-pulse tracking-wider transform -skew-x-6 text-xl' : 'text-sidebar-foreground'}`}>
+                {isSpecialUser ? 'NEXUS' : 'PSN Dashboard'}
               </h2>
               <p className="text-sm text-sidebar-foreground/70">Lead Management System</p>
             </div>
