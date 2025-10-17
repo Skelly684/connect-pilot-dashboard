@@ -29,6 +29,44 @@ const SORT_FIELDS = ["recommendations_score", "person_name", "organization_name"
 const KEYWORD_FIELDS = ["name", "description", "domain"];
 const EXPORT_FIELDS = ["id", "email", "person_name", "title", "company_name", "linkedin_url", "phone"];
 
+// Auto-track Test_1 export on mount
+const autoTrackTest1 = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const logId = "d103a4d5-4e40-4ba8-8563-ef3583183639";
+    
+    // Check if already tracked
+    const { data: existing } = await supabase
+      .from("searchleads_jobs")
+      .select("*")
+      .eq("log_id", logId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!existing) {
+      // Add to database
+      await supabase.from("searchleads_jobs").insert({
+        log_id: logId,
+        file_name: "Test_1",
+        status: "pending",
+        user_id: user.id,
+      });
+
+      // Trigger retrieval via edge function
+      await supabase.functions.invoke('retrieve-searchleads-export', {
+        body: { logId }
+      });
+    }
+  } catch (error) {
+    console.error("Failed to auto-track Test_1:", error);
+  }
+};
+
+// Run on module load
+autoTrackTest1();
+
 const DEPARTMENTS = [
   "C-Suite", "Product", "Engineering & Technical", "Design", "Education",
   "Finance", "Human Resources", "Information Technology", "Legal", "Marketing",
@@ -47,10 +85,11 @@ const INDUSTRIES = [
 
 export default function AdvancedLeadFilters() {
   const { toast } = useToast();
-  const { createExport } = useSearchLeadsExport();
+  const { createExport, pollExistingExport } = useSearchLeadsExport();
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [lastExportLogId, setLastExportLogId] = useState<string | null>(null);
+  const [trackLogId, setTrackLogId] = useState("");
   const [expandedSections, setExpandedSections] = useState({
     person: true,
     company: false,
@@ -62,6 +101,27 @@ export default function AdvancedLeadFilters() {
 
   const [noOfLeads, setNoOfLeads] = useState(100);
   const [fileName, setFileName] = useState("lead_export");
+
+  const handleTrackExistingExport = async () => {
+    if (!trackLogId.trim()) {
+      toast({
+        title: "Missing Log ID",
+        description: "Please enter a log ID to track",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await pollExistingExport(trackLogId.trim());
+      setTrackLogId("");
+    } catch (error) {
+      console.error("Failed to track export:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleTestCEOUK = async () => {
     try {
@@ -653,6 +713,35 @@ export default function AdvancedLeadFilters() {
           </CardContent>
         </Card>
       )}
+
+      {/* Track Existing Export */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Track Existing Export
+          </CardTitle>
+          <CardDescription>
+            Enter a log_id from SearchLeads to track and retrieve an export that was created outside this system
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Enter log_id (e.g., d103a4d5-4e40-4ba8-8563-ef3583183639)"
+              value={trackLogId}
+              onChange={(e) => setTrackLogId(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleTrackExistingExport}
+              disabled={isLoading || !trackLogId.trim()}
+            >
+              Track & Retrieve
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Results Display */}
       {results && (

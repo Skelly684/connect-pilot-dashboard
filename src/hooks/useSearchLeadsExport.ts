@@ -11,9 +11,10 @@ interface ExportJob {
   status: "pending" | "completed" | "failed";
   created_at: string;
   user_id: string;
-  no_of_leads?: number;
-  result_data?: any;
-  csv_url?: string;
+  url?: string;
+  csv_path?: string;
+  summary?: any;
+  error?: string;
 }
 
 export const useSearchLeadsExport = () => {
@@ -60,7 +61,6 @@ export const useSearchLeadsExport = () => {
           file_name: fileName,
           status: "pending",
           user_id: user.id,
-          no_of_leads: noOfLeads,
         });
 
       if (dbError) {
