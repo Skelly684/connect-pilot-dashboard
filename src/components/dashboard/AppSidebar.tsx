@@ -51,7 +51,7 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
       <SidebarContent className="bg-gradient-sidebar backdrop-blur-xl border-sidebar-border/50 shadow-lg">
         <div className="p-6 border-b border-sidebar-border/50">
           <div className="flex justify-center">
-            <div className="relative w-20 h-20">
+            <div className="relative w-24 h-24">
               <img 
                 src={isSpecialUser ? "/assets/leadm8-logo.png" : "/lovable-uploads/7c5cb75c-bf84-4a68-9e78-2fd787db361e.png"}
                 alt={isSpecialUser ? "LeadM8 Logo" : "PSN Logo"}
