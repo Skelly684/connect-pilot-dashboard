@@ -135,7 +135,7 @@ export const LeadExportFilesSection = () => {
         inQuotes = !inQuotes;
       } else if (char === ',' && !inQuotes) {
         // End of field
-        result.push(current.trim());
+        result.push(current);
         current = '';
       } else {
         current += char;
@@ -143,8 +143,17 @@ export const LeadExportFilesSection = () => {
     }
     
     // Add the last field
-    result.push(current.trim());
-    return result;
+    result.push(current);
+    
+    // Clean and normalize all fields
+    return result.map(field => {
+      // Remove quotes if they wrap the entire field
+      let cleaned = field.trim();
+      if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+        cleaned = cleaned.slice(1, -1);
+      }
+      return cleaned.trim();
+    });
   };
 
   const parseCSV = (csvText: string) => {
@@ -154,37 +163,56 @@ export const LeadExportFilesSection = () => {
     const headers = parseCSVLine(lines[0]);
     const leads: any[] = [];
 
-    console.log('CSV Headers:', headers); // Debug
+    console.log('CSV Headers:', headers);
+    console.log('Expected columns:', headers.length);
 
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i]);
+      
+      // Skip if row doesn't have enough values
+      if (values.length < headers.length - 2) {
+        console.warn(`Row ${i} has ${values.length} values but expected ~${headers.length}, skipping`);
+        continue;
+      }
+
       const rawLead: any = {};
 
       headers.forEach((header, index) => {
         rawLead[header] = values[index] || '';
       });
 
-      console.log('Parsed lead:', rawLead); // Debug
+      console.log(`Row ${i} parsed:`, {
+        name: rawLead.Name,
+        email: rawLead.email,
+        title: rawLead.title,
+        org: rawLead.organization_name,
+        valueCount: values.length
+      });
 
-      // Map CSV columns to Lead interface
+      // Map CSV columns to Lead interface with normalized field names
       const lead = {
         tempId: i,
         name: rawLead.Name || rawLead.name || '',
         email: rawLead.email || rawLead.Email || '',
-        company_website: rawLead.organization_primary_domain || '',
-        linkedin_url: rawLead.Linkdeln_url || rawLead.linkedin_url || '',
-        job_title: rawLead.title || rawLead.Title || '',
-        company_name: rawLead.organization_name || '',
+        company_website: rawLead.organization_primary_domain || rawLead.organization_website || '',
+        linkedin_url: rawLead.Linkdeln_url || rawLead.linkedin_url || rawLead.LinkedIn_url || '',
+        job_title: rawLead.title || rawLead.Title || rawLead.job_title || '',
+        company_name: rawLead.organization_name || rawLead.company_name || rawLead.Company || '',
         country_name: rawLead.country || rawLead.Country || '',
         state_name: rawLead.state || rawLead.State || '',
-        phone: rawLead.phone_number || rawLead.Phone || '',
+        phone: rawLead.phone_number || rawLead.Phone || rawLead.phone || '',
         industry: rawLead.Industry || rawLead.industry || '',
       };
 
-      leads.push(lead);
+      // Only add if we have at least name or email
+      if (lead.name || lead.email) {
+        leads.push(lead);
+      } else {
+        console.warn(`Row ${i} skipped - no name or email`);
+      }
     }
 
-    console.log('Total leads parsed:', leads.length); // Debug
+    console.log('Total leads parsed:', leads.length);
     return leads;
   };
 
