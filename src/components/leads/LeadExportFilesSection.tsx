@@ -620,11 +620,32 @@ export const LeadExportFilesSection = () => {
                       </code>
                     </TableCell>
                     <TableCell>
-                      {typeof job.summary === 'string' 
-                        ? job.summary
-                        : job.summary?.leads?.length 
-                          ? `${job.summary.leads.length} leads` 
-                          : "—"}
+                      {job.summary && typeof job.summary === 'object' ? (
+                        <div className="max-w-xs">
+                          <div className="text-sm space-y-1">
+                            {Object.entries(job.summary as Record<string, any>).map(([key, value]) => {
+                              if (Array.isArray(value) && value.length > 0) {
+                                return (
+                                  <div key={key} className="flex gap-2">
+                                    <span className="text-muted-foreground">{key.replace(/_/g, ' ')}:</span>
+                                    <span className="font-medium truncate">{value.join(', ')}</span>
+                                  </div>
+                                );
+                              } else if (typeof value === 'string' && value) {
+                                return (
+                                  <div key={key} className="flex gap-2">
+                                    <span className="text-muted-foreground">{key.replace(/_/g, ' ')}:</span>
+                                    <span className="font-medium truncate">{value}</span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
                     <TableCell>
                       {format(new Date(job.created_at), "MMM d, yyyy HH:mm")}
