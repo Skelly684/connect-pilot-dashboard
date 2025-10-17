@@ -117,42 +117,74 @@ export const LeadExportFilesSection = () => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+      
+      if (char === '"' && inQuotes && nextChar === '"') {
+        // Escaped quote
+        current += '"';
+        i++; // Skip next quote
+      } else if (char === '"') {
+        // Toggle quote mode
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        // End of field
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    // Add the last field
+    result.push(current.trim());
+    return result;
+  };
+
   const parseCSV = (csvText: string) => {
-    const lines = csvText.split('\n');
+    const lines = csvText.split('\n').filter(line => line.trim());
     if (lines.length < 2) return [];
 
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const headers = parseCSVLine(lines[0]);
     const leads: any[] = [];
 
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+    console.log('CSV Headers:', headers); // Debug
 
-      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseCSVLine(lines[i]);
       const rawLead: any = {};
 
       headers.forEach((header, index) => {
         rawLead[header] = values[index] || '';
       });
 
+      console.log('Parsed lead:', rawLead); // Debug
+
       // Map CSV columns to Lead interface
       const lead = {
-        tempId: i, // Temporary ID for selection
-        name: rawLead.Name || '',
-        email: rawLead.email || '',
+        tempId: i,
+        name: rawLead.Name || rawLead.name || '',
+        email: rawLead.email || rawLead.Email || '',
         company_website: rawLead.organization_primary_domain || '',
-        linkedin_url: rawLead.Linkdeln_url || '',
-        job_title: rawLead.title || '',
+        linkedin_url: rawLead.Linkdeln_url || rawLead.linkedin_url || '',
+        job_title: rawLead.title || rawLead.Title || '',
         company_name: rawLead.organization_name || '',
-        country_name: rawLead.country || '',
-        state_name: rawLead.state || '',
-        phone: rawLead.phone_number || '',
-        industry: rawLead.Industry || '',
+        country_name: rawLead.country || rawLead.Country || '',
+        state_name: rawLead.state || rawLead.State || '',
+        phone: rawLead.phone_number || rawLead.Phone || '',
+        industry: rawLead.Industry || rawLead.industry || '',
       };
 
       leads.push(lead);
     }
 
+    console.log('Total leads parsed:', leads.length); // Debug
     return leads;
   };
 
@@ -435,10 +467,9 @@ export const LeadExportFilesSection = () => {
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  <TableHead>Name</TableHead>
+                  <TableHead>Contact</TableHead>
                   <TableHead>Job Title</TableHead>
                   <TableHead>Company</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>LinkedIn</TableHead>
@@ -458,8 +489,17 @@ export const LeadExportFilesSection = () => {
                           onCheckedChange={(checked) => handleSelectLead(lead.tempId, checked as boolean)}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">
-                        {lead.name || '—'}
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">
+                            {lead.name || '—'}
+                          </div>
+                          {lead.email && (
+                            <Badge variant="secondary" className="font-mono text-xs">
+                              {lead.email}
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {lead.job_title || '—'}
@@ -483,13 +523,6 @@ export const LeadExportFilesSection = () => {
                             </div>
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        {lead.email ? (
-                          <Badge variant="secondary" className="font-mono text-xs">
-                            {lead.email}
-                          </Badge>
-                        ) : '—'}
                       </TableCell>
                       <TableCell>
                         {lead.phone || '—'}
