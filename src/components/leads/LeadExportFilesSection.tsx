@@ -358,7 +358,11 @@ export const LeadExportFilesSection = () => {
 
       const updatedCSV = updatedCSVLines.join('\n');
 
-      // Upload updated CSV back to storage
+      // Get the original filename from the job
+      const originalFileName = currentJob.file_name || 'export.csv';
+      const fileName = originalFileName.endsWith('.csv') ? originalFileName : `${originalFileName}.csv`;
+
+      // Upload updated CSV back to storage with original filename
       if (currentJob.csv_path) {
         const filePath = currentJob.csv_path.replace('https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/', '');
         
@@ -366,10 +370,13 @@ export const LeadExportFilesSection = () => {
           .from('exports')
           .update(filePath, new Blob([updatedCSV], { type: 'text/csv' }), {
             cacheControl: '0',
-            upsert: true
+            upsert: true,
+            contentType: 'text/csv'
           });
 
         if (error) throw error;
+
+        console.log(`✅ Updated CSV file: ${fileName} with ${remainingLeads.length} remaining leads`);
       }
     } catch (error) {
       console.error('Error updating CSV:', error);
