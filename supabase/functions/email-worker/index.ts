@@ -24,6 +24,10 @@ serve(async (req) => {
     // Step 0: Clean up any stuck emails first
     console.log('🧹 Running cleanup on stuck emails...');
     await supabase.rpc('cleanup_stuck_emails');
+    
+    // Step 0.5: Clean up old rejected leads (older than 24 hours)
+    console.log('🧹 Running cleanup on old rejected leads...');
+    await supabase.rpc('cleanup_old_rejected_leads');
 
     // Step 1: Claim emails from the queue using atomic locking
     const { data: claimedEmails, error: claimError } = await supabase.rpc('claim_next_email', {

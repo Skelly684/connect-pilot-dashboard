@@ -1004,6 +1004,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      cleanup_old_rejected_leads: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_stuck_emails: {
         Args: Record<PropertyKey, never>
         Returns: undefined
