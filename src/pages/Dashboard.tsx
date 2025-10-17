@@ -6,7 +6,7 @@ import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import AdvancedLeadFilters from "./AdvancedLeadFilters";
 import { AllLeadsSection } from "@/components/leads/AllLeadsSection";
-import { ReviewNewLeadsSection } from "@/components/leads/ReviewNewLeadsSection";
+import { LeadExportFilesSection } from "@/components/leads/LeadExportFilesSection";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { CRMIntegration } from "@/components/integrations/CRMIntegration";
 import { OutreachCenter } from "@/components/outreach/OutreachCenter";
@@ -117,16 +117,7 @@ const Dashboard = () => {
           />
         );
       case "review-leads":
-        return (
-          <ReviewNewLeadsSection 
-            leads={leads}
-            isLoading={isLoadingLeads}
-            onAcceptLeads={handleAcceptLeads}
-            onRejectLeads={handleRejectLeads}
-            onSendAcceptedLeads={handleSendAcceptedLeads}
-            onRefresh={fetchLeads}
-          />
-        );
+        return <LeadExportFilesSection />;
       case "outreach":
         return <OutreachCenter />;
       case "self-leads":
