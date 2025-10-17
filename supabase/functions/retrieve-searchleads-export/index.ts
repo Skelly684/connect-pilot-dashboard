@@ -105,11 +105,22 @@ Deno.serve(async (req) => {
     }
 
     // Extract relevant data from response
-    const csvUrl = exportData.log?.url || exportData.log?.data || exportData.url || exportData.data || exportData.file_csv || exportData.csv_url || null;
+    let csvUrl = exportData.log?.url || exportData.log?.data || exportData.url || exportData.data || exportData.file_csv || exportData.csv_url || null;
     const summary = exportData.summary || exportData.log?.summary || null;
     const status = exportData.log?.status || exportData.status || "unknown";
     const leadsEnriched = exportData.log?.leadsEnriched || null;
     const creditsUsed = exportData.log?.creditsUsed || null;
+
+    // Convert Google Sheets URL to CSV export URL
+    if (csvUrl && csvUrl.includes('docs.google.com/spreadsheets')) {
+      // Extract the spreadsheet ID
+      const match = csvUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (match && match[1]) {
+        const spreadsheetId = match[1];
+        csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv`;
+        console.log('Converted Google Sheets URL to CSV export:', csvUrl);
+      }
+    }
 
     console.log('Extracted data:', { csvUrl, status, leadsEnriched, creditsUsed, successfulEndpoint });
 

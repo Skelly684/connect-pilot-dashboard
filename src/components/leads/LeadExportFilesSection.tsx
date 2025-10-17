@@ -139,9 +139,7 @@ export const LeadExportFilesSection = () => {
                           )}
                         >
                           <Download className="h-4 w-4 mr-2" />
-                          {job.url?.includes('google.com') 
-                            ? 'Open Google Sheets' 
-                            : 'Download CSV'}
+                          Download CSV
                         </Button>
                       ) : (
                         <span className="text-sm text-muted-foreground">Processing...</span>
