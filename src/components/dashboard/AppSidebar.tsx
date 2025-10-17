@@ -55,9 +55,10 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
               <img 
                 src={isSpecialUser ? "/assets/leadm8-logo.png" : "/lovable-uploads/7c5cb75c-bf84-4a68-9e78-2fd787db361e.png"}
                 alt={isSpecialUser ? "LeadM8 Logo" : "PSN Logo"}
-                className="w-full h-full rounded-2xl shadow-primary transition-transform duration-300 hover:scale-105 object-cover"
+                className="w-full h-full rounded-2xl shadow-primary transition-transform duration-300 hover:scale-105"
+                style={isSpecialUser ? { objectFit: 'cover', objectPosition: 'center' } : {}}
               />
-              <div className="absolute -inset-0.5 bg-gradient-primary rounded-2xl opacity-20 blur"></div>
+              {!isSpecialUser && <div className="absolute -inset-0.5 bg-gradient-primary rounded-2xl opacity-20 blur"></div>}
             </div>
           </div>
           {!isCollapsed && (

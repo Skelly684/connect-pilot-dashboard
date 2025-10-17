@@ -60,13 +60,14 @@ export const DashboardHeader = () => {
   return (
     <header className="h-16 bg-gradient-card backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6 sticky top-0 z-50 shadow-md">
       <div className="flex items-center space-x-4">
-        <div className="relative">
+        <div className="relative w-12 h-12">
           <img 
             src={isSpecialUser ? "/assets/leadm8-logo.png" : "/assets/psn-logo.png"}
             alt={isSpecialUser ? "LeadM8 Logo" : "PSN Logo"}
-            className={`${isSpecialUser ? 'w-12 h-12' : 'w-9 h-9'} rounded-xl shadow-sm transition-transform duration-300 hover:scale-110 object-cover`}
+            className={`w-full h-full ${isSpecialUser ? 'rounded-2xl' : 'rounded-xl'} shadow-sm transition-transform duration-300 hover:scale-110`}
+            style={isSpecialUser ? { objectFit: 'cover', objectPosition: 'center' } : {}}
           />
-          <div className="absolute -inset-0.5 bg-gradient-primary rounded-xl opacity-20 blur-sm"></div>
+          {!isSpecialUser && <div className="absolute -inset-0.5 bg-gradient-primary rounded-xl opacity-20 blur-sm"></div>}
         </div>
         <div className="hidden md:block">
           <h1 className={`text-lg font-semibold ${isSpecialUser ? 'font-russo italic bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 bg-clip-text text-transparent animate-pulse tracking-wider transform -skew-x-6 text-xl' : 'text-foreground'}`}>
