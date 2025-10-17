@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Download, FileSpreadsheet, Loader2, Eye } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, Eye, CheckCircle, XCircle, ExternalLink } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -21,6 +23,7 @@ import {
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { useCampaigns } from "@/hooks/useCampaigns";
 
 interface ExportJob {
   log_id: string;
@@ -32,13 +35,44 @@ interface ExportJob {
   status: string;
 }
 
+const safeStr = (v?: string | null): string => {
+  return (v ?? "").toString().trim();
+};
+
+const extractDomain = (url?: string | null): string => {
+  const raw = safeStr(url);
+  if (!raw) return "";
+  try {
+    const u = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
+    return u.hostname.replace(/^www\./, "");
+  } catch {
+    return raw.replace(/^https?:\/\//, "").replace(/^www\./, "");
+  }
+};
+
+const ensureHref = (url?: string | null): string | null => {
+  const raw = safeStr(url);
+  if (!raw) return null;
+  try {
+    const hasProto = /^https?:\/\//i.test(raw);
+    return hasProto ? raw : `https://${raw}`;
+  } catch {
+    return null;
+  }
+};
+
 export const LeadExportFilesSection = () => {
   const [exportJobs, setExportJobs] = useState<ExportJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [reviewLeads, setReviewLeads] = useState<any[]>([]);
   const [isLoadingCSV, setIsLoadingCSV] = useState(false);
+  const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set());
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const isOperatingRef = useRef(false);
   const { toast } = useToast();
+  const { campaigns, getDefaultCampaign } = useCampaigns();
 
   const fetchExportJobs = async () => {
     try {
@@ -95,11 +129,26 @@ export const LeadExportFilesSection = () => {
       if (!line) continue;
 
       const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-      const lead: any = {};
+      const rawLead: any = {};
 
       headers.forEach((header, index) => {
-        lead[header] = values[index] || '';
+        rawLead[header] = values[index] || '';
       });
+
+      // Map CSV columns to Lead interface
+      const lead = {
+        tempId: i, // Temporary ID for selection
+        name: rawLead.Name || '',
+        email: rawLead.email || '',
+        company_website: rawLead.organization_primary_domain || '',
+        linkedin_url: rawLead.Linkdeln_url || '',
+        job_title: rawLead.title || '',
+        company_name: rawLead.organization_name || '',
+        country_name: rawLead.country || '',
+        state_name: rawLead.state || '',
+        phone: rawLead.phone_number || '',
+        industry: rawLead.Industry || '',
+      };
 
       leads.push(lead);
     }
@@ -109,6 +158,7 @@ export const LeadExportFilesSection = () => {
 
   const handleReview = async (url: string) => {
     setIsLoadingCSV(true);
+    setSelectedLeads(new Set());
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch CSV');
@@ -127,6 +177,110 @@ export const LeadExportFilesSection = () => {
       });
     } finally {
       setIsLoadingCSV(false);
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set(reviewLeads.map(lead => lead.tempId));
+      setSelectedLeads(allIds);
+    } else {
+      setSelectedLeads(new Set());
+    }
+  };
+
+  const handleSelectLead = (leadId: number, checked: boolean) => {
+    const newSelected = new Set(selectedLeads);
+    if (checked) {
+      newSelected.add(leadId);
+    } else {
+      newSelected.delete(leadId);
+    }
+    setSelectedLeads(newSelected);
+  };
+
+  const handleAcceptSelected = async () => {
+    if (isOperatingRef.current || isProcessing) return;
+    if (selectedLeads.size === 0) return;
+    
+    const campaignId = selectedCampaignId || getDefaultCampaign()?.id;
+    if (!campaignId) {
+      toast({
+        title: "No Campaign Selected",
+        description: "Please select a campaign before accepting leads",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    isOperatingRef.current = true;
+    setIsProcessing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const selectedLeadsData = reviewLeads.filter(lead => selectedLeads.has(lead.tempId));
+      
+      const leadsToInsert = selectedLeadsData.map(lead => ({
+        user_id: user.id,
+        name: lead.name,
+        email: lead.email,
+        email_address: lead.email,
+        company_name: lead.company_name,
+        company_website: lead.company_website,
+        linkedin_url: lead.linkedin_url,
+        job_title: lead.job_title,
+        phone: lead.phone,
+        state_name: lead.state_name,
+        country_name: lead.country_name,
+        status: 'accepted',
+        campaign_id: campaignId,
+      }));
+
+      const { error } = await supabase
+        .from('leads')
+        .insert(leadsToInsert);
+
+      if (error) throw error;
+
+      setSelectedLeads(new Set());
+      toast({
+        title: "Success",
+        description: `${selectedLeadsData.length} leads accepted for outreach`,
+      });
+      
+      // Remove accepted leads from review list
+      setReviewLeads(prev => prev.filter(lead => !selectedLeads.has(lead.tempId)));
+    } catch (error) {
+      console.error('Error accepting leads:', error);
+      toast({
+        title: "Error",
+        description: "Failed to accept leads",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+      isOperatingRef.current = false;
+    }
+  };
+
+  const handleRejectSelected = async () => {
+    if (isOperatingRef.current || isProcessing) return;
+    if (selectedLeads.size === 0) return;
+    
+    isOperatingRef.current = true;
+    setIsProcessing(true);
+    try {
+      // Simply remove from the review list
+      setReviewLeads(prev => prev.filter(lead => !selectedLeads.has(lead.tempId)));
+      setSelectedLeads(new Set());
+      toast({
+        title: "Success",
+        description: "Selected leads rejected",
+      });
+    } finally {
+      setIsProcessing(false);
+      isOperatingRef.current = false;
     }
   };
 
@@ -223,57 +377,141 @@ export const LeadExportFilesSection = () => {
       </CardContent>
 
       <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Review Leads from CSV</DialogTitle>
-            <DialogDescription>
-              Preview of {reviewLeads.length} leads from the export
-            </DialogDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>Review Leads from CSV</DialogTitle>
+                <DialogDescription>
+                  {reviewLeads.length} leads • {selectedLeads.size} selected
+                </DialogDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Select campaign" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {campaigns.map((campaign) => (
+                      <SelectItem key={campaign.id} value={campaign.id}>
+                        {campaign.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </DialogHeader>
+
+          <div className="flex items-center gap-2 py-2 border-b">
+            <Button
+              onClick={handleAcceptSelected}
+              disabled={selectedLeads.size === 0 || isProcessing}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <CheckCircle className="h-4 w-4" />
+              Accept Selected ({selectedLeads.size})
+            </Button>
+            <Button
+              onClick={handleRejectSelected}
+              disabled={selectedLeads.size === 0 || isProcessing}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <XCircle className="h-4 w-4" />
+              Reject Selected
+            </Button>
+          </div>
           
-          <div className="rounded-md border">
+          <div className="flex-1 overflow-y-auto rounded-md border">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedLeads.size === reviewLeads.length && reviewLeads.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Job Title</TableHead>
                   <TableHead>Company</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Location</TableHead>
+                  <TableHead>LinkedIn</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {reviewLeads.map((lead, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">
-                      {lead.firstName || lead.first_name || lead.fullName || lead.name || '—'}
-                      {' '}
-                      {lead.lastName || lead.last_name || ''}
-                    </TableCell>
-                    <TableCell>
-                      {lead.jobTitle || lead.job_title || lead.title || lead.headline || '—'}
-                    </TableCell>
-                    <TableCell>
-                      {lead.company || lead.companyName || lead.company_name || lead.orgName || '—'}
-                    </TableCell>
-                    <TableCell>
-                      {lead.email || lead.emailAddress || lead.email_address ? (
-                        <Badge variant="secondary" className="font-mono text-xs">
-                          {lead.email || lead.emailAddress || lead.email_address}
-                        </Badge>
-                      ) : '—'}
-                    </TableCell>
-                    <TableCell>
-                      {lead.phone || lead.phone_number || '—'}
-                    </TableCell>
-                    <TableCell>
-                      {lead.location || lead.cityName || lead.city_name || lead.orgCity || '—'}
-                      {(lead.stateName || lead.state_name || lead.orgState) && 
-                        `, ${lead.stateName || lead.state_name || lead.orgState}`}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {reviewLeads.map((lead) => {
+                  const companyDomain = extractDomain(lead.company_website);
+                  const companyHref = ensureHref(lead.company_website);
+                  const linkedinHref = ensureHref(lead.linkedin_url);
+
+                  return (
+                    <TableRow key={lead.tempId}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedLeads.has(lead.tempId)}
+                          onCheckedChange={(checked) => handleSelectLead(lead.tempId, checked as boolean)}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {lead.name || '—'}
+                      </TableCell>
+                      <TableCell>
+                        {lead.job_title || '—'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">
+                            {lead.company_name || '—'}
+                          </div>
+                          {companyHref && companyDomain && (
+                            <div className="flex items-center space-x-1">
+                              <a 
+                                href={companyHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
+                              >
+                                <span>{companyDomain}</span>
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {lead.email ? (
+                          <Badge variant="secondary" className="font-mono text-xs">
+                            {lead.email}
+                          </Badge>
+                        ) : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {lead.phone || '—'}
+                      </TableCell>
+                      <TableCell>
+                        {[lead.state_name, lead.country_name].filter(Boolean).join(', ') || '—'}
+                      </TableCell>
+                      <TableCell>
+                        {linkedinHref ? (
+                          <a
+                            href={linkedinHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        ) : '—'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
