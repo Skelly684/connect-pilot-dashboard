@@ -170,6 +170,7 @@ export const useSearchLeadsExport = () => {
           // Still processing - keep polling
           console.log(`⏳ Export ${logId} still ${status}`);
           setTimeout(poll, 120000);
+        } else if (status === "failed") {
           // Update database with failed status
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
