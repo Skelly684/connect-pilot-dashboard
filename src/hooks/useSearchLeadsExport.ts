@@ -139,62 +139,60 @@ export const useSearchLeadsExport = () => {
       }
 
       attempts++;
-      const status = await checkExportStatus(logId);
+      console.log(`📡 Polling export ${logId}, attempt ${attempts}/${maxAttempts}`);
+      
+      // Directly call edge function to retrieve (it checks status internally)
+      try {
+        const { data, error } = await supabase.functions.invoke('retrieve-searchleads-export', {
+          body: { logId }
+        });
 
-      if (status === "completed") {
-        // Automatically retrieve and save the CSV file
-        try {
-          console.log(`✅ Export ${logId} completed! Automatically retrieving CSV...`);
-          
-          // Call edge function to retrieve and save the export
-          const { data, error } = await supabase.functions.invoke('retrieve-searchleads-export', {
-            body: { logId }
-          });
+        if (error) throw error;
 
-          if (error) {
-            console.error("Edge function error:", error);
-            throw new Error(error.message || "Failed to retrieve export");
-          }
+        console.log(`📥 Retrieval response for ${logId}:`, data);
 
-          if (data?.success && data?.csv_url) {
-            toast({
-              title: "Export Retrieved! ✅",
-              description: `CSV file is ready. Check "Lead Export Files" tab to review leads.`,
-              duration: 7000,
-            });
-          } else {
-            console.warn(`Export ${logId} completed but CSV not yet available:`, data);
-            // Continue polling in case CSV becomes available later
-            setTimeout(poll, 120000); // Check again in 2 minutes
-          }
-        } catch (error) {
-          console.error("Failed to retrieve completed export:", error);
+        const status = data?.status || 'unknown';
+
+        if (data?.success && data?.has_results && data?.csv_url) {
+          // Successfully retrieved and saved
           toast({
-            title: "Retrieval Failed",
-            description: `Export completed but failed to download CSV. Log ID: ${logId}`,
+            title: "Export Retrieved! ✅",
+            description: `CSV file "${data.csv_path}" is ready. Check "Lead Export Files" tab.`,
+            duration: 7000,
+          });
+          return; // Stop polling
+        } else if (status === "completed") {
+          // Completed but no CSV yet - keep polling
+          console.log(`⏳ Export ${logId} completed but CSV not ready yet`);
+          setTimeout(poll, 120000);
+        } else if (status === "pending" || status === "processing") {
+          // Still processing - keep polling
+          console.log(`⏳ Export ${logId} still ${status}`);
+          setTimeout(poll, 120000);
+          // Update database with failed status
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase
+              .from("searchleads_jobs")
+              .update({ status: "failed", error: data?.error })
+              .eq("log_id", logId)
+              .eq("user_id", user.id);
+          }
+
+          toast({
+            title: "Export Failed",
+            description: `Export ${logId} failed: ${data?.error || 'Unknown error'}`,
             variant: "destructive",
           });
+        } else {
+          // Unknown status - keep polling
+          console.log(`⏳ Export ${logId} has unknown status: ${status}`);
+          setTimeout(poll, 120000);
         }
-      } else if (status === "failed") {
-        // Update database with failed status
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase
-            .from("searchleads_jobs")
-            .update({ status: "failed" })
-            .eq("log_id", logId)
-            .eq("user_id", user.id);
-        }
-
-        toast({
-          title: "Export Failed",
-          description: `Export ${logId} failed to complete.`,
-          variant: "destructive",
-        });
-      } else {
-        // Still pending, check again in 2 minutes
-        console.log(`Export ${logId} still pending (attempt ${attempts}/${maxAttempts})`);
-        setTimeout(poll, 120000); // Check every 2 minutes
+      } catch (error) {
+        console.error(`❌ Error polling ${logId}:`, error);
+        // Don't stop polling on errors, retry
+        setTimeout(poll, 120000);
       }
     };
 

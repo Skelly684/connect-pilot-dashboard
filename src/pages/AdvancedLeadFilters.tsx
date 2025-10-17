@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
@@ -29,43 +29,6 @@ const SORT_FIELDS = ["recommendations_score", "person_name", "organization_name"
 const KEYWORD_FIELDS = ["name", "description", "domain"];
 const EXPORT_FIELDS = ["id", "email", "person_name", "title", "company_name", "linkedin_url", "phone"];
 
-// Auto-track Test_1 export on mount
-const autoTrackTest1 = async () => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const logId = "d103a4d5-4e40-4ba8-8563-ef3583183639";
-    
-    // Check if already tracked
-    const { data: existing } = await supabase
-      .from("searchleads_jobs")
-      .select("*")
-      .eq("log_id", logId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!existing) {
-      // Add to database
-      await supabase.from("searchleads_jobs").insert({
-        log_id: logId,
-        file_name: "Test_1",
-        status: "pending",
-        user_id: user.id,
-      });
-
-      // Trigger retrieval via edge function
-      await supabase.functions.invoke('retrieve-searchleads-export', {
-        body: { logId }
-      });
-    }
-  } catch (error) {
-    console.error("Failed to auto-track Test_1:", error);
-  }
-};
-
-// Run on module load
-autoTrackTest1();
 
 const DEPARTMENTS = [
   "C-Suite", "Product", "Engineering & Technical", "Design", "Education",
@@ -101,6 +64,44 @@ export default function AdvancedLeadFilters() {
 
   const [noOfLeads, setNoOfLeads] = useState(100);
   const [fileName, setFileName] = useState("lead_export");
+
+  // Auto-track Test_1 on mount
+  useEffect(() => {
+    const trackTest1 = async () => {
+      const logId = "d103a4d5-4e40-4ba8-8563-ef3583183639";
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: job } = await supabase
+        .from("searchleads_jobs")
+        .select("*")
+        .eq("log_id", logId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (job && job.status === "failed") {
+        // Reset failed status and retry
+        await supabase
+          .from("searchleads_jobs")
+          .update({ status: "pending" })
+          .eq("log_id", logId)
+          .eq("user_id", user.id);
+        
+        await pollExistingExport(logId);
+      } else if (!job) {
+        // Create and track
+        await supabase.from("searchleads_jobs").insert({
+          log_id: logId,
+          file_name: "Test_1",
+          status: "pending",
+          user_id: user.id,
+        });
+        await pollExistingExport(logId);
+      }
+    };
+    
+    trackTest1();
+  }, [pollExistingExport]);
 
   const handleTrackExistingExport = async () => {
     if (!trackLogId.trim()) {
