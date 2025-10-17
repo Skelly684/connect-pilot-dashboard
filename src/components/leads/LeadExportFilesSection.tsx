@@ -70,6 +70,8 @@ export const LeadExportFilesSection = () => {
   const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set());
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentJob, setCurrentJob] = useState<ExportJob | null>(null);
+  const [originalCSVText, setOriginalCSVText] = useState<string>("");
   const isOperatingRef = useRef(false);
   const { toast } = useToast();
   const { campaigns, getDefaultCampaign } = useCampaigns();
@@ -278,7 +280,7 @@ export const LeadExportFilesSection = () => {
     return leads;
   };
 
-  const handleReview = async (url: string) => {
+  const handleReview = async (url: string, job: ExportJob) => {
     setIsLoadingCSV(true);
     setSelectedLeads(new Set());
     try {
@@ -289,6 +291,8 @@ export const LeadExportFilesSection = () => {
       const parsedLeads = parseCSV(csvText);
       
       setReviewLeads(parsedLeads);
+      setOriginalCSVText(csvText);
+      setCurrentJob(job);
       setReviewDialogOpen(true);
     } catch (error) {
       console.error('Error loading CSV:', error);
@@ -299,6 +303,77 @@ export const LeadExportFilesSection = () => {
       });
     } finally {
       setIsLoadingCSV(false);
+    }
+  };
+
+  const updateCSVFile = async (remainingLeads: any[]) => {
+    if (!currentJob) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // If no leads remain, delete the file and job
+      if (remainingLeads.length === 0) {
+        // Delete from storage if csv_path exists
+        if (currentJob.csv_path) {
+          const filePath = currentJob.csv_path.replace('https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/', '');
+          await supabase.storage
+            .from('exports')
+            .remove([filePath]);
+        }
+
+        // Delete job from database
+        await supabase
+          .from('searchleads_jobs')
+          .delete()
+          .eq('log_id', currentJob.log_id);
+
+        toast({
+          title: "CSV Completed",
+          description: "All leads processed. File has been removed.",
+        });
+
+        // Refresh the export jobs list
+        fetchExportJobs();
+        setReviewDialogOpen(false);
+        return;
+      }
+
+      // Otherwise, update the CSV with remaining leads
+      const lines = originalCSVText.split('\n');
+      const headers = lines[0];
+      
+      // Rebuild CSV with remaining leads
+      const updatedCSVLines = [headers];
+      const allLines = lines.slice(1);
+      
+      remainingLeads.forEach(lead => {
+        // Find the original line for this lead based on tempId
+        const lineIndex = lead.tempId - 1;
+        if (lineIndex >= 0 && lineIndex < allLines.length) {
+          updatedCSVLines.push(allLines[lineIndex]);
+        }
+      });
+
+      const updatedCSV = updatedCSVLines.join('\n');
+
+      // Upload updated CSV back to storage
+      if (currentJob.csv_path) {
+        const filePath = currentJob.csv_path.replace('https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/', '');
+        
+        const { error } = await supabase.storage
+          .from('exports')
+          .update(filePath, new Blob([updatedCSV], { type: 'text/csv' }), {
+            cacheControl: '0',
+            upsert: true
+          });
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error updating CSV:', error);
+      // Don't show error to user - this is a background operation
     }
   };
 
@@ -366,13 +441,17 @@ export const LeadExportFilesSection = () => {
       if (error) throw error;
 
       setSelectedLeads(new Set());
+      // Remove accepted leads from review list
+      const remainingLeads = reviewLeads.filter(lead => !selectedLeads.has(lead.tempId));
+      setReviewLeads(remainingLeads);
+      
+      // Update CSV file in storage
+      await updateCSVFile(remainingLeads);
+      
       toast({
         title: "Success",
         description: `${selectedLeadsData.length} leads accepted for outreach`,
       });
-      
-      // Remove accepted leads from review list
-      setReviewLeads(prev => prev.filter(lead => !selectedLeads.has(lead.tempId)));
     } catch (error) {
       console.error('Error accepting leads:', error);
       toast({
@@ -393,9 +472,14 @@ export const LeadExportFilesSection = () => {
     isOperatingRef.current = true;
     setIsProcessing(true);
     try {
-      // Simply remove from the review list
-      setReviewLeads(prev => prev.filter(lead => !selectedLeads.has(lead.tempId)));
+      // Remove from the review list
+      const remainingLeads = reviewLeads.filter(lead => !selectedLeads.has(lead.tempId));
+      setReviewLeads(remainingLeads);
       setSelectedLeads(new Set());
+      
+      // Update CSV file in storage
+      await updateCSVFile(remainingLeads);
+      
       toast({
         title: "Success",
         description: "Selected leads rejected",
@@ -468,7 +552,7 @@ export const LeadExportFilesSection = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleReview(job.url || job.csv_path!)}
+                            onClick={() => handleReview(job.url || job.csv_path!, job)}
                             disabled={isLoadingCSV}
                           >
                             <Eye className="h-4 w-4 mr-2" />
