@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, Eye } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -11,8 +11,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 interface ExportJob {
   log_id: string;
@@ -27,6 +35,9 @@ interface ExportJob {
 export const LeadExportFilesSection = () => {
   const [exportJobs, setExportJobs] = useState<ExportJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [reviewLeads, setReviewLeads] = useState<any[]>([]);
+  const [isLoadingCSV, setIsLoadingCSV] = useState(false);
   const { toast } = useToast();
 
   const fetchExportJobs = async () => {
@@ -70,6 +81,53 @@ export const LeadExportFilesSection = () => {
   const handleDownload = (url: string, fileName: string) => {
     // Open in new tab (works for both CSV and Google Sheets)
     window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const parseCSV = (csvText: string) => {
+    const lines = csvText.split('\n');
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const leads: any[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+      const lead: any = {};
+
+      headers.forEach((header, index) => {
+        lead[header] = values[index] || '';
+      });
+
+      leads.push(lead);
+    }
+
+    return leads;
+  };
+
+  const handleReview = async (url: string) => {
+    setIsLoadingCSV(true);
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch CSV');
+      
+      const csvText = await response.text();
+      const parsedLeads = parseCSV(csvText);
+      
+      setReviewLeads(parsedLeads);
+      setReviewDialogOpen(true);
+    } catch (error) {
+      console.error('Error loading CSV:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load CSV file for review",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingCSV(false);
+    }
   };
 
   return (
@@ -130,17 +188,28 @@ export const LeadExportFilesSection = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       {(job.url || job.csv_path) ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDownload(
-                            job.url || job.csv_path!, 
-                            job.file_name || "export"
-                          )}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download CSV
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReview(job.url || job.csv_path!)}
+                            disabled={isLoadingCSV}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Review
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownload(
+                              job.url || job.csv_path!, 
+                              job.file_name || "export"
+                            )}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download CSV
+                          </Button>
+                        </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">Processing...</span>
                       )}
@@ -152,6 +221,64 @@ export const LeadExportFilesSection = () => {
           </div>
         )}
       </CardContent>
+
+      <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Review Leads from CSV</DialogTitle>
+            <DialogDescription>
+              Preview of {reviewLeads.length} leads from the export
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Job Title</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Location</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reviewLeads.map((lead, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">
+                      {lead.firstName || lead.first_name || lead.fullName || lead.name || '—'}
+                      {' '}
+                      {lead.lastName || lead.last_name || ''}
+                    </TableCell>
+                    <TableCell>
+                      {lead.jobTitle || lead.job_title || lead.title || lead.headline || '—'}
+                    </TableCell>
+                    <TableCell>
+                      {lead.company || lead.companyName || lead.company_name || lead.orgName || '—'}
+                    </TableCell>
+                    <TableCell>
+                      {lead.email || lead.emailAddress || lead.email_address ? (
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {lead.email || lead.emailAddress || lead.email_address}
+                        </Badge>
+                      ) : '—'}
+                    </TableCell>
+                    <TableCell>
+                      {lead.phone || lead.phone_number || '—'}
+                    </TableCell>
+                    <TableCell>
+                      {lead.location || lead.cityName || lead.city_name || lead.orgCity || '—'}
+                      {(lead.stateName || lead.state_name || lead.orgState) && 
+                        `, ${lead.stateName || lead.state_name || lead.orgState}`}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
