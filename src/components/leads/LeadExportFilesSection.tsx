@@ -163,83 +163,118 @@ export const LeadExportFilesSection = () => {
     const headers = parseCSVLine(lines[0]);
     const leads: any[] = [];
 
-    console.log('CSV Headers with indices:', headers.map((h, i) => `${i}: ${h}`));
-    console.log('Total header count:', headers.length);
+    console.log('🔍 CSV Headers:', headers);
+    console.log('📊 Header count:', headers.length);
+
+    // Create a mapping of lowercase header names to actual header names for flexible matching
+    const headerMap = new Map<string, string>();
+    headers.forEach(h => {
+      headerMap.set(h.toLowerCase().trim(), h);
+    });
 
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i]);
       
-      // Log the first few problem rows in detail
-      if (i === 8 || i === 11) {
-        console.log(`\n=== DEBUG ROW ${i} ===`);
-        console.log('Raw line:', lines[i].substring(0, 200));
-        console.log('Parsed values count:', values.length);
-        console.log('First 10 values:', values.slice(0, 10));
-      }
-      
-      // Skip if row doesn't have enough values
-      if (values.length < headers.length - 2) {
-        console.warn(`Row ${i} has ${values.length} values but expected ~${headers.length}, skipping`);
+      // Skip if row doesn't have enough values - allow some flexibility
+      if (values.length < Math.max(1, headers.length - 5)) {
+        console.warn(`⚠️ Row ${i} has ${values.length} values but expected ~${headers.length}, skipping`);
         continue;
+      }
+
+      // Pad values array to match headers length
+      while (values.length < headers.length) {
+        values.push('');
       }
 
       const rawLead: any = {};
 
+      // Map values to headers
       headers.forEach((header, index) => {
-        const value = values[index] || '';
-        rawLead[header] = value;
+        rawLead[header] = values[index] || '';
       });
 
-      // Debug specific problematic rows
-      if (i === 8 || i === 11) {
-        console.log('Raw lead object keys:', Object.keys(rawLead).slice(0, 10));
-        console.log('Name field value:', rawLead.Name, 'Type:', typeof rawLead.Name);
-        console.log('email field value:', rawLead.email, 'Type:', typeof rawLead.email);
-        console.log('Full rawLead:', rawLead);
-      }
-
-      // Extract values as strings, ensuring no objects
-      const getName = () => {
-        const nameVal = rawLead.Name || rawLead.name || '';
-        return typeof nameVal === 'string' ? nameVal : String(nameVal || '');
+      // Helper to safely get string value
+      const safeGet = (...keys: string[]): string => {
+        for (const key of keys) {
+          const exactMatch = rawLead[key];
+          if (exactMatch && typeof exactMatch === 'string' && exactMatch.trim()) {
+            return exactMatch.trim();
+          }
+          
+          // Try case-insensitive match
+          const lowerKey = key.toLowerCase();
+          const actualHeader = headerMap.get(lowerKey);
+          if (actualHeader && rawLead[actualHeader]) {
+            const val = rawLead[actualHeader];
+            if (typeof val === 'string' && val.trim()) {
+              return val.trim();
+            }
+          }
+        }
+        return '';
       };
 
-      const getEmail = () => {
-        const emailVal = rawLead.email || rawLead.Email || '';
-        return typeof emailVal === 'string' ? emailVal : String(emailVal || '');
-      };
-
-      // Map CSV columns to Lead interface with normalized field names
+      // Map CSV columns to Lead interface with flexible matching
       const lead = {
         tempId: i,
-        name: getName(),
-        email: getEmail(),
-        company_website: String(rawLead.organization_primary_domain || rawLead.organization_website || ''),
-        linkedin_url: String(rawLead.Linkdeln_url || rawLead.linkedin_url || rawLead.LinkedIn_url || ''),
-        job_title: String(rawLead.title || rawLead.Title || rawLead.job_title || ''),
-        company_name: String(rawLead.organization_name || rawLead.company_name || rawLead.Company || ''),
-        country_name: String(rawLead.country || rawLead.Country || ''),
-        state_name: String(rawLead.state || rawLead.State || ''),
-        phone: String(rawLead.phone_number || rawLead.Phone || rawLead.phone || ''),
-        industry: String(rawLead.Industry || rawLead.industry || ''),
+        name: safeGet('Name', 'name', 'full_name', 'Full Name', 'contact_name'),
+        email: safeGet('email', 'Email', 'email_address', 'Email Address'),
+        company_website: safeGet(
+          'organization_primary_domain', 
+          'organization_website', 
+          'company_website',
+          'website',
+          'Website'
+        ),
+        linkedin_url: safeGet(
+          'Linkdeln_url', 
+          'linkedin_url', 
+          'LinkedIn_url',
+          'LinkedIn URL',
+          'linkedin'
+        ),
+        job_title: safeGet(
+          'title', 
+          'Title', 
+          'job_title', 
+          'Job Title',
+          'position',
+          'Position'
+        ),
+        company_name: safeGet(
+          'organization_name', 
+          'company_name', 
+          'Company',
+          'company',
+          'organization',
+          'Organization'
+        ),
+        country_name: safeGet('country', 'Country', 'country_name'),
+        state_name: safeGet('state', 'State', 'state_name'),
+        phone: safeGet('phone_number', 'Phone', 'phone', 'phone_1', 'mobile'),
+        industry: safeGet('Industry', 'industry', 'sector', 'Sector'),
       };
 
-      console.log(`Row ${i} final lead:`, {
-        name: lead.name,
-        email: lead.email,
-        title: lead.job_title,
-        org: lead.company_name
-      });
+      // Log first few leads and any that look problematic
+      if (i <= 5 || !lead.name || !lead.email) {
+        console.log(`📝 Row ${i}:`, {
+          name: lead.name,
+          email: lead.email,
+          title: lead.job_title,
+          company: lead.company_name,
+          valuesCount: values.length
+        });
+      }
 
       // Only add if we have at least name or email
       if (lead.name || lead.email) {
         leads.push(lead);
       } else {
-        console.warn(`Row ${i} skipped - no name or email`);
+        console.warn(`⛔ Row ${i} skipped - no name or email`);
       }
     }
 
-    console.log('Total leads parsed:', leads.length);
+    console.log('✅ Total leads parsed:', leads.length);
     return leads;
   };
 
