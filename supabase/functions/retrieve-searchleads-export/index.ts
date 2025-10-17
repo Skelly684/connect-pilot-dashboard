@@ -35,10 +35,11 @@ Deno.serve(async (req) => {
     const { logId } = await req.json();
     console.log(`📥 Retrieving export for log_id: ${logId}`);
 
+    // Try the main logs endpoint which should return export information
     const endpoints = [
+      `${SEARCHLEADS_API_BASE}/logs/${logId}`,
       `${SEARCHLEADS_API_BASE}/export/${logId}`,
       `${SEARCHLEADS_API_BASE}/exports/${logId}`,
-      `${SEARCHLEADS_API_BASE}/export/status/${logId}`,
     ];
 
     let exportData: any = null;

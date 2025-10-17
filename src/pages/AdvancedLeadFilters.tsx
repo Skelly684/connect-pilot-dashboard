@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, ChevronDown, ChevronUp, Search, Download } from "lucide-react";
+import { X, Plus, ChevronDown, ChevronUp, Search, Download, Upload, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
@@ -53,6 +53,9 @@ export default function AdvancedLeadFilters() {
   const [results, setResults] = useState<any>(null);
   const [lastExportLogId, setLastExportLogId] = useState<string | null>(null);
   const [trackLogId, setTrackLogId] = useState("");
+  const [importUrl, setImportUrl] = useState("");
+  const [importFileName, setImportFileName] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     person: true,
     company: false,
@@ -121,6 +124,87 @@ export default function AdvancedLeadFilters() {
       console.error("Failed to track export:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDirectImport = async () => {
+    if (!importUrl.trim() || !importFileName.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide both URL and file name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Convert Google Sheets URL to CSV export format if needed
+      let csvUrl = importUrl.trim();
+      if (csvUrl.includes('docs.google.com/spreadsheets')) {
+        const spreadsheetId = csvUrl.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1];
+        if (spreadsheetId) {
+          csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv`;
+        }
+      }
+
+      toast({
+        title: "Importing...",
+        description: "Downloading and saving your export",
+      });
+
+      // Download the CSV
+      const response = await fetch(csvUrl);
+      if (!response.ok) throw new Error("Failed to download CSV");
+      
+      const csvBlob = await response.blob();
+      const fileName = importFileName.endsWith('.csv') ? importFileName : `${importFileName}.csv`;
+      const filePath = `${user.id}/${fileName}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('exports')
+        .upload(filePath, csvBlob, {
+          contentType: 'text/csv',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('exports')
+        .getPublicUrl(filePath);
+
+      // Create job record
+      await supabase.from('searchleads_jobs').insert({
+        log_id: `manual_${Date.now()}`,
+        file_name: fileName,
+        status: 'completed',
+        user_id: user.id,
+        csv_path: publicUrl,
+        url: importUrl,
+      });
+
+      toast({
+        title: "Import Successful!",
+        description: `${fileName} is ready in "Lead Export Files"`,
+      });
+
+      setImportUrl("");
+      setImportFileName("");
+    } catch (error) {
+      console.error("Import error:", error);
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "Failed to import export",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -374,6 +458,56 @@ export default function AdvancedLeadFilters() {
           <CardContent>
             <Button onClick={handleTestCEOUK} className="w-full">
               Create CEO_UK Export
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Manual Import Card */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Import Completed Export
+            </CardTitle>
+            <CardDescription>
+              Paste the Google Sheets or CSV URL from SearchLeads to import your completed export directly
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="import-url">Google Sheets / CSV URL</Label>
+              <Input
+                id="import-url"
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="import-filename">File Name</Label>
+              <Input
+                id="import-filename"
+                placeholder="Test_1"
+                value={importFileName}
+                onChange={(e) => setImportFileName(e.target.value)}
+              />
+            </div>
+            <Button 
+              onClick={handleDirectImport} 
+              disabled={isImporting || !importUrl.trim() || !importFileName.trim()}
+              className="w-full"
+            >
+              {isImporting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Import Now
+                </>
+              )}
             </Button>
           </CardContent>
         </Card>
