@@ -64,10 +64,14 @@ export const DashboardHeader = () => {
           <img 
             src={isSpecialUser ? "/assets/leadm8-logo.png" : "/assets/psn-logo.png"}
             alt={isSpecialUser ? "LeadM8 Logo" : "PSN Logo"}
-            className={`w-full h-full ${isSpecialUser ? 'rounded-2xl' : 'rounded-xl'} shadow-sm transition-transform duration-300 hover:scale-110`}
+            className={`w-full h-full ${isSpecialUser ? '' : 'rounded-xl'} shadow-sm transition-transform duration-300 hover:scale-110`}
             style={isSpecialUser ? { objectFit: 'cover', objectPosition: 'center' } : {}}
           />
-          {!isSpecialUser && <div className="absolute -inset-0.5 bg-gradient-primary rounded-xl opacity-20 blur-sm"></div>}
+          {isSpecialUser ? (
+            <div className="absolute -inset-1 bg-purple-500/30 opacity-60 blur-lg"></div>
+          ) : (
+            <div className="absolute -inset-0.5 bg-gradient-primary rounded-xl opacity-20 blur-sm"></div>
+          )}
         </div>
         <div className="hidden md:block">
           <h1 className={`text-lg font-semibold ${isSpecialUser ? 'font-russo italic bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 bg-clip-text text-transparent animate-pulse tracking-wider transform -skew-x-6 text-xl' : 'text-foreground'}`}>
