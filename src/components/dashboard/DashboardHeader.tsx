@@ -61,15 +61,16 @@ export const DashboardHeader = () => {
     <header className="h-16 bg-gradient-card backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6 sticky top-0 z-50 shadow-md">
       <div className="flex items-center space-x-4">
         <div className="relative w-14 h-14">
+          {isSpecialUser && (
+            <div className="absolute -inset-1 bg-purple-500/30 opacity-60 blur-lg -z-10"></div>
+          )}
           <img 
             src={isSpecialUser ? "/assets/leadm8-logo.png" : "/assets/psn-logo.png"}
             alt={isSpecialUser ? "LeadM8 Logo" : "PSN Logo"}
-            className={`w-full h-full ${isSpecialUser ? '' : 'rounded-xl'} shadow-sm transition-transform duration-300 hover:scale-110`}
-            style={isSpecialUser ? { objectFit: 'cover', objectPosition: 'center' } : {}}
+            className={`w-full h-full ${isSpecialUser ? '' : 'rounded-xl shadow-sm'} transition-transform duration-300 hover:scale-110 relative z-10`}
+            style={isSpecialUser ? { objectFit: 'contain', objectPosition: 'center' } : {}}
           />
-          {isSpecialUser ? (
-            <div className="absolute -inset-1 bg-purple-500/30 opacity-60 blur-lg"></div>
-          ) : (
+          {!isSpecialUser && (
             <div className="absolute -inset-0.5 bg-gradient-primary rounded-xl opacity-20 blur-sm"></div>
           )}
         </div>
