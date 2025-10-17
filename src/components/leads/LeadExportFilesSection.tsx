@@ -19,7 +19,6 @@ interface ExportJob {
   file_name: string;
   csv_path?: string | null;
   url?: string | null;
-  csv_url?: string | null;
   summary?: any;
   created_at: string;
   status: string;
@@ -130,17 +129,17 @@ export const LeadExportFilesSection = () => {
                       {format(new Date(job.created_at), "MMM d, yyyy HH:mm")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {(job.url || job.csv_url || job.csv_path) ? (
+                      {(job.url || job.csv_path) ? (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDownload(
-                            job.url || job.csv_url || job.csv_path!, 
+                            job.url || job.csv_path!, 
                             job.file_name || "export"
                           )}
                         >
                           <Download className="h-4 w-4 mr-2" />
-                          {(job.url || job.csv_url)?.includes('google.com') 
+                          {job.url?.includes('google.com') 
                             ? 'Open Google Sheets' 
                             : 'Download CSV'}
                         </Button>

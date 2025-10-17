@@ -123,7 +123,6 @@ Deno.serve(async (req) => {
 
     const dbUpdate = {
       status: status,
-      csv_url: csvUrl,
       url: csvUrl,
       summary: summary || (leadsEnriched ? `${leadsEnriched} leads enriched, ${creditsUsed} credits used` : null),
     };
