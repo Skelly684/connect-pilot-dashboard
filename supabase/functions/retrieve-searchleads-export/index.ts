@@ -50,10 +50,20 @@ Deno.serve(async (req) => {
           headers: { "authorization": `Bearer ${SEARCHLEADS_API_KEY}` },
         });
 
+        console.log(`📡 Response status: ${response.status}`);
+        const responseText = await response.text();
+        console.log(`📄 Response body: ${responseText.substring(0, 500)}`);
+
         if (response.ok) {
-          exportData = await response.json();
-          console.log(`✅ Success with endpoint: ${endpoint}`);
-          break;
+          try {
+            exportData = JSON.parse(responseText);
+            console.log(`✅ Success with endpoint: ${endpoint}`, { status: exportData?.status || exportData?.log?.status });
+            break;
+          } catch (parseErr) {
+            console.error(`❌ JSON parse error:`, parseErr);
+          }
+        } else {
+          console.log(`⚠️ Non-OK response from ${endpoint}: ${response.status}`);
         }
       } catch (err) {
         console.log(`❌ Error with endpoint: ${endpoint}`, err);
