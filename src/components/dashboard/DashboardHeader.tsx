@@ -61,8 +61,10 @@ export const DashboardHeader = () => {
     <header className="h-16 bg-gradient-card backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6 sticky top-0 z-50 shadow-md">
       <div className="flex items-center space-x-4">
         <div className="relative w-14 h-14">
-          {isSpecialUser && (
-            <div className="absolute -inset-1 bg-purple-500/30 opacity-60 blur-lg -z-10"></div>
+          {isSpecialUser ? (
+            <div className="absolute -inset-1 bg-purple-500/30 opacity-60 blur-lg -z-10 dark:bg-purple-500/50 dark:opacity-80 dark:blur-xl"></div>
+          ) : (
+            <div className="absolute -inset-0.5 bg-gradient-primary rounded-xl opacity-20 blur-sm dark:bg-purple-500/40 dark:opacity-70 dark:blur-lg"></div>
           )}
           <img 
             src={isSpecialUser ? "/assets/leadm8-logo.png" : "/assets/psn-logo.png"}
@@ -70,9 +72,6 @@ export const DashboardHeader = () => {
             className={`w-full h-full rounded-xl ${isSpecialUser ? '' : 'shadow-sm'} transition-transform duration-300 hover:scale-110 relative z-10`}
             style={isSpecialUser ? { objectFit: 'contain', objectPosition: 'center' } : {}}
           />
-          {!isSpecialUser && (
-            <div className="absolute -inset-0.5 bg-gradient-primary rounded-xl opacity-20 blur-sm"></div>
-          )}
         </div>
         <div className="hidden md:block">
           <h1 className={`text-lg font-semibold ${isSpecialUser ? 'font-russo italic bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 bg-clip-text text-transparent animate-pulse tracking-wider transform -skew-x-6 text-xl' : 'text-foreground'}`}>
