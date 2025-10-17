@@ -4,6 +4,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { ElectricBolts } from "@/components/dashboard/ElectricBolts";
 import AdvancedLeadFilters from "./AdvancedLeadFilters";
 import { AllLeadsSection } from "@/components/leads/AllLeadsSection";
 import { LeadExportFilesSection } from "@/components/leads/LeadExportFilesSection";
@@ -136,9 +137,10 @@ const Dashboard = () => {
 
   return (
     <SidebarProvider>
+      <ElectricBolts />
       <div className="min-h-screen flex w-full bg-gradient-secondary">
         <AppSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
-        <main className="flex-1 flex flex-col overflow-auto">
+        <main className="flex-1 flex flex-col overflow-auto relative">
           <DashboardHeader />
           <div className="flex-1 p-6">
             <div className="max-w-7xl mx-auto animate-fade-in">
