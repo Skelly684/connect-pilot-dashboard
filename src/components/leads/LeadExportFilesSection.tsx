@@ -327,16 +327,17 @@ export const LeadExportFilesSection = () => {
     setIsLoadingCSV(true);
     setSelectedLeads(new Set());
     try {
-      // Strip any existing query parameters from the URL and add fresh cache-busting timestamp
+      // Strip any existing query parameters from the URL (Supabase storage doesn't support them)
       const cleanUrl = url.split('?')[0];
-      const urlWithCacheBust = `${cleanUrl}?t=${Date.now()}`;
-      console.log('📥 Fetching CSV from:', urlWithCacheBust);
+      console.log('📥 Fetching CSV from:', cleanUrl);
       
-      const response = await fetch(urlWithCacheBust, {
+      // Use a timestamp in headers to force fresh fetch
+      const response = await fetch(cleanUrl, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
+          'Pragma': 'no-cache',
+          'X-Requested-At': Date.now().toString()
         }
       });
       if (!response.ok) throw new Error('Failed to fetch CSV');
