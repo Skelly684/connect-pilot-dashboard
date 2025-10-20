@@ -570,83 +570,91 @@ export const LeadExportFilesSection = () => {
       let processedCount = 0;
       let updatedCount = 0;
       let insertedCount = 0;
+      let skippedCount = 0;
       
       // Process each lead individually to handle duplicates
       for (const lead of selectedLeadsData) {
         console.log(`📝 Processing lead ${processedCount + 1}/${selectedLeadsData.length}:`, lead.name, lead.email);
         
-        if (!lead.email) {
-          console.log('⚠️ Skipping lead without email');
+        // Skip leads without both email and name
+        if (!lead.email && !lead.name) {
+          console.log('⚠️ Skipping lead without email or name');
+          skippedCount++;
           continue;
         }
         
-        // Check if lead already exists
-        const { data: existing, error: checkError } = await supabase
+        // For leads with email, check for duplicates
+        if (lead.email) {
+          const { data: existing, error: checkError } = await supabase
+            .from('leads')
+            .select('id, status')
+            .eq('user_id', user.id)
+            .eq('email_address', lead.email)
+            .maybeSingle();
+          
+          if (checkError) {
+            console.error('❌ Error checking for existing lead:', checkError);
+            continue;
+          }
+          
+          if (existing) {
+            console.log('🔄 Updating existing lead:', existing.id, 'from', existing.status, 'to rejected');
+            const { error: updateError } = await supabase
+              .from('leads')
+              .update({
+                status: 'rejected',
+                reviewed_at: new Date().toISOString(),
+              })
+              .eq('id', existing.id);
+            
+            if (updateError) {
+              console.error('❌ Error updating lead:', updateError);
+            } else {
+              updatedCount++;
+              console.log('✅ Lead updated');
+            }
+            processedCount++;
+            continue;
+          }
+        }
+        
+        // Insert new rejected lead (even without email, use name as identifier)
+        console.log('➕ Inserting new rejected lead');
+        const { error: insertError, data: inserted } = await supabase
           .from('leads')
-          .select('id, status')
-          .eq('user_id', user.id)
-          .eq('email_address', lead.email)
-          .maybeSingle();
+          .insert({
+            user_id: user.id,
+            name: lead.name,
+            email: lead.email || null,
+            email_address: lead.email || null,
+            company_name: lead.company_name,
+            company_website: lead.company_website,
+            linkedin_url: lead.linkedin_url,
+            job_title: lead.job_title,
+            phone: lead.phone,
+            state_name: lead.state_name,
+            country_name: lead.country_name,
+            status: 'rejected',
+            reviewed_at: new Date().toISOString(),
+          })
+          .select();
         
-        if (checkError) {
-          console.error('❌ Error checking for existing lead:', checkError);
-          continue;
-        }
-        
-        if (existing) {
-          console.log('🔄 Updating existing lead:', existing.id, 'from', existing.status, 'to rejected');
-          // Update existing lead to rejected
-          const { error: updateError } = await supabase
-            .from('leads')
-            .update({
-              status: 'rejected',
-              reviewed_at: new Date().toISOString(),
-            })
-            .eq('id', existing.id);
-          
-          if (updateError) {
-            console.error('❌ Error updating lead:', updateError);
-          } else {
-            updatedCount++;
-            console.log('✅ Lead updated');
-          }
+        if (insertError) {
+          console.error('❌ Error inserting lead:', insertError);
         } else {
-          console.log('➕ Inserting new rejected lead');
-          // Insert new rejected lead
-          const { error: insertError, data: inserted } = await supabase
-            .from('leads')
-            .insert({
-              user_id: user.id,
-              name: lead.name,
-              email: lead.email,
-              email_address: lead.email,
-              company_name: lead.company_name,
-              company_website: lead.company_website,
-              linkedin_url: lead.linkedin_url,
-              job_title: lead.job_title,
-              phone: lead.phone,
-              state_name: lead.state_name,
-              country_name: lead.country_name,
-              status: 'rejected',
-              reviewed_at: new Date().toISOString(),
-            })
-            .select();
-          
-          if (insertError) {
-            console.error('❌ Error inserting lead:', insertError);
-          } else {
-            insertedCount++;
-            console.log('✅ Lead inserted:', inserted);
-          }
+          insertedCount++;
+          console.log('✅ Lead inserted:', inserted);
         }
         
         processedCount++;
       }
       
       console.log('📊 Rejection summary:', {
+        total: selectedLeadsData.length,
         processed: processedCount,
         updated: updatedCount,
-        inserted: insertedCount
+        inserted: insertedCount,
+        skipped: skippedCount
       });
 
       // Remove from the review list
@@ -667,7 +675,7 @@ export const LeadExportFilesSection = () => {
       
       toast({
         title: "Success",
-        description: `${processedCount} leads rejected (${insertedCount} new, ${updatedCount} updated)`,
+        description: `${processedCount} leads rejected (${insertedCount} new, ${updatedCount} updated${skippedCount > 0 ? `, ${skippedCount} skipped` : ''})`,
       });
     } catch (error) {
       console.error('❌ Error rejecting leads:', error);
