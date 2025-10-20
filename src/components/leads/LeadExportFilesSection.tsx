@@ -461,6 +461,23 @@ export const LeadExportFilesSection = () => {
 
         console.log('✅ CSV uploaded successfully:', uploadData);
         
+        // CRITICAL: Update the csv_path in database with cache-busting timestamp
+        const newCsvPath = `https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/${filePath}?t=${Date.now()}`;
+        console.log('🔄 Updating csv_path in database to:', newCsvPath);
+        
+        const { error: updateError } = await supabase
+          .from('searchleads_jobs')
+          .update({ csv_path: newCsvPath })
+          .eq('log_id', currentJob.log_id);
+        
+        if (updateError) {
+          console.error('❌ Error updating csv_path:', updateError);
+        } else {
+          console.log('✅ csv_path updated in database');
+          // Update current job reference
+          setCurrentJob({ ...currentJob, csv_path: newCsvPath });
+        }
+        
         // Update the CSV text for next iteration
         setOriginalCSVText(updatedCSV);
       }
