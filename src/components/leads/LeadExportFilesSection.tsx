@@ -327,16 +327,13 @@ export const LeadExportFilesSection = () => {
     setIsLoadingCSV(true);
     setSelectedLeads(new Set());
     try {
-      // Add cache-busting parameter to force fresh fetch
-      const cacheBustUrl = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
-      console.log('📥 Fetching CSV with cache-busting:', cacheBustUrl);
+      console.log('📥 Fetching CSV from:', url);
       
-      const response = await fetch(cacheBustUrl, {
+      const response = await fetch(url, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+          'Pragma': 'no-cache'
         }
       });
       if (!response.ok) throw new Error('Failed to fetch CSV');
