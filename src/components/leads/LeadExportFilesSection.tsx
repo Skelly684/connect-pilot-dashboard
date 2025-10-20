@@ -473,13 +473,18 @@ export const LeadExportFilesSection = () => {
       return;
     }
     
+    console.log('🟢 START: Accepting selected leads', Array.from(selectedLeads));
+    
     isOperatingRef.current = true;
     setIsProcessing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+      
+      console.log('👤 User ID:', user.id);
 
       const selectedLeadsData = reviewLeads.filter(lead => selectedLeads.has(lead.tempId));
+      console.log('📋 Selected leads data:', selectedLeadsData.length, 'leads');
       
       const leadsToInsert = selectedLeadsData.map(lead => ({
         user_id: user.id,
@@ -499,29 +504,41 @@ export const LeadExportFilesSection = () => {
         accepted_at: new Date().toISOString(),
       }));
 
-      const { error } = await supabase
+      console.log('💾 Inserting leads into database...');
+      const { data: insertedData, error } = await supabase
         .from('leads')
-        .insert(leadsToInsert);
+        .insert(leadsToInsert)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database insert error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Inserted leads:', insertedData?.length || 0);
 
       setSelectedLeads(new Set());
       // Remove accepted leads from review list
       const remainingLeads = reviewLeads.filter(lead => !selectedLeads.has(lead.tempId));
+      console.log('📊 Remaining leads in review:', remainingLeads.length);
       setReviewLeads(remainingLeads);
       
       // Update CSV file in storage
+      console.log('📝 Updating CSV file...');
       await updateCSVFile(remainingLeads);
       
       // Refresh recently reviewed leads
+      console.log('🔄 Refreshing reviewed leads list...');
       await fetchReviewedLeads();
+      
+      console.log('🟢 END: Accept operation complete');
       
       toast({
         title: "Success",
         description: `${selectedLeadsData.length} leads accepted for outreach`,
       });
     } catch (error) {
-      console.error('Error accepting leads:', error);
+      console.error('❌ Error accepting leads:', error);
       toast({
         title: "Error",
         description: "Failed to accept leads",
@@ -537,38 +554,66 @@ export const LeadExportFilesSection = () => {
     if (isOperatingRef.current || isProcessing) return;
     if (selectedLeads.size === 0) return;
     
+    console.log('🔴 START: Rejecting selected leads', Array.from(selectedLeads));
+    
     isOperatingRef.current = true;
     setIsProcessing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      console.log('👤 User ID:', user.id);
+
       const selectedLeadsData = reviewLeads.filter(lead => selectedLeads.has(lead.tempId));
+      console.log('📋 Leads to reject:', selectedLeadsData.length);
+      
+      let processedCount = 0;
+      let updatedCount = 0;
+      let insertedCount = 0;
       
       // Process each lead individually to handle duplicates
       for (const lead of selectedLeadsData) {
-        if (!lead.email) continue; // Skip leads without email
+        console.log(`📝 Processing lead ${processedCount + 1}/${selectedLeadsData.length}:`, lead.name, lead.email);
+        
+        if (!lead.email) {
+          console.log('⚠️ Skipping lead without email');
+          continue;
+        }
         
         // Check if lead already exists
-        const { data: existing } = await supabase
+        const { data: existing, error: checkError } = await supabase
           .from('leads')
-          .select('id')
+          .select('id, status')
           .eq('user_id', user.id)
           .eq('email_address', lead.email)
-          .single();
+          .maybeSingle();
+        
+        if (checkError) {
+          console.error('❌ Error checking for existing lead:', checkError);
+          continue;
+        }
         
         if (existing) {
+          console.log('🔄 Updating existing lead:', existing.id, 'from', existing.status, 'to rejected');
           // Update existing lead to rejected
-          await supabase
+          const { error: updateError } = await supabase
             .from('leads')
             .update({
               status: 'rejected',
               reviewed_at: new Date().toISOString(),
             })
             .eq('id', existing.id);
+          
+          if (updateError) {
+            console.error('❌ Error updating lead:', updateError);
+          } else {
+            updatedCount++;
+            console.log('✅ Lead updated');
+          }
         } else {
+          console.log('➕ Inserting new rejected lead');
           // Insert new rejected lead
-          await supabase
+          const { error: insertError, data: inserted } = await supabase
             .from('leads')
             .insert({
               user_id: user.id,
@@ -584,27 +629,48 @@ export const LeadExportFilesSection = () => {
               country_name: lead.country_name,
               status: 'rejected',
               reviewed_at: new Date().toISOString(),
-            });
+            })
+            .select();
+          
+          if (insertError) {
+            console.error('❌ Error inserting lead:', insertError);
+          } else {
+            insertedCount++;
+            console.log('✅ Lead inserted:', inserted);
+          }
         }
+        
+        processedCount++;
       }
+      
+      console.log('📊 Rejection summary:', {
+        processed: processedCount,
+        updated: updatedCount,
+        inserted: insertedCount
+      });
 
       // Remove from the review list
       const remainingLeads = reviewLeads.filter(lead => !selectedLeads.has(lead.tempId));
+      console.log('📊 Remaining leads in review:', remainingLeads.length);
       setReviewLeads(remainingLeads);
       setSelectedLeads(new Set());
       
       // Update CSV file in storage
+      console.log('📝 Updating CSV file...');
       await updateCSVFile(remainingLeads);
       
       // Refresh recently reviewed leads
+      console.log('🔄 Refreshing reviewed leads list...');
       await fetchReviewedLeads();
+      
+      console.log('🔴 END: Reject operation complete');
       
       toast({
         title: "Success",
-        description: `${selectedLeadsData.length} leads rejected`,
+        description: `${processedCount} leads rejected (${insertedCount} new, ${updatedCount} updated)`,
       });
     } catch (error) {
-      console.error('Error rejecting leads:', error);
+      console.error('❌ Error rejecting leads:', error);
       toast({
         title: "Error",
         description: "Failed to reject leads",
