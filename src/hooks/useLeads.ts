@@ -91,38 +91,53 @@ export const useLeads = () => {
 
       if (error) throw error;
 
-      // Check latest call status and update lead status if needed
-      if (data) {
-        const leadsToUpdate: string[] = [];
-        for (const lead of data) {
-          const { data: latestCall, error: callError } = await supabase
-            .from('call_logs')
-            .select('answered')
-            .eq('lead_id', lead.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (!callError && latestCall && (latestCall as any).answered === true && lead.status !== 'replied') {
-            leadsToUpdate.push(lead.id);
-          }
-        }
-
-        // Update leads to 'replied' status if they have answered calls
-        if (leadsToUpdate.length > 0) {
-          await supabase
-            .from('leads')
-            .update({ status: 'replied' })
-            .in('id', leadsToUpdate);
-        }
-
-        // Refetch to get updated data
-        const { data: updatedData } = await supabase
-          .from('leads')
-          .select('*')
+      // Fetch all call logs in a single query (much faster!)
+      if (data && data.length > 0) {
+        const leadIds = data.map(lead => lead.id);
+        const { data: allCallLogs, error: callError } = await supabase
+          .from('call_logs')
+          .select('lead_id, answered, created_at')
+          .in('lead_id', leadIds)
           .order('created_at', { ascending: false });
 
-        setLeads(updatedData || []);
+        if (!callError && allCallLogs) {
+          // Group calls by lead_id and find latest answered call for each
+          const latestAnsweredCallsByLead = new Map<string, boolean>();
+          
+          for (const call of allCallLogs) {
+            if (!latestAnsweredCallsByLead.has(call.lead_id)) {
+              latestAnsweredCallsByLead.set(call.lead_id, call.answered === true);
+            }
+          }
+
+          // Find leads that need status update
+          const leadsToUpdate = data
+            .filter(lead => 
+              latestAnsweredCallsByLead.get(lead.id) === true && 
+              lead.status !== 'replied'
+            )
+            .map(lead => lead.id);
+
+          // Update leads to 'replied' status if they have answered calls
+          if (leadsToUpdate.length > 0) {
+            await supabase
+              .from('leads')
+              .update({ status: 'replied' })
+              .in('id', leadsToUpdate);
+
+            // Refetch to get updated data
+            const { data: updatedData } = await supabase
+              .from('leads')
+              .select('*')
+              .order('created_at', { ascending: false });
+
+            setLeads(updatedData || []);
+          } else {
+            setLeads(data || []);
+          }
+        } else {
+          setLeads(data || []);
+        }
       } else {
         setLeads([]);
       }
