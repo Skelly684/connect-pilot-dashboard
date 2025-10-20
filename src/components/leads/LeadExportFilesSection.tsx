@@ -524,28 +524,48 @@ export const LeadExportFilesSection = () => {
 
       const selectedLeadsData = reviewLeads.filter(lead => selectedLeads.has(lead.tempId));
       
-      // Insert rejected leads into database so they show in Recently Reviewed
-      const leadsToInsert = selectedLeadsData.map(lead => ({
-        user_id: user.id,
-        name: lead.name,
-        email: lead.email,
-        email_address: lead.email,
-        company_name: lead.company_name,
-        company_website: lead.company_website,
-        linkedin_url: lead.linkedin_url,
-        job_title: lead.job_title,
-        phone: lead.phone,
-        state_name: lead.state_name,
-        country_name: lead.country_name,
-        status: 'rejected',
-        reviewed_at: new Date().toISOString(),
-      }));
-
-      const { error } = await supabase
-        .from('leads')
-        .insert(leadsToInsert);
-
-      if (error) throw error;
+      // Process each lead individually to handle duplicates
+      for (const lead of selectedLeadsData) {
+        if (!lead.email) continue; // Skip leads without email
+        
+        // Check if lead already exists
+        const { data: existing } = await supabase
+          .from('leads')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('email_address', lead.email)
+          .single();
+        
+        if (existing) {
+          // Update existing lead to rejected
+          await supabase
+            .from('leads')
+            .update({
+              status: 'rejected',
+              reviewed_at: new Date().toISOString(),
+            })
+            .eq('id', existing.id);
+        } else {
+          // Insert new rejected lead
+          await supabase
+            .from('leads')
+            .insert({
+              user_id: user.id,
+              name: lead.name,
+              email: lead.email,
+              email_address: lead.email,
+              company_name: lead.company_name,
+              company_website: lead.company_website,
+              linkedin_url: lead.linkedin_url,
+              job_title: lead.job_title,
+              phone: lead.phone,
+              state_name: lead.state_name,
+              country_name: lead.country_name,
+              status: 'rejected',
+              reviewed_at: new Date().toISOString(),
+            });
+        }
+      }
 
       // Remove from the review list
       const remainingLeads = reviewLeads.filter(lead => !selectedLeads.has(lead.tempId));
