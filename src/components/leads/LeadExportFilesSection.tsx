@@ -327,17 +327,27 @@ export const LeadExportFilesSection = () => {
     setIsLoadingCSV(true);
     setSelectedLeads(new Set());
     try {
-      // Strip any existing query parameters from the URL (Supabase storage doesn't support them)
-      const cleanUrl = url.split('?')[0];
-      console.log('📥 Fetching CSV from:', cleanUrl);
+      // Handle different URL types
+      let fetchUrl = url;
+      const isGoogleSheets = url.includes('docs.google.com/spreadsheets');
       
-      // Use a timestamp in headers to force fresh fetch
-      const response = await fetch(cleanUrl, {
+      if (isGoogleSheets) {
+        // For Google Sheets, ensure we have the CSV export format
+        if (!url.includes('format=csv')) {
+          fetchUrl = url.includes('?') ? `${url}&format=csv` : `${url}?format=csv`;
+        }
+        console.log('📥 Fetching Google Sheets CSV from:', fetchUrl);
+      } else {
+        // For Supabase storage, strip query params and use clean URL
+        fetchUrl = url.split('?')[0];
+        console.log('📥 Fetching Supabase CSV from:', fetchUrl);
+      }
+      
+      const response = await fetch(fetchUrl, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'X-Requested-At': Date.now().toString()
+          'Pragma': 'no-cache'
         }
       });
       if (!response.ok) throw new Error('Failed to fetch CSV');
