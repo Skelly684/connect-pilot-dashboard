@@ -119,15 +119,23 @@ export const LeadExportFilesSection = () => {
 
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
+      console.log('🔍 Fetching reviewed leads since:', twentyFourHoursAgo);
+
       const { data, error } = await supabase
         .from("leads")
         .select("*")
         .eq("user_id", user.id)
         .in("status", ["accepted", "rejected"])
+        .not("reviewed_at", "is", null)
         .gte("reviewed_at", twentyFourHoursAgo)
         .order("reviewed_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching reviewed leads:', error);
+        throw error;
+      }
+      
+      console.log('✅ Found', data?.length || 0, 'reviewed leads');
       setReviewedLeads(data || []);
     } catch (error) {
       console.error("Error fetching reviewed leads:", error);
@@ -348,21 +356,28 @@ export const LeadExportFilesSection = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      console.log('🔄 Updating CSV file with', remainingLeads.length, 'remaining leads');
+
       // If no leads remain, delete the file and job
       if (remainingLeads.length === 0) {
+        console.log('🗑️ No leads remaining, deleting file and job');
         // Delete from storage if csv_path exists
         if (currentJob.csv_path) {
           const filePath = currentJob.csv_path.replace('https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/', '');
-          await supabase.storage
+          const { error: deleteError } = await supabase.storage
             .from('exports')
             .remove([filePath]);
+          
+          if (deleteError) console.error('Error deleting file:', deleteError);
         }
 
         // Delete job from database
-        await supabase
+        const { error: jobError } = await supabase
           .from('searchleads_jobs')
           .delete()
           .eq('log_id', currentJob.log_id);
+
+        if (jobError) console.error('Error deleting job:', jobError);
 
         toast({
           title: "CSV Completed",
@@ -370,7 +385,7 @@ export const LeadExportFilesSection = () => {
         });
 
         // Refresh the export jobs list
-        fetchExportJobs();
+        await fetchExportJobs();
         setReviewDialogOpen(false);
         return;
       }
@@ -381,10 +396,10 @@ export const LeadExportFilesSection = () => {
       
       // Rebuild CSV with remaining leads
       const updatedCSVLines = [headers];
-      const allLines = lines.slice(1);
+      const allLines = lines.slice(1).filter(line => line.trim());
       
       remainingLeads.forEach(lead => {
-        // Find the original line for this lead based on tempId
+        // Find the original line for this lead based on tempId (which is the line number)
         const lineIndex = lead.tempId - 1;
         if (lineIndex >= 0 && lineIndex < allLines.length) {
           updatedCSVLines.push(allLines[lineIndex]);
@@ -392,16 +407,15 @@ export const LeadExportFilesSection = () => {
       });
 
       const updatedCSV = updatedCSVLines.join('\n');
+      console.log('📝 New CSV has', updatedCSVLines.length - 1, 'data rows');
 
-      // Get the original filename from the job
-      const originalFileName = currentJob.file_name || 'export.csv';
-      const fileName = originalFileName.endsWith('.csv') ? originalFileName : `${originalFileName}.csv`;
-
-      // Upload updated CSV back to storage with original filename
+      // Upload updated CSV back to storage
       if (currentJob.csv_path) {
         const filePath = currentJob.csv_path.replace('https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/', '');
         
-        const { error } = await supabase.storage
+        console.log('📤 Uploading to:', filePath);
+        
+        const { error, data } = await supabase.storage
           .from('exports')
           .update(filePath, new Blob([updatedCSV], { type: 'text/csv' }), {
             cacheControl: '0',
@@ -409,13 +423,20 @@ export const LeadExportFilesSection = () => {
             contentType: 'text/csv'
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Error updating CSV:', error);
+          throw error;
+        }
 
-        console.log(`✅ Updated CSV file: ${fileName} with ${remainingLeads.length} remaining leads`);
+        console.log('✅ CSV updated successfully:', data);
       }
     } catch (error) {
-      console.error('Error updating CSV:', error);
-      // Don't show error to user - this is a background operation
+      console.error('❌ Error in updateCSVFile:', error);
+      toast({
+        title: "Warning",
+        description: "Leads processed but CSV update failed. The file may still show old leads.",
+        variant: "destructive",
+      });
     }
   };
 
