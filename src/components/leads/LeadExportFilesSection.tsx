@@ -327,9 +327,12 @@ export const LeadExportFilesSection = () => {
     setIsLoadingCSV(true);
     setSelectedLeads(new Set());
     try {
-      console.log('📥 Fetching CSV from:', url);
+      // Strip any existing query parameters from the URL and add fresh cache-busting timestamp
+      const cleanUrl = url.split('?')[0];
+      const urlWithCacheBust = `${cleanUrl}?t=${Date.now()}`;
+      console.log('📥 Fetching CSV from:', urlWithCacheBust);
       
-      const response = await fetch(url, {
+      const response = await fetch(urlWithCacheBust, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -429,7 +432,9 @@ export const LeadExportFilesSection = () => {
 
       // Upload updated CSV back to storage - use delete then upload approach
       if (currentJob.csv_path) {
-        const filePath = currentJob.csv_path.replace('https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/', '');
+        // Strip any query parameters from the csv_path to get clean file path
+        const cleanPath = currentJob.csv_path.split('?')[0];
+        const filePath = cleanPath.replace('https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/', '');
         
         console.log('🗑️ Deleting old file:', filePath);
         
@@ -461,22 +466,9 @@ export const LeadExportFilesSection = () => {
 
         console.log('✅ CSV uploaded successfully:', uploadData);
         
-        // CRITICAL: Update the csv_path in database with cache-busting timestamp
-        const newCsvPath = `https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/${filePath}?t=${Date.now()}`;
-        console.log('🔄 Updating csv_path in database to:', newCsvPath);
-        
-        const { error: updateError } = await supabase
-          .from('searchleads_jobs')
-          .update({ csv_path: newCsvPath })
-          .eq('log_id', currentJob.log_id);
-        
-        if (updateError) {
-          console.error('❌ Error updating csv_path:', updateError);
-        } else {
-          console.log('✅ csv_path updated in database');
-          // Update current job reference
-          setCurrentJob({ ...currentJob, csv_path: newCsvPath });
-        }
+        // Keep the clean path in database (without query parameters)
+        // Cache-busting will be done when fetching, not in stored URL
+        console.log('✅ CSV file updated in storage at:', filePath);
         
         // Update the CSV text for next iteration
         setOriginalCSVText(updatedCSV);
