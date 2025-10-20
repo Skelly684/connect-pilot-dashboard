@@ -16,6 +16,7 @@ import { AdminPage } from "@/components/admin/AdminPage";
 import { useLeads } from "@/hooks/useLeads";
 import { useLeadReplyRealtime } from "@/hooks/useLeadReplyRealtime";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDemo } from "@/contexts/DemoContext";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -25,6 +26,7 @@ const Dashboard = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [replyLeadId, setReplyLeadId] = useState<string | null>(null);
+  const { isDemoActive } = useDemo();
 
   // Handle URL parameters for navigation from other pages
   useEffect(() => {

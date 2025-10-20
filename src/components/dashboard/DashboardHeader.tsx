@@ -18,6 +18,7 @@ import { useTheme } from "next-themes";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { DemoMode } from "./DemoMode";
+import { useDemo } from "@/contexts/DemoContext";
 
 export const DashboardHeader = () => {
   const { user, signOut } = useAuth();
@@ -26,7 +27,13 @@ export const DashboardHeader = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification, clearAllNotifications } = useNotifications();
   const { theme, setTheme } = useTheme();
   const [forceUpdate, setForceUpdate] = React.useState(0);
-  const [showDemo, setShowDemo] = React.useState(false);
+  const { isDemoActive, setDemoActive } = useDemo();
+  
+  const isSpecialUser = user?.email === 'scttskelly@gmail.com';
+  
+  const handleStartDemo = () => {
+    setDemoActive(true);
+  };
   
   console.log('🎨 DashboardHeader render - notifications:', notifications.length, 'unread:', unreadCount);
   console.log('🎨 DashboardHeader notifications detail:', notifications);
@@ -57,11 +64,9 @@ export const DashboardHeader = () => {
     user.email.split('@')[0].substring(0, 2).toUpperCase() : 
     'UN';
 
-  const isSpecialUser = user?.email === 'scttskelly@gmail.com';
-
   return (
     <>
-      {showDemo && <DemoMode onClose={() => setShowDemo(false)} />}
+      {isDemoActive && <DemoMode onClose={() => setDemoActive(false)} />}
       <header className="h-16 bg-gradient-card backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6 sticky top-0 z-50 shadow-md">
       <div className="flex items-center space-x-4">
         <div className="relative w-10 h-10">
@@ -88,7 +93,7 @@ export const DashboardHeader = () => {
       <div className="flex items-center space-x-3">
         {isSpecialUser && (
           <Button
-            onClick={() => setShowDemo(true)}
+            onClick={handleStartDemo}
             className="bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-500 hover:to-purple-400 shadow-lg shadow-purple-500/50 animate-pulse"
           >
             <Play className="mr-2 h-4 w-4" />
