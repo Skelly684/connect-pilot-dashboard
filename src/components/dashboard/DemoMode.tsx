@@ -278,41 +278,46 @@ export const DemoMode: React.FC<DemoModeProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[100] pointer-events-none">
-      {/* Semi-transparent overlay */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-auto"></div>
-      {/* Close button */}
+      {/* Nearly invisible overlay - just to establish the z-index layer */}
+      {/* Close button - top right corner */}
       <Button
         variant="ghost"
         size="icon"
         onClick={handleClose}
-        className="absolute top-4 right-4 z-10 text-white hover:bg-white/20 pointer-events-auto shadow-xl bg-black/50 backdrop-blur-sm"
+        className="absolute top-20 right-6 z-10 text-white hover:bg-red-500/90 pointer-events-auto shadow-2xl bg-red-500/80 backdrop-blur-sm border-2 border-white/50 hover:scale-110 transition-all duration-300"
+        title="Exit Demo"
       >
-        <X className="h-6 w-6" />
+        <X className="h-5 w-5" />
       </Button>
 
-      {/* Progress bar */}
-      <div className="absolute top-0 left-0 right-0 h-2 bg-black/50 backdrop-blur-sm pointer-events-auto">
+      {/* Thin progress bar at very top */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-black/30 pointer-events-none z-[101]">
         <div
-          className="h-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-100 ease-linear shadow-lg shadow-purple-500/50"
+          className="h-full bg-gradient-to-r from-purple-500 via-purple-400 to-purple-500 transition-all duration-100 ease-linear shadow-lg shadow-purple-500/50"
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      {/* Scene counter and title */}
-      <div className="absolute top-6 left-6 pointer-events-auto">
-        <div className="bg-black/70 backdrop-blur-md border border-white/20 rounded-xl px-6 py-4 shadow-2xl">
-          <div className="text-white/60 text-xs font-mono mb-1">
-            {currentSceneIndex + 1} / {demoScenes.length}
+      {/* Compact info badge - top left */}
+      <div className="absolute top-20 left-6 pointer-events-auto animate-fade-in">
+        <div className="bg-black/85 backdrop-blur-xl border-2 border-purple-500/50 rounded-2xl px-5 py-3 shadow-2xl shadow-purple-500/30">
+          <div className="flex items-center gap-4">
+            <div className="text-purple-400 text-xs font-mono font-bold">
+              {currentSceneIndex + 1}/{demoScenes.length}
+            </div>
+            <div className="h-8 w-px bg-white/20"></div>
+            <div>
+              <h3 className="text-base font-bold text-white mb-0.5 bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+                {currentScene.title}
+              </h3>
+              <p className="text-xs text-white/60">{currentScene.description}</p>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-1 bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
-            {currentScene.title}
-          </h2>
-          <p className="text-sm text-white/70">{currentScene.description}</p>
         </div>
       </div>
 
-      {/* Annotations overlay - positioned absolutely over the real UI */}
-      <div className="absolute inset-0 pointer-events-none">
+      {/* Floating annotations over the real dashboard */}
+      <div className="absolute inset-0 pointer-events-none z-50">
         {currentScene.annotations.map((annotation, index) => (
           <div
             key={index}
@@ -320,41 +325,68 @@ export const DemoMode: React.FC<DemoModeProps> = ({ onClose }) => {
             style={{
               ...annotation.position,
               transform: 'translate(-50%, -50%)',
-              animationDelay: `${(annotation.delay || 0)}ms`
+              animationDelay: `${(annotation.delay || 0)}ms`,
+              zIndex: 50
             }}
           >
             <div
-              className={`px-6 py-3 rounded-xl backdrop-blur-md border shadow-2xl pointer-events-auto ${
+              className={`px-5 py-3 rounded-xl backdrop-blur-xl border-2 shadow-2xl pointer-events-none transition-all duration-300 ${
                 annotation.highlight
-                  ? 'bg-purple-500/95 border-purple-400 text-white font-semibold text-lg shadow-purple-500/50'
-                  : 'bg-black/80 border-white/30 text-white'
+                  ? 'bg-purple-600/95 border-purple-400 text-white font-bold text-base shadow-purple-500/60 animate-pulse'
+                  : 'bg-black/90 border-yellow-400/70 text-white font-medium text-sm shadow-yellow-500/40'
               }`}
             >
-              {annotation.text}
+              <div className="flex items-center gap-2">
+                {!annotation.highlight && (
+                  <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                )}
+                <span>{annotation.text}</span>
+              </div>
             </div>
-            {/* Arrow pointer */}
+            {/* Pointing arrow for non-highlighted annotations */}
             {!annotation.highlight && (
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-black/80"></div>
+              <svg 
+                className="absolute -bottom-3 left-1/2 -translate-x-1/2" 
+                width="24" 
+                height="12" 
+                viewBox="0 0 24 12"
+              >
+                <path 
+                  d="M12 12L0 0h24z" 
+                  fill="rgba(0,0,0,0.9)"
+                  stroke="rgba(250, 204, 21, 0.7)"
+                  strokeWidth="2"
+                />
+              </svg>
             )}
           </div>
         ))}
       </div>
 
-      {/* Navigation controls */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center justify-center space-x-4 pointer-events-auto">
+      {/* Sleek navigation controls at bottom */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center justify-center gap-3 pointer-events-auto animate-fade-in">
         <Button
           variant="outline"
           onClick={handlePrev}
           disabled={currentSceneIndex === 0}
-          className="bg-black/70 backdrop-blur-md border-white/20 text-white hover:bg-black/80 disabled:opacity-30 shadow-xl"
+          className="bg-black/85 backdrop-blur-xl border-2 border-white/30 text-white hover:bg-black/90 hover:border-white/50 disabled:opacity-30 disabled:cursor-not-allowed shadow-2xl transition-all duration-300 hover:scale-105"
+          size="lg"
         >
           Previous
         </Button>
+        
+        <div className="bg-black/85 backdrop-blur-xl border-2 border-purple-500/50 rounded-xl px-4 py-2 shadow-2xl">
+          <div className="text-purple-400 font-mono text-sm font-bold">
+            Step {currentSceneIndex + 1} of {demoScenes.length}
+          </div>
+        </div>
+        
         <Button
           onClick={handleNext}
-          className="bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-500 hover:to-purple-400 shadow-xl shadow-purple-500/50"
+          className="bg-gradient-to-r from-purple-600 via-purple-500 to-purple-600 text-white hover:from-purple-500 hover:via-purple-400 hover:to-purple-500 shadow-2xl shadow-purple-500/50 transition-all duration-300 hover:scale-105 font-semibold"
+          size="lg"
         >
-          {currentSceneIndex === demoScenes.length - 1 ? 'Finish' : 'Next'}
+          {currentSceneIndex === demoScenes.length - 1 ? 'Finish Demo' : 'Next Step'}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
