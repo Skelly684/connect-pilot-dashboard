@@ -36,7 +36,7 @@ interface NaturalLanguageLeadSearchProps {
 
 export const NaturalLanguageLeadSearch = ({ onSaveLeads }: NaturalLanguageLeadSearchProps) => {
   const [prompt, setPrompt] = useState("");
-  const [leadCount, setLeadCount] = useState(50);
+  const [leadCount, setLeadCount] = useState(100);
   const [isSearching, setIsSearching] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [lastPrompt, setLastPrompt] = useState("");
@@ -141,7 +141,7 @@ export const NaturalLanguageLeadSearch = ({ onSaveLeads }: NaturalLanguageLeadSe
     }
 
     // Clamp to allowed range
-    const clampedCount = Math.max(10, Math.min(100, leadCount));
+    const clampedCount = Math.max(100, Math.min(1000, leadCount));
 
     setIsSearching(true);
 
@@ -292,14 +292,14 @@ export const NaturalLanguageLeadSearch = ({ onSaveLeads }: NaturalLanguageLeadSe
               <Input
                 id="leadCount"
                 type="number"
-                min={10}
-                max={100}
+                min={100}
+                max={1000}
                 step={10}
                 value={leadCount}
                 onChange={(e) => setLeadCount(Number(e.target.value))}
               />
               <p className="text-sm text-muted-foreground">
-                Allowed range: 10–100.
+                Allowed range: 100–1,000.
               </p>
             </div>
 
