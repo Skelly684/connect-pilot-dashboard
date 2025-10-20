@@ -364,11 +364,16 @@ export const LeadExportFilesSection = () => {
         // Delete from storage if csv_path exists
         if (currentJob.csv_path) {
           const filePath = currentJob.csv_path.replace('https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/', '');
+          console.log('🗑️ Deleting file:', filePath);
           const { error: deleteError } = await supabase.storage
             .from('exports')
             .remove([filePath]);
           
-          if (deleteError) console.error('Error deleting file:', deleteError);
+          if (deleteError) {
+            console.error('❌ Error deleting file:', deleteError);
+          } else {
+            console.log('✅ File deleted successfully');
+          }
         }
 
         // Delete job from database
@@ -377,7 +382,11 @@ export const LeadExportFilesSection = () => {
           .delete()
           .eq('log_id', currentJob.log_id);
 
-        if (jobError) console.error('Error deleting job:', jobError);
+        if (jobError) {
+          console.error('❌ Error deleting job:', jobError);
+        } else {
+          console.log('✅ Job deleted successfully');
+        }
 
         toast({
           title: "CSV Completed",
@@ -409,26 +418,42 @@ export const LeadExportFilesSection = () => {
       const updatedCSV = updatedCSVLines.join('\n');
       console.log('📝 New CSV has', updatedCSVLines.length - 1, 'data rows');
 
-      // Upload updated CSV back to storage
+      // Upload updated CSV back to storage - use delete then upload approach
       if (currentJob.csv_path) {
         const filePath = currentJob.csv_path.replace('https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/', '');
         
-        console.log('📤 Uploading to:', filePath);
+        console.log('🗑️ Deleting old file:', filePath);
         
-        const { error, data } = await supabase.storage
+        // Delete the old file first
+        const { error: deleteError } = await supabase.storage
           .from('exports')
-          .update(filePath, new Blob([updatedCSV], { type: 'text/csv' }), {
+          .remove([filePath]);
+        
+        if (deleteError) {
+          console.error('⚠️ Error deleting old file (might not exist):', deleteError);
+        } else {
+          console.log('✅ Old file deleted');
+        }
+
+        // Upload the new file
+        console.log('📤 Uploading new file to:', filePath);
+        const { error: uploadError, data: uploadData } = await supabase.storage
+          .from('exports')
+          .upload(filePath, new Blob([updatedCSV], { type: 'text/csv' }), {
             cacheControl: '0',
             upsert: true,
             contentType: 'text/csv'
           });
 
-        if (error) {
-          console.error('❌ Error updating CSV:', error);
-          throw error;
+        if (uploadError) {
+          console.error('❌ Error uploading CSV:', uploadError);
+          throw uploadError;
         }
 
-        console.log('✅ CSV updated successfully:', data);
+        console.log('✅ CSV uploaded successfully:', uploadData);
+        
+        // Update the CSV text for next iteration
+        setOriginalCSVText(updatedCSV);
       }
     } catch (error) {
       console.error('❌ Error in updateCSVFile:', error);
