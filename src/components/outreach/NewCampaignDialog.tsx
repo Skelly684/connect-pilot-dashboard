@@ -101,15 +101,21 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
       
       // Create email template if provided
       if (emailSubject.trim() && emailBody.trim()) {
-        const template = await createEmailTemplate({
-          user_id: user.id,
-          campaign_id: null,
-          name: `${campaignName} - Email Template`,
-          subject: emailSubject,
-          body: emailBody,
-          is_active: true
-        });
-        emailTemplateId = template.id;
+        try {
+          const template = await createEmailTemplate({
+            user_id: user.id,
+            campaign_id: null,
+            name: `${campaignName} - Email Template`,
+            subject: emailSubject,
+            body: emailBody,
+            is_active: true
+          });
+          emailTemplateId = template.id;
+        } catch (templateError: any) {
+          console.error('Email template creation failed:', templateError);
+          alert(`Failed to create email template: ${templateError.message || 'Unknown error'}`);
+          throw templateError;
+        }
       }
       
       // Create campaign with delivery rules
@@ -190,8 +196,9 @@ export const NewCampaignDialog = ({ open, onOpenChange }: NewCampaignDialogProps
       setEmailSteps([]);
       
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating campaign:', error);
+      alert(`Error: ${error.message || 'Failed to create campaign'}`);
     } finally {
       setIsLoading(false);
     }
