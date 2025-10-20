@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, LogOut, User, X, Moon, Sun } from "lucide-react";
+import { Bell, LogOut, User, X, Moon, Sun, Play } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,7 @@ import { formatDistance } from "date-fns";
 import { useTheme } from "next-themes";
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { DemoMode } from "./DemoMode";
 
 export const DashboardHeader = () => {
   const { user, signOut } = useAuth();
@@ -25,6 +26,7 @@ export const DashboardHeader = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification, clearAllNotifications } = useNotifications();
   const { theme, setTheme } = useTheme();
   const [forceUpdate, setForceUpdate] = React.useState(0);
+  const [showDemo, setShowDemo] = React.useState(false);
   
   console.log('🎨 DashboardHeader render - notifications:', notifications.length, 'unread:', unreadCount);
   console.log('🎨 DashboardHeader notifications detail:', notifications);
@@ -58,7 +60,9 @@ export const DashboardHeader = () => {
   const isSpecialUser = user?.email === 'scttskelly@gmail.com';
 
   return (
-    <header className="h-16 bg-gradient-card backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6 sticky top-0 z-50 shadow-md">
+    <>
+      {showDemo && <DemoMode onClose={() => setShowDemo(false)} />}
+      <header className="h-16 bg-gradient-card backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6 sticky top-0 z-50 shadow-md">
       <div className="flex items-center space-x-4">
         <div className="relative w-10 h-10">
           {isSpecialUser ? (
@@ -82,6 +86,16 @@ export const DashboardHeader = () => {
       </div>
       
       <div className="flex items-center space-x-3">
+        {isSpecialUser && (
+          <Button
+            onClick={() => setShowDemo(true)}
+            className="bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-500 hover:to-purple-400 shadow-lg shadow-purple-500/50 animate-pulse"
+          >
+            <Play className="mr-2 h-4 w-4" />
+            Preview Demo
+          </Button>
+        )}
+        
         <Button
           variant="ghost"
           size="icon"
@@ -209,5 +223,6 @@ export const DashboardHeader = () => {
         </DropdownMenu>
       </div>
     </header>
+    </>
   );
 };
