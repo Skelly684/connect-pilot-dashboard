@@ -492,6 +492,9 @@ export const LeadExportFilesSection = () => {
       // Update CSV file in storage
       await updateCSVFile(remainingLeads);
       
+      // Refresh recently reviewed leads
+      await fetchReviewedLeads();
+      
       toast({
         title: "Success",
         description: `${selectedLeadsData.length} leads accepted for outreach`,
@@ -516,6 +519,34 @@ export const LeadExportFilesSection = () => {
     isOperatingRef.current = true;
     setIsProcessing(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const selectedLeadsData = reviewLeads.filter(lead => selectedLeads.has(lead.tempId));
+      
+      // Insert rejected leads into database so they show in Recently Reviewed
+      const leadsToInsert = selectedLeadsData.map(lead => ({
+        user_id: user.id,
+        name: lead.name,
+        email: lead.email,
+        email_address: lead.email,
+        company_name: lead.company_name,
+        company_website: lead.company_website,
+        linkedin_url: lead.linkedin_url,
+        job_title: lead.job_title,
+        phone: lead.phone,
+        state_name: lead.state_name,
+        country_name: lead.country_name,
+        status: 'rejected',
+        reviewed_at: new Date().toISOString(),
+      }));
+
+      const { error } = await supabase
+        .from('leads')
+        .insert(leadsToInsert);
+
+      if (error) throw error;
+
       // Remove from the review list
       const remainingLeads = reviewLeads.filter(lead => !selectedLeads.has(lead.tempId));
       setReviewLeads(remainingLeads);
@@ -524,9 +555,19 @@ export const LeadExportFilesSection = () => {
       // Update CSV file in storage
       await updateCSVFile(remainingLeads);
       
+      // Refresh recently reviewed leads
+      await fetchReviewedLeads();
+      
       toast({
         title: "Success",
-        description: "Selected leads rejected",
+        description: `${selectedLeadsData.length} leads rejected`,
+      });
+    } catch (error) {
+      console.error('Error rejecting leads:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject leads",
+        variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
