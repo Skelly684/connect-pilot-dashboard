@@ -327,6 +327,9 @@ export const LeadExportFilesSection = () => {
     setIsLoadingCSV(true);
     setSelectedLeads(new Set());
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       // Handle different URL types
       let fetchUrl = url;
       const isGoogleSheets = url.includes('docs.google.com/spreadsheets');
@@ -355,6 +358,41 @@ export const LeadExportFilesSection = () => {
       const csvText = await response.text();
       console.log('✅ Fetched CSV, length:', csvText.length);
       const parsedLeads = parseCSV(csvText);
+      
+      // CRITICAL: If this is a Google Sheets URL, migrate it to Supabase storage
+      if (isGoogleSheets && !job.csv_path) {
+        console.log('📦 Migrating Google Sheets to Supabase storage...');
+        
+        // Create a file path based on the job log_id
+        const fileName = `${user.id}/${job.log_id}_${job.file_name || 'export'}.csv`;
+        
+        // Upload to Supabase storage
+        const { error: uploadError } = await supabase.storage
+          .from('exports')
+          .upload(fileName, new Blob([csvText], { type: 'text/csv' }), {
+            cacheControl: '0',
+            upsert: true,
+            contentType: 'text/csv'
+          });
+        
+        if (uploadError) {
+          console.error('❌ Error uploading to storage:', uploadError);
+        } else {
+          // Update the job with the new csv_path
+          const csvPath = `https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/${fileName}`;
+          console.log('✅ CSV migrated to:', csvPath);
+          
+          const { error: updateError } = await supabase
+            .from('searchleads_jobs')
+            .update({ csv_path: csvPath })
+            .eq('log_id', job.log_id);
+          
+          if (!updateError) {
+            console.log('✅ Job updated with new csv_path');
+            job.csv_path = csvPath; // Update local job object
+          }
+        }
+      }
       
       setReviewLeads(parsedLeads);
       setOriginalCSVText(csvText);
