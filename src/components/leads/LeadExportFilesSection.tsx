@@ -502,6 +502,14 @@ export const LeadExportFilesSection = () => {
     
     isOperatingRef.current = true;
     setIsProcessing(true);
+    
+    // Show loading toast
+    const loadingToast = toast({
+      title: "Processing...",
+      description: "Accepting leads and updating CSV file",
+      duration: Infinity,
+    });
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -542,15 +550,18 @@ export const LeadExportFilesSection = () => {
       
       console.log('✅ Inserted leads:', insertedData?.length || 0);
 
-      setSelectedLeads(new Set());
       // Remove accepted leads from review list
       const remainingLeads = reviewLeads.filter(lead => !selectedLeads.has(lead.tempId));
       console.log('📊 Remaining leads in review:', remainingLeads.length);
-      setReviewLeads(remainingLeads);
       
-      // Update CSV file in storage
-      console.log('📝 Updating CSV file...');
+      // CRITICAL: Update CSV file in storage BEFORE updating state
+      console.log('📝 Updating CSV file - THIS MUST COMPLETE...');
       await updateCSVFile(remainingLeads);
+      console.log('✅ CSV file update completed');
+      
+      // Now update UI state
+      setReviewLeads(remainingLeads);
+      setSelectedLeads(new Set());
       
       // Refresh recently reviewed leads
       console.log('🔄 Refreshing reviewed leads list...');
@@ -558,12 +569,16 @@ export const LeadExportFilesSection = () => {
       
       console.log('🟢 END: Accept operation complete');
       
+      // Dismiss loading toast
+      loadingToast.dismiss();
+      
       toast({
         title: "Success",
         description: `${selectedLeadsData.length} leads accepted for outreach`,
       });
     } catch (error) {
       console.error('❌ Error accepting leads:', error);
+      loadingToast.dismiss();
       toast({
         title: "Error",
         description: "Failed to accept leads",
@@ -583,6 +598,14 @@ export const LeadExportFilesSection = () => {
     
     isOperatingRef.current = true;
     setIsProcessing(true);
+    
+    // Show loading toast
+    const loadingToast = toast({
+      title: "Processing...",
+      description: "Rejecting leads and updating CSV file",
+      duration: Infinity,
+    });
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -685,12 +708,15 @@ export const LeadExportFilesSection = () => {
       // Remove from the review list
       const remainingLeads = reviewLeads.filter(lead => !selectedLeads.has(lead.tempId));
       console.log('📊 Remaining leads in review:', remainingLeads.length);
+      
+      // CRITICAL: Update CSV file in storage BEFORE updating state
+      console.log('📝 Updating CSV file - THIS MUST COMPLETE...');
+      await updateCSVFile(remainingLeads);
+      console.log('✅ CSV file update completed');
+      
+      // Now update UI state
       setReviewLeads(remainingLeads);
       setSelectedLeads(new Set());
-      
-      // Update CSV file in storage
-      console.log('📝 Updating CSV file...');
-      await updateCSVFile(remainingLeads);
       
       // Refresh recently reviewed leads
       console.log('🔄 Refreshing reviewed leads list...');
@@ -698,12 +724,16 @@ export const LeadExportFilesSection = () => {
       
       console.log('🔴 END: Reject operation complete');
       
+      // Dismiss loading toast
+      loadingToast.dismiss();
+      
       toast({
         title: "Success",
         description: `${processedCount} leads rejected (${insertedCount} new, ${updatedCount} updated${skippedCount > 0 ? `, ${skippedCount} skipped` : ''})`,
       });
     } catch (error) {
       console.error('❌ Error rejecting leads:', error);
+      loadingToast.dismiss();
       toast({
         title: "Error",
         description: "Failed to reject leads",
