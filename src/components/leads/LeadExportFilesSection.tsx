@@ -964,7 +964,7 @@ export const LeadExportFilesSection = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleReview(job.url || job.csv_path!, job)}
+                            onClick={() => handleReview(job.csv_path || job.url!, job)}
                             disabled={isLoadingCSV}
                           >
                             <Eye className="h-4 w-4 mr-2" />
