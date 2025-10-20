@@ -9,18 +9,14 @@ import { useCampaigns } from "@/hooks/useCampaigns";
 import { NewCampaignDialog } from "@/components/outreach/NewCampaignDialog";
 import { CampaignSettingsDialog } from "@/components/outreach/CampaignSettingsDialog";
 import { CampaignEditor } from "@/components/outreach/CampaignEditor";
-import { useDemo } from "@/contexts/DemoContext";
+
 
 export const OutreachCenter = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null);
   const [showNewCampaign, setShowNewCampaign] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const { campaigns: realCampaigns, isLoading, updateCampaign, setDefaultCampaign, deleteCampaign } = useCampaigns();
-  const { isDemoActive, getFakeCampaigns } = useDemo();
-  
-  // Use demo campaigns if demo mode is active
-  const campaigns = isDemoActive ? getFakeCampaigns() : realCampaigns;
+  const { campaigns, isLoading, updateCampaign, setDefaultCampaign, deleteCampaign } = useCampaigns();
 
   // Get campaign from URL parameters
   const campaignIdParam = searchParams.get('campaign');

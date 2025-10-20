@@ -22,13 +22,13 @@ const demoScenes: DemoScene[] = [
   {
     id: 'intro',
     title: 'Welcome to NEXUS',
-    description: 'Your AI-powered lead management system',
+    description: 'Your AI-powered lead management platform',
     route: '/dashboard',
-    duration: 4000,
+    duration: 3500,
     annotations: [
       {
         text: 'Automate your entire lead workflow with AI',
-        position: { top: '45%', left: '50%' },
+        position: { top: '50%', left: '50%' },
         highlight: true,
         delay: 500
       }
@@ -37,174 +37,160 @@ const demoScenes: DemoScene[] = [
   {
     id: 'dashboard',
     title: 'Dashboard Overview',
-    description: 'See all your metrics at a glance',
+    description: 'Monitor your lead pipeline',
     route: '/dashboard',
     duration: 5000,
     annotations: [
       {
-        text: 'Track total leads and conversion rates',
-        position: { top: '30%', left: '20%' },
+        text: '"Review New Leads" - Accept or reject incoming leads',
+        position: { top: '35%', left: '30%' },
         delay: 300
       },
       {
-        text: 'Monitor active campaigns and replies',
-        position: { top: '30%', right: '20%' },
-        delay: 800
+        text: '"All Leads" - View and manage your entire database',
+        position: { top: '50%', left: '30%' },
+        delay: 1000
+      },
+      {
+        text: '"CRM Sync" - Connect external CRM systems',
+        position: { top: '65%', left: '30%' },
+        delay: 1700
       }
     ]
   },
   {
-    id: 'campaigns',
-    title: 'Outreach Campaigns',
-    description: 'AI-powered email sequences',
+    id: 'outreach',
+    title: 'Email Campaigns',
+    description: 'Create automated outreach sequences',
     route: '/outreach',
-    duration: 7000,
+    duration: 6000,
     annotations: [
       {
-        text: 'Create multi-step email campaigns',
-        position: { top: '20%', left: '30%' },
+        text: '"+ New Campaign" - Start a new email sequence',
+        position: { top: '20%', right: '25%' },
         delay: 500
       },
       {
-        text: 'AI personalizes each message automatically',
-        position: { top: '45%', left: '50%' },
+        text: 'Configure email steps, delays, and personalization',
+        position: { top: '40%', left: '50%' },
         highlight: true,
         delay: 1500
       },
       {
-        text: 'Set delivery rules and timing',
-        position: { bottom: '25%', right: '20%' },
+        text: 'Track opens, clicks, and replies in real-time',
+        position: { bottom: '30%', left: '35%' },
         delay: 2500
       }
     ]
   },
   {
     id: 'self-leads',
-    title: 'Import Leads',
-    description: 'Upload CSV files from SearchLeads',
+    title: 'Import Your Leads',
+    description: 'Upload CSV files or export from SearchLeads',
     route: '/self-leads',
-    duration: 6000,
+    duration: 5500,
     annotations: [
       {
-        text: 'Upload CSV files with leads',
-        position: { top: '25%', left: '50%' },
+        text: '"Upload CSV" - Import leads from your files',
+        position: { top: '30%', left: '50%' },
         delay: 500
       },
       {
-        text: 'View recent imports and exports',
-        position: { top: '50%', left: '30%' },
+        text: '"Request Export" - Pull leads from SearchLeads API',
+        position: { top: '45%', left: '50%' },
         delay: 1500
+      },
+      {
+        text: 'View recent imports and pending exports',
+        position: { bottom: '25%', left: '50%' },
+        delay: 2500
       }
     ]
   },
   {
     id: 'all-leads',
     title: 'All Leads',
-    description: 'Manage your prospect database',
+    description: 'Your complete prospect database',
     route: '/leads',
-    duration: 7000,
+    duration: 6500,
     annotations: [
       {
-        text: 'Filter and search through all leads',
-        position: { top: '15%', left: '50%' },
+        text: 'Search and filter leads by status, source, or activity',
+        position: { top: '20%', left: '50%' },
         delay: 500
       },
       {
-        text: 'Track status: New → Contacted → Replied',
-        position: { top: '35%', right: '25%' },
+        text: 'Status progression: New → Contacted → Replied',
+        position: { top: '40%', left: '30%' },
         delay: 1500
       },
       {
-        text: 'See email and call activity for each lead',
-        position: { bottom: '20%', left: '30%' },
+        text: 'Click any lead to view full activity timeline',
+        position: { top: '55%', left: '50%' },
+        highlight: true,
         delay: 2500
       }
     ]
   },
   {
-    id: 'lead-detail',
-    title: 'Lead Activity Timeline',
-    description: 'Complete interaction history',
-    route: '/leads/demo-lead-1',
-    duration: 8000,
-    annotations: [
-      {
-        text: 'View full email conversation thread',
-        position: { top: '25%', left: '30%' },
-        delay: 500
-      },
-      {
-        text: 'See call logs and recordings',
-        position: { top: '45%', left: '30%' },
-        delay: 1500
-      },
-      {
-        text: 'Add notes and track next steps',
-        position: { bottom: '25%', right: '25%' },
-        delay: 2500
-      }
-    ]
-  },
-  {
-    id: 'lead-reply',
+    id: 'lead-replied',
     title: 'Lead Replied! 🎉',
-    description: 'Instant notifications',
+    description: 'Real-time engagement tracking',
     route: '/leads',
-    duration: 7000,
+    duration: 6000,
     annotations: [
       {
-        text: '🟣 Replied leads glow purple',
-        position: { top: '35%', left: '50%' },
+        text: '🟣 Purple glow = Lead replied to your email',
+        position: { top: '40%', left: '50%' },
         highlight: true,
         delay: 500
       },
       {
-        text: 'Email sequence automatically stops',
-        position: { top: '50%', left: '25%' },
-        delay: 1500
+        text: 'Email sequences auto-stop when leads reply',
+        position: { top: '55%', left: '30%' },
+        delay: 1800
       },
       {
-        text: 'Get instant browser notifications',
-        position: { bottom: '20%', right: '25%' },
-        highlight: true,
-        delay: 2500
+        text: 'Instant browser notifications for new replies',
+        position: { bottom: '25%', right: '25%' },
+        delay: 2800
       }
     ]
   },
   {
     id: 'calendar',
-    title: 'Google Calendar Integration',
-    description: 'Schedule meetings with leads',
+    title: 'Calendar Integration',
+    description: 'Sync with Google Calendar',
     route: '/calendar',
-    duration: 7000,
+    duration: 5500,
     annotations: [
       {
-        text: 'One-click Google Calendar sync',
-        position: { top: '15%', left: '50%' },
+        text: '"Connect Google Calendar" - One-click OAuth setup',
+        position: { top: '25%', left: '50%' },
         delay: 500
       },
       {
-        text: 'Quick-book meetings with AI suggestions',
-        position: { top: '40%', right: '20%' },
-        highlight: true,
+        text: '"Quick Book" - Schedule meetings with leads',
+        position: { top: '20%', right: '20%' },
         delay: 1500
       },
       {
-        text: 'Automatic lead linking',
-        position: { bottom: '25%', left: '25%' },
+        text: 'Meetings automatically link to lead profiles',
+        position: { bottom: '30%', left: '35%' },
+        highlight: true,
         delay: 2500
       }
     ]
   },
   {
     id: 'outro',
-    title: 'NEXUS: Your Lead Automation Platform',
-    description: 'Close more deals, faster.',
+    title: 'NEXUS - Lead Automation Platform',
+    description: 'Close more deals faster',
     route: '/dashboard',
-    duration: 4000,
+    duration: 3500,
     annotations: [
       {
-        text: 'Automate outreach • Track engagement • Close deals',
+        text: 'Import → Campaign → Reply → Close',
         position: { top: '50%', left: '50%' },
         highlight: true,
         delay: 500

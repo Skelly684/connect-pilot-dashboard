@@ -48,7 +48,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useDemo } from "@/contexts/DemoContext";
+
 import { LeadQuickActions } from "./LeadQuickActions";
 import * as XLSX from 'xlsx';
 
@@ -238,7 +238,7 @@ const CompanyCell = ({ company }: { company: any }) => {
 };
 
 export const AllLeadsSection = ({ 
-  leads: realLeads, 
+  leads, 
   isLoading, 
   onUpdateLeadStatus, 
   onDeleteLeads, 
@@ -247,10 +247,6 @@ export const AllLeadsSection = ({
   tempHighlightLeadId 
 }: AllLeadsSectionProps) => {
   const navigate = useNavigate();
-  const { isDemoActive, getFakeLeads } = useDemo();
-  
-  // Use demo leads if demo mode is active
-  const leads = isDemoActive ? getFakeLeads() : realLeads;
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
