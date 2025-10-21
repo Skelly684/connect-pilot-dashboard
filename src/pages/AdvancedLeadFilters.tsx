@@ -322,6 +322,18 @@ export default function AdvancedLeadFilters() {
               </div>
 
               <TextArrayInput field="organization_job_locations" label="Company Job Locations" placeholder="e.g., CA, NY" />
+
+              <TextArrayInput
+                field="q_organization_domains_list"
+                label="Company Domains (Include)"
+                placeholder="e.g., google.com, microsoft.com"
+              />
+
+              <TextArrayInput
+                field="q_organization_domains_exclude_list"
+                label="Company Domains (Exclude)"
+                placeholder="e.g., example.com"
+              />
             </CollapsibleContent>
           </Collapsible>
 
@@ -351,18 +363,6 @@ export default function AdvancedLeadFilters() {
                 options={KEYWORD_FIELDS}
                 label="Search Keywords In"
                 placeholder="Select fields..."
-              />
-
-              <TextArrayInput
-                field="q_organization_domains_list"
-                label="Include Specific Domains"
-                placeholder="e.g., google.com, microsoft.com"
-              />
-
-              <TextArrayInput
-                field="q_organization_domains_exclude_list"
-                label="Exclude Domains"
-                placeholder="e.g., example.com"
               />
             </CollapsibleContent>
           </Collapsible>
