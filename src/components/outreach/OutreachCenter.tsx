@@ -6,27 +6,29 @@ import { Badge } from "@/components/ui/badge";
 import { Mail, Phone, Send, Play, Pause, Settings, Plus, Star, StarOff, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCampaigns } from "@/hooks/useCampaigns";
-import { NewCampaignDialog } from "@/components/outreach/NewCampaignDialog";
+import { CampaignDialog } from "@/components/outreach/CampaignDialog";
 import { CampaignSettingsDialog } from "@/components/outreach/CampaignSettingsDialog";
-import { CampaignEditor } from "@/components/outreach/CampaignEditor";
 
 
 export const OutreachCenter = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null);
-  const [showNewCampaign, setShowNewCampaign] = useState(false);
+  const [showCampaignDialog, setShowCampaignDialog] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+  const [editingCampaign, setEditingCampaign] = useState<any>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { campaigns, isLoading, updateCampaign, setDefaultCampaign, deleteCampaign } = useCampaigns();
 
-  // Get campaign from URL parameters
-  const campaignIdParam = searchParams.get('campaign');
-  const editingCampaign = campaignIdParam ? campaigns.find(c => c.id === campaignIdParam) : null;
+  const handleNewCampaign = () => {
+    setDialogMode('create');
+    setEditingCampaign(null);
+    setShowCampaignDialog(true);
+  };
 
-  // Clear campaign parameter when going back
-  const handleBackToList = () => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete('campaign');
-    setSearchParams(newParams);
+  const handleEditCampaign = (campaign: any) => {
+    setDialogMode('edit');
+    setEditingCampaign(campaign);
+    setShowCampaignDialog(true);
   };
 
   const activeCampaigns = campaigns.filter(c => c.is_active);
@@ -72,29 +74,6 @@ export const OutreachCenter = () => {
     );
   }
 
-  // Show campaign editor if editing a specific campaign
-  if (editingCampaign) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="outline" 
-            onClick={handleBackToList}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Campaigns
-          </Button>
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-foreground">Edit Campaign</h2>
-            <p className="text-gray-600 dark:text-foreground/90 text-base">{editingCampaign.name}</p>
-          </div>
-        </div>
-        <CampaignEditor campaign={editingCampaign} />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -102,7 +81,7 @@ export const OutreachCenter = () => {
           <h2 className="text-3xl font-bold text-gray-900 dark:text-foreground">Outreach Center</h2>
           <p className="text-gray-600 dark:text-foreground/90 text-base">Manage your email and phone outreach campaigns</p>
         </div>
-        <Button onClick={() => setShowNewCampaign(true)} className="gap-2">
+        <Button onClick={handleNewCampaign} className="gap-2">
           <Plus className="h-4 w-4" />
           New Campaign
         </Button>
@@ -120,7 +99,7 @@ export const OutreachCenter = () => {
                 <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500 text-lg">No campaigns yet</p>
                 <p className="text-gray-400 text-sm mt-2">Create your first campaign to get started</p>
-                <Button onClick={() => setShowNewCampaign(true)} className="mt-4">
+                <Button onClick={handleNewCampaign} className="mt-4">
                   Create Campaign
                 </Button>
               </div>
@@ -133,7 +112,7 @@ export const OutreachCenter = () => {
                       <div
                         key={campaign.id}
                         className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                        onClick={() => setSelectedCampaign(parseInt(campaign.id))}
+                        onClick={() => handleEditCampaign(campaign)}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -231,7 +210,7 @@ export const OutreachCenter = () => {
                       <div
                         key={campaign.id}
                         className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer opacity-75"
-                        onClick={() => setSelectedCampaign(parseInt(campaign.id))}
+                        onClick={() => handleEditCampaign(campaign)}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="font-medium text-gray-900">{campaign.name}</h3>
@@ -276,9 +255,11 @@ export const OutreachCenter = () => {
         </Card>
       </div>
 
-      <NewCampaignDialog 
-        open={showNewCampaign} 
-        onOpenChange={setShowNewCampaign}
+      <CampaignDialog
+        open={showCampaignDialog}
+        onOpenChange={setShowCampaignDialog}
+        campaign={editingCampaign}
+        mode={dialogMode}
       />
     </div>
   );
