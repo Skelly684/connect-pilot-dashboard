@@ -1,27 +1,30 @@
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CampaignList } from '@/components/outreach/CampaignList';
-import { CampaignEditor } from '@/components/outreach/CampaignEditor';
 import { CampaignStats } from '@/components/outreach/CampaignStats';
 import { ActionFooter } from '@/components/outreach/ActionFooter';
-import { NewCampaignDialog } from '@/components/outreach/NewCampaignDialog';
+import { CampaignDialog } from '@/components/outreach/CampaignDialog';
 import { useCampaigns, Campaign } from '@/hooks/useCampaigns';
 import { useSearchParams } from 'react-router-dom';
 
 export default function Outreach() {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [showNewCampaignDialog, setShowNewCampaignDialog] = useState(false);
+  const [showCampaignDialog, setShowCampaignDialog] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [searchParams] = useSearchParams();
-  const { campaigns, isLoading, createCampaign } = useCampaigns();
+  const { campaigns, isLoading } = useCampaigns();
 
   const handleNewCampaign = () => {
-    setShowNewCampaignDialog(true);
+    setDialogMode('create');
+    setShowCampaignDialog(true);
   };
 
-  const handleCampaignCreated = (campaign: Campaign) => {
-    setSelectedCampaign(campaign);
-    setShowNewCampaignDialog(false);
+  const handleEditCampaign = () => {
+    if (selectedCampaign) {
+      setDialogMode('edit');
+      setShowCampaignDialog(true);
+    }
   };
 
   // Auto-select campaign from URL parameter and update when campaigns change
@@ -79,16 +82,27 @@ export default function Outreach() {
             />
           </div>
 
-          {/* Right Column - Campaign Editor */}
+          {/* Right Column - Campaign Preview */}
           <div className="col-span-8 flex flex-col">
             {selectedCampaign ? (
               <>
                 {/* Stats */}
                 <CampaignStats campaignId={selectedCampaign.id} />
                 
-                {/* Editor */}
-                <div className="flex-1">
-                  <CampaignEditor campaign={selectedCampaign} />
+                {/* Campaign Preview Card */}
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center max-w-md space-y-4">
+                    <div className="p-8 bg-card border rounded-lg">
+                      <h2 className="text-2xl font-semibold mb-2">{selectedCampaign.name}</h2>
+                      <p className="text-muted-foreground mb-6">
+                        Click "Edit Campaign" below to modify settings, messaging, and delivery rules.
+                      </p>
+                      <Button onClick={handleEditCampaign} size="lg" className="gap-2">
+                        <Edit className="h-4 w-4" />
+                        Edit Campaign
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Actions Footer */}
@@ -110,10 +124,12 @@ export default function Outreach() {
         </div>
       </div>
 
-      {/* New Campaign Dialog */}
-      <NewCampaignDialog
-        open={showNewCampaignDialog}
-        onOpenChange={setShowNewCampaignDialog}
+      {/* Campaign Dialog (Create/Edit) */}
+      <CampaignDialog
+        open={showCampaignDialog}
+        onOpenChange={setShowCampaignDialog}
+        campaign={dialogMode === 'edit' ? selectedCampaign : null}
+        mode={dialogMode}
       />
     </div>
   );
