@@ -77,11 +77,16 @@ export const CampaignDialog = ({ open, onOpenChange, campaign, mode }: CampaignD
       setFromName(campaign.from_name || 'Scott | PSN');
       setEmailDailyCap(campaign.email_daily_cap || 150);
       
-      // Load email template if exists
-      if (campaign.email_template) {
-        console.log('Loading email template:', campaign.email_template);
-        setEmailSubject(campaign.email_template.subject || '');
-        setEmailBody(campaign.email_template.body || '');
+      // Load email template if exists - check both possible field names
+      const emailTemplate = (campaign as any).email_template || (campaign as any).email_templates;
+      if (emailTemplate) {
+        console.log('Loading email template:', emailTemplate);
+        setEmailSubject(emailTemplate.subject || '');
+        setEmailBody(emailTemplate.body || '');
+      } else if (campaign.email_template_id) {
+        // If template not loaded but we have ID, fetch it
+        console.log('Fetching email template by ID:', campaign.email_template_id);
+        fetchTemplateById(campaign.email_template_id);
       } else {
         setEmailSubject('');
         setEmailBody('');
@@ -210,6 +215,24 @@ export const CampaignDialog = ({ open, onOpenChange, campaign, mode }: CampaignD
     setEmailDailyCap(150);
     setDeliveryRules(defaultRules);
     setEmailSteps([]);
+  };
+
+  const fetchTemplateById = async (templateId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('email_templates')
+        .select('subject, body')
+        .eq('id', templateId)
+        .single();
+      
+      if (!error && data) {
+        console.log('Fetched template from database:', data);
+        setEmailSubject(data.subject || '');
+        setEmailBody(data.body || '');
+      }
+    } catch (err) {
+      console.error('Error fetching template by ID:', err);
+    }
   };
   
   // Sample lead for preview
