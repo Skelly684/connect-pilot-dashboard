@@ -203,13 +203,17 @@ export const LeadExportFilesSection = () => {
 
   const parseCSV = (csvText: string) => {
     const lines = csvText.split('\n').filter(line => line.trim());
-    if (lines.length < 2) return [];
+    if (lines.length < 2) {
+      console.error('❌ CSV has less than 2 lines:', lines.length);
+      return [];
+    }
 
     const headers = parseCSVLine(lines[0]);
     const leads: any[] = [];
 
     console.log('🔍 CSV Headers:', headers);
     console.log('📊 Header count:', headers.length);
+    console.log('📊 Total data rows to parse:', lines.length - 1);
 
     // Create a mapping of lowercase header names to actual header names for flexible matching
     const headerMap = new Map<string, string>();
@@ -357,7 +361,21 @@ export const LeadExportFilesSection = () => {
       
       const csvText = await response.text();
       console.log('✅ Fetched CSV, length:', csvText.length);
+      console.log('📄 First 500 chars of CSV:', csvText.substring(0, 500));
       const parsedLeads = parseCSV(csvText);
+      
+      if (parsedLeads.length === 0) {
+        console.error('❌ No leads parsed from CSV!');
+        toast({
+          title: "No Leads Found",
+          description: "The CSV file appears to be empty or has an incompatible format. Please check the console for details.",
+          variant: "destructive",
+        });
+        setIsLoadingCSV(false);
+        return;
+      }
+      
+      console.log('✅ Successfully parsed', parsedLeads.length, 'leads from CSV');
       
       // CRITICAL: If this is a Google Sheets URL, migrate it to Supabase storage
       if (isGoogleSheets && !job.csv_path) {
