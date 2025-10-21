@@ -150,12 +150,49 @@ export const CampaignDialog = ({ open, onOpenChange, campaign, mode }: CampaignD
       const steps = await fetchEmailSteps(campaignId);
       console.log('Loaded email steps:', steps);
       
-      // Transform steps to match the format expected by DeliveryRulesTab
-      const transformedSteps = (steps || []).map(step => ({
-        ...step,
-        when_to_send: step.send_offset_minutes !== null ? 'delay' : 'exact',
-      }));
+      // For each step, fetch the template content if template_id exists
+      const transformedSteps = await Promise.all(
+        (steps || []).map(async (step) => {
+          let subject = '';
+          let body = '';
+          
+          // Try to find template content
+          if (step.template_id) {
+            const template = emailTemplates.find(t => t.id === step.template_id);
+            if (template) {
+              subject = template.subject;
+              body = template.body;
+              console.log(`Found template for step ${step.step_number}:`, template.name);
+            } else {
+              // Fetch template from database if not in local cache
+              try {
+                const { data, error } = await supabase
+                  .from('email_templates')
+                  .select('subject, body')
+                  .eq('id', step.template_id)
+                  .single();
+                
+                if (!error && data) {
+                  subject = data.subject;
+                  body = data.body;
+                  console.log(`Fetched template from DB for step ${step.step_number}`);
+                }
+              } catch (err) {
+                console.error('Error fetching template:', err);
+              }
+            }
+          }
+          
+          return {
+            ...step,
+            when_to_send: step.send_offset_minutes !== null ? 'delay' : 'exact',
+            subject,
+            body,
+          };
+        })
+      );
       
+      console.log('Transformed email steps with templates:', transformedSteps);
       setEmailSteps(transformedSteps);
     } catch (error) {
       console.error('Error loading email steps:', error);
@@ -423,15 +460,26 @@ export const CampaignDialog = ({ open, onOpenChange, campaign, mode }: CampaignD
 
         <div className="space-y-6">
           {/* Basic Campaign Info */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="campaign-name">Campaign Name</Label>
-              <Input
-                id="campaign-name"
-                value={campaignName}
-                onChange={(e) => setCampaignName(e.target.value)}
-                placeholder="Q1 Sales Outreach"
-              />
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="campaign-name">Campaign Name</Label>
+                <Input
+                  id="campaign-name"
+                  value={campaignName}
+                  onChange={(e) => setCampaignName(e.target.value)}
+                  placeholder="Q1 Sales Outreach"
+                />
+              </div>
+              <div>
+                <Label htmlFor="from-name">From Name</Label>
+                <Input
+                  id="from-name"
+                  value={fromName}
+                  onChange={(e) => setFromName(e.target.value)}
+                  placeholder="Scott | PSN"
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="from-email">From Email</Label>
