@@ -328,6 +328,13 @@ export const LeadExportFilesSection = () => {
   };
 
   const handleReview = async (url: string, job: ExportJob) => {
+    console.log('🚀 START handleReview for job:', {
+      log_id: job.log_id,
+      file_name: job.file_name,
+      url: url,
+      csv_path: job.csv_path
+    });
+    
     setIsLoadingCSV(true);
     setSelectedLeads(new Set());
     try {
@@ -345,11 +352,30 @@ export const LeadExportFilesSection = () => {
         }
         console.log('📥 Fetching Google Sheets CSV from:', fetchUrl);
       } else {
-        // For Supabase storage, strip query params and use clean URL
-        fetchUrl = url.split('?')[0];
-        console.log('📥 Fetching Supabase CSV from:', fetchUrl);
+        // For Supabase storage, clean up the URL
+        // Remove all query parameters first
+        let cleanPath = url.split('?')[0];
+        
+        // If it's not a full URL, construct one
+        if (!cleanPath.startsWith('http')) {
+          cleanPath = `https://zcgutkfkohonpqvwfukk.supabase.co/storage/v1/object/public/exports/${cleanPath}`;
+        }
+        
+        // URL encode any spaces in the path
+        const urlParts = cleanPath.split('/');
+        const encodedParts = urlParts.map((part, idx) => {
+          // Don't encode the protocol part (https:)
+          if (idx < 3) return part;
+          return encodeURIComponent(decodeURIComponent(part));
+        });
+        fetchUrl = encodedParts.join('/');
+        
+        console.log('📥 Original URL:', url);
+        console.log('📥 Cleaned URL:', cleanPath);
+        console.log('📥 Final fetch URL:', fetchUrl);
       }
       
+      console.log('🌐 Making fetch request to:', fetchUrl);
       const response = await fetch(fetchUrl, {
         cache: 'no-store',
         headers: {
@@ -357,7 +383,14 @@ export const LeadExportFilesSection = () => {
           'Pragma': 'no-cache'
         }
       });
-      if (!response.ok) throw new Error('Failed to fetch CSV');
+      
+      console.log('📡 Response status:', response.status, response.statusText);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        console.error('❌ Fetch failed with status:', response.status);
+        throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`);
+      }
       
       const csvText = await response.text();
       console.log('✅ Fetched CSV, length:', csvText.length);
