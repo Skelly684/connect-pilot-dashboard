@@ -13,7 +13,7 @@ export default function Outreach() {
   const [showCampaignDialog, setShowCampaignDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [searchParams] = useSearchParams();
-  const { campaigns, isLoading } = useCampaigns();
+  const { campaigns, isLoading, fetchCampaigns } = useCampaigns();
 
   const handleNewCampaign = () => {
     setDialogMode('create');
@@ -24,6 +24,21 @@ export default function Outreach() {
     if (selectedCampaign) {
       setDialogMode('edit');
       setShowCampaignDialog(true);
+    }
+  };
+
+  const handleDialogClose = async (open: boolean) => {
+    setShowCampaignDialog(open);
+    if (!open) {
+      // Refresh campaigns after closing dialog to get updated data
+      await fetchCampaigns();
+      // Update selected campaign with fresh data
+      if (selectedCampaign) {
+        const updatedCampaign = campaigns.find(c => c.id === selectedCampaign.id);
+        if (updatedCampaign) {
+          setSelectedCampaign(updatedCampaign);
+        }
+      }
     }
   };
 
@@ -127,7 +142,7 @@ export default function Outreach() {
       {/* Campaign Dialog (Create/Edit) */}
       <CampaignDialog
         open={showCampaignDialog}
-        onOpenChange={setShowCampaignDialog}
+        onOpenChange={handleDialogClose}
         campaign={dialogMode === 'edit' ? selectedCampaign : null}
         mode={dialogMode}
       />

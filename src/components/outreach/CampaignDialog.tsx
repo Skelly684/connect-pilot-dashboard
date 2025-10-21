@@ -70,6 +70,8 @@ export const CampaignDialog = ({ open, onOpenChange, campaign, mode }: CampaignD
   // Load campaign data when editing
   useEffect(() => {
     if (mode === 'edit' && campaign && open) {
+      console.log('Loading campaign data for edit:', campaign);
+      
       setCampaignName(campaign.name);
       setFromEmail(campaign.from_email || '');
       setFromName(campaign.from_name || 'Scott | PSN');
@@ -77,19 +79,36 @@ export const CampaignDialog = ({ open, onOpenChange, campaign, mode }: CampaignD
       
       // Load email template if exists
       if (campaign.email_template) {
+        console.log('Loading email template:', campaign.email_template);
         setEmailSubject(campaign.email_template.subject || '');
         setEmailBody(campaign.email_template.body || '');
+      } else {
+        setEmailSubject('');
+        setEmailBody('');
       }
       
-      // Load delivery rules
+      // Load delivery rules and caller config
       if (campaign.delivery_rules) {
+        console.log('Loading delivery rules:', campaign.delivery_rules);
         setDeliveryRules(campaign.delivery_rules);
         if (campaign.delivery_rules.caller) {
           setCallerConfig(campaign.delivery_rules.caller);
+        } else {
+          // Use default caller config if not present
+          setCallerConfig({
+            opening_script: campaign.caller_prompt || 'Hi, this is Scott from PSN…',
+            goal: 'qualify',
+            tone: 'professional',
+            disclose_ai: false,
+            max_duration_sec: 180,
+            qualify_questions: [],
+            objections: [],
+            not_interested_policy: 'send_followup_email'
+          });
         }
       } else {
         // Construct from legacy fields
-        setDeliveryRules({
+        const legacyRules: DeliveryRules = {
           use_email: true,
           use_calls: true,
           call: {
@@ -101,23 +120,46 @@ export const CampaignDialog = ({ open, onOpenChange, campaign, mode }: CampaignD
           email: {
             send_initial: true,
           },
+        };
+        setDeliveryRules(legacyRules);
+        
+        // Set caller config from legacy caller_prompt
+        setCallerConfig({
+          opening_script: campaign.caller_prompt || 'Hi, this is Scott from PSN…',
+          goal: 'qualify',
+          tone: 'professional',
+          disclose_ai: false,
+          max_duration_sec: 180,
+          qualify_questions: [],
+          objections: [],
+          not_interested_policy: 'send_followup_email'
         });
       }
       
       // Load email steps
       loadEmailSteps(campaign.id);
-    } else if (mode === 'create') {
-      // Reset to defaults
+    } else if (mode === 'create' && open) {
+      // Reset to defaults when opening create dialog
       resetForm();
     }
   }, [campaign, mode, open]);
 
   const loadEmailSteps = async (campaignId: string) => {
     try {
+      console.log('Fetching email steps for campaign:', campaignId);
       const steps = await fetchEmailSteps(campaignId);
-      setEmailSteps(steps || []);
+      console.log('Loaded email steps:', steps);
+      
+      // Transform steps to match the format expected by DeliveryRulesTab
+      const transformedSteps = (steps || []).map(step => ({
+        ...step,
+        when_to_send: step.send_offset_minutes !== null ? 'delay' : 'exact',
+      }));
+      
+      setEmailSteps(transformedSteps);
     } catch (error) {
       console.error('Error loading email steps:', error);
+      setEmailSteps([]);
     }
   };
 
