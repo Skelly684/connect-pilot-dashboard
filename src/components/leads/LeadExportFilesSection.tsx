@@ -300,7 +300,7 @@ export const LeadExportFilesSection = () => {
         ),
         country_name: safeGet('country', 'Country', 'country_name'),
         state_name: safeGet('state', 'State', 'state_name'),
-        phone: safeGet('phone_number', 'Phone', 'phone', 'phone_1', 'mobile'),
+        phone: safeGet('phone_number', 'mobile_number', 'Phone', 'phone', 'phone_1', 'mobile'),
         industry: safeGet('Industry', 'industry', 'sector', 'Sector'),
       };
 
