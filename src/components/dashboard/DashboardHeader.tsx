@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, LogOut, User, X, Moon, Sun, Play } from "lucide-react";
+import { Bell, LogOut, User, X, Moon, Sun } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,16 +91,6 @@ export const DashboardHeader = () => {
       </div>
       
       <div className="flex items-center space-x-3">
-        {isSpecialUser && (
-          <Button
-            onClick={handleStartDemo}
-            className="bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-500 hover:to-purple-400 shadow-lg shadow-purple-500/50 animate-pulse"
-          >
-            <Play className="mr-2 h-4 w-4" />
-            Preview Demo
-          </Button>
-        )}
-        
         <Button
           variant="ghost"
           size="icon"
