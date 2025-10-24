@@ -1003,19 +1003,16 @@ export type Database = {
           to_email: string
           updated_at: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "email_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
-      cleanup_old_rejected_leads: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_stuck_emails: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      is_admin: {
-        Args: { u: string }
-        Returns: boolean
-      }
+      cleanup_old_rejected_leads: { Args: never; Returns: undefined }
+      cleanup_stuck_emails: { Args: never; Returns: undefined }
+      is_admin: { Args: { u: string }; Returns: boolean }
       mark_email_sent: {
         Args: {
           p_lock_token: string
