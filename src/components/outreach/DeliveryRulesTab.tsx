@@ -194,7 +194,7 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
     setIsLoading(false);
   };
 
-  // Debounced version with 300ms delay
+  // Debounced version with 100ms delay (reduced for better responsiveness)
   const handleSaveRules = useCallback(() => {
     // Clear any existing timeout
     if (saveTimeoutRef.current) {
@@ -204,7 +204,7 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
     // Set new timeout
     saveTimeoutRef.current = setTimeout(() => {
       handleSaveRulesImmediate();
-    }, 300);
+    }, 100);
   }, [handleSaveRulesImmediate]);
 
   // Cleanup timeout on unmount
@@ -308,7 +308,10 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
             <Switch
               id="use-calls"
               checked={deliveryRules.use_calls}
-              onCheckedChange={(checked) => setDeliveryRules(prev => ({ ...prev, use_calls: checked }))}
+              onCheckedChange={(checked) => {
+                setDeliveryRules(prev => ({ ...prev, use_calls: checked }));
+                handleSaveRules();
+              }}
             />
           </div>
 
@@ -320,7 +323,10 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
             <Switch
               id="use-email"
               checked={deliveryRules.use_email}
-              onCheckedChange={(checked) => setDeliveryRules(prev => ({ ...prev, use_email: checked }))}
+              onCheckedChange={(checked) => {
+                setDeliveryRules(prev => ({ ...prev, use_email: checked }));
+                handleSaveRules();
+              }}
             />
           </div>
         </CardContent>
@@ -342,10 +348,13 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
                   min="1"
                   max="10"
                   value={deliveryRules.call.max_attempts}
-                  onChange={(e) => setDeliveryRules(prev => ({
-                    ...prev,
-                    call: { ...prev.call, max_attempts: parseInt(e.target.value) || 1 }
-                  }))}
+                  onChange={(e) => {
+                    setDeliveryRules(prev => ({
+                      ...prev,
+                      call: { ...prev.call, max_attempts: parseInt(e.target.value) || 1 }
+                    }));
+                    handleSaveRules();
+                  }}
                 />
               </div>
 
@@ -357,10 +366,13 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
                   min="5"
                   max="1440"
                   value={deliveryRules.call.retry_minutes}
-                  onChange={(e) => setDeliveryRules(prev => ({
-                    ...prev,
-                    call: { ...prev.call, retry_minutes: parseInt(e.target.value) || 5 }
-                  }))}
+                  onChange={(e) => {
+                    setDeliveryRules(prev => ({
+                      ...prev,
+                      call: { ...prev.call, retry_minutes: parseInt(e.target.value) || 5 }
+                    }));
+                    handleSaveRules();
+                  }}
                 />
               </div>
             </div>
@@ -374,10 +386,13 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
                   min="0"
                   max="23"
                   value={deliveryRules.call.window_start}
-                  onChange={(e) => setDeliveryRules(prev => ({
-                    ...prev,
-                    call: { ...prev.call, window_start: parseInt(e.target.value) || 0 }
-                  }))}
+                  onChange={(e) => {
+                    setDeliveryRules(prev => ({
+                      ...prev,
+                      call: { ...prev.call, window_start: parseInt(e.target.value) || 0 }
+                    }));
+                    handleSaveRules();
+                  }}
                 />
               </div>
 
@@ -389,10 +404,13 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
                   min="1"
                   max="24"
                   value={deliveryRules.call.window_end}
-                  onChange={(e) => setDeliveryRules(prev => ({
-                    ...prev,
-                    call: { ...prev.call, window_end: parseInt(e.target.value) || 1 }
-                  }))}
+                  onChange={(e) => {
+                    setDeliveryRules(prev => ({
+                      ...prev,
+                      call: { ...prev.call, window_end: parseInt(e.target.value) || 1 }
+                    }));
+                    handleSaveRules();
+                  }}
                 />
               </div>
             </div>
@@ -422,10 +440,13 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
               <Switch
                 id="send-initial"
                 checked={deliveryRules.email.send_initial}
-                onCheckedChange={(checked) => setDeliveryRules(prev => ({
-                  ...prev,
-                  email: { ...prev.email, send_initial: checked }
-                }))}
+                onCheckedChange={(checked) => {
+                  setDeliveryRules(prev => ({
+                    ...prev,
+                    email: { ...prev.email, send_initial: checked }
+                  }));
+                  handleSaveRules();
+                }}
               />
             </div>
 
