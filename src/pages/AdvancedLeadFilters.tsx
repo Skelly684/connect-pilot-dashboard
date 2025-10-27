@@ -497,10 +497,11 @@ export default function AdvancedLeadFilters() {
                 <Input
                   type="number"
                   value={noOfLeads}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value) || 100;
-                    const clampedValue = Math.max(100, Math.min(1000, value));
-                    setNoOfLeads(clampedValue);
+                  onChange={(e) => setNoOfLeads(parseInt(e.target.value) || 0)}
+                  onBlur={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (value < 100) setNoOfLeads(100);
+                    else if (value > 1000) setNoOfLeads(1000);
                   }}
                   min={100}
                   max={1000}
