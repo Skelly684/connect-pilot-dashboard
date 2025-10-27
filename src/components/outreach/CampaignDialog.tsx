@@ -21,7 +21,7 @@ interface CampaignDialogProps {
 }
 
 export const CampaignDialog = ({ open, onOpenChange, campaign, mode }: CampaignDialogProps) => {
-  const { createCampaign, updateCampaign, createEmailTemplate, saveEmailSteps, fetchEmailSteps, emailTemplates } = useCampaigns();
+  const { createCampaign, updateCampaign, createEmailTemplate, saveEmailSteps, fetchEmailSteps, emailTemplates, fetchCampaigns } = useCampaigns();
   const [isLoading, setIsLoading] = useState(false);
   
   // Campaign basic info
@@ -430,6 +430,9 @@ export const CampaignDialog = ({ open, onOpenChange, campaign, mode }: CampaignD
           }
         }
       }
+      
+      // Refresh campaigns list
+      await fetchCampaigns();
       
       resetForm();
       onOpenChange(false);
