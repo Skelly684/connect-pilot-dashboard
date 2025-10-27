@@ -66,9 +66,9 @@ serve(async (req) => {
         headline: lead.headline || ''
       };
 
-      // Replace each variable
+      // Replace each variable (using double braces {{variable}})
       Object.entries(replacements).forEach(([key, value]) => {
-        const regex = new RegExp(`\\{${key}\\}`, 'g');
+        const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
         result = result.replace(regex, value);
       });
 

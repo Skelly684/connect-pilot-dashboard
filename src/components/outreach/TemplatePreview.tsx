@@ -20,9 +20,9 @@ export const TemplatePreview = ({ title, content }: TemplatePreviewProps) => {
   const renderPreview = (text: string) => {
     let preview = text;
     
-    // Replace template variables with mock data (single braces)
+    // Replace template variables with mock data (double braces)
     Object.entries(mockData).forEach(([key, value]) => {
-      const regex = new RegExp(`\\{${key}\\}`, 'g');
+      const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
       preview = preview.replace(regex, value);
     });
 
