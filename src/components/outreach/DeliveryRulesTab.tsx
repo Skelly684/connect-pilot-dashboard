@@ -77,11 +77,14 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
     campaign.delivery_rules ? { ...defaultRules, ...campaign.delivery_rules } : defaultRules
   );
 
-  // Update delivery rules when campaign changes
+  // Update delivery rules when campaign changes (but not for new campaigns to avoid infinite loops)
   useEffect(() => {
+    // Skip for new campaigns - they manage their own state
+    if (campaign.id === 'new') return;
+    
     const rules = campaign.delivery_rules ? { ...defaultRules, ...campaign.delivery_rules } : defaultRules;
     setDeliveryRules(rules);
-  }, [campaign.delivery_rules]);
+  }, [campaign.id, campaign.delivery_rules]);
 
   // Load email steps on mount (only if not provided as props)
   useEffect(() => {
@@ -321,8 +324,14 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
               id="use-calls"
               checked={deliveryRules.use_calls}
               onCheckedChange={(checked) => {
-                setDeliveryRules(prev => ({ ...prev, use_calls: checked }));
-                handleSaveRules();
+                const newRules = { ...deliveryRules, use_calls: checked };
+                setDeliveryRules(newRules);
+                // Update parent immediately for new campaigns, auto-save for existing
+                if (campaign.id === 'new') {
+                  onUpdateCampaign(campaign.id, { delivery_rules: newRules });
+                } else {
+                  handleSaveRules();
+                }
               }}
             />
           </div>
@@ -336,8 +345,14 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
               id="use-email"
               checked={deliveryRules.use_email}
               onCheckedChange={(checked) => {
-                setDeliveryRules(prev => ({ ...prev, use_email: checked }));
-                handleSaveRules();
+                const newRules = { ...deliveryRules, use_email: checked };
+                setDeliveryRules(newRules);
+                // Update parent immediately for new campaigns, auto-save for existing
+                if (campaign.id === 'new') {
+                  onUpdateCampaign(campaign.id, { delivery_rules: newRules });
+                } else {
+                  handleSaveRules();
+                }
               }}
             />
           </div>
@@ -365,7 +380,9 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
                       ...prev,
                       call: { ...prev.call, max_attempts: parseInt(e.target.value) || 1 }
                     }));
-                    handleSaveRules();
+                    if (campaign.id !== 'new') {
+                      handleSaveRules();
+                    }
                   }}
                 />
               </div>
@@ -383,7 +400,9 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
                       ...prev,
                       call: { ...prev.call, retry_minutes: parseInt(e.target.value) || 5 }
                     }));
-                    handleSaveRules();
+                    if (campaign.id !== 'new') {
+                      handleSaveRules();
+                    }
                   }}
                 />
               </div>
@@ -403,7 +422,9 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
                       ...prev,
                       call: { ...prev.call, window_start: parseInt(e.target.value) || 0 }
                     }));
-                    handleSaveRules();
+                    if (campaign.id !== 'new') {
+                      handleSaveRules();
+                    }
                   }}
                 />
               </div>
@@ -421,7 +442,9 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
                       ...prev,
                       call: { ...prev.call, window_end: parseInt(e.target.value) || 1 }
                     }));
-                    handleSaveRules();
+                    if (campaign.id !== 'new') {
+                      handleSaveRules();
+                    }
                   }}
                 />
               </div>
@@ -457,7 +480,9 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
                     ...prev,
                     email: { ...prev.email, send_initial: checked }
                   }));
-                  handleSaveRules();
+                  if (campaign.id !== 'new') {
+                    handleSaveRules();
+                  }
                 }}
               />
             </div>
