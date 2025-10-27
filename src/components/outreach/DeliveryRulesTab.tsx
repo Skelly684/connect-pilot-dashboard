@@ -126,10 +126,22 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
   );
 
   const handleSaveRulesImmediate = async () => {
+    // For new campaigns, just update local state without showing success toast
+    if (campaign.id === 'new') {
+      await onUpdateCampaign(campaign.id, {
+        delivery_rules: deliveryRules,
+        call_window_start: deliveryRules.call.window_start,
+        call_window_end: deliveryRules.call.window_end,
+        max_call_retries: deliveryRules.call.max_attempts,
+        retry_minutes: deliveryRules.call.retry_minutes,
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Validate email steps for mutual exclusivity and completeness
-      if (deliveryRules.use_email && campaign.id !== 'new') {
+      if (deliveryRules.use_email) {
         for (const s of emailSteps) {
           const mode = s.when_to_send;
           const hasExact = !!s.send_at;
@@ -166,7 +178,7 @@ export const DeliveryRulesTab = ({ campaign, onUpdateCampaign, emailSteps: propE
       });
 
       // Save email steps if email is enabled
-      if (deliveryRules.use_email && campaign.id !== 'new') {
+      if (deliveryRules.use_email) {
         const stepsToSave = emailSteps.map(step => ({
           step_number: step.step_number,
           template_id: step.template_id || null,
