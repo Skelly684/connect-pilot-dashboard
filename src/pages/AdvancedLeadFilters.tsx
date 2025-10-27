@@ -132,6 +132,15 @@ export default function AdvancedLeadFilters() {
 
 
   const handleExport = async () => {
+    if (noOfLeads < 100 || noOfLeads > 1000) {
+      toast({
+        title: "Invalid Number of Leads",
+        description: "Number of leads must be between 100 and 1000",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const payload = buildPayload(false);
@@ -488,10 +497,16 @@ export default function AdvancedLeadFilters() {
                 <Input
                   type="number"
                   value={noOfLeads}
-                  onChange={(e) => setNoOfLeads(parseInt(e.target.value) || 100)}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 100;
+                    const clampedValue = Math.max(100, Math.min(1000, value));
+                    setNoOfLeads(clampedValue);
+                  }}
                   min={100}
                   max={1000}
+                  className={noOfLeads < 100 || noOfLeads > 1000 ? "border-destructive" : ""}
                 />
+                <p className="text-xs text-muted-foreground">Must be between 100 and 1000</p>
               </div>
 
               <div className="space-y-2">
