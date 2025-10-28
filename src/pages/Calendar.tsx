@@ -351,7 +351,11 @@ const Calendar = () => {
                           ) : (
                             <div className="space-y-3">
                               {googleEvents.slice(0, 10).map((event) => (
-                                <EventCard key={event.id} event={event} />
+                                <EventCard 
+                                  key={event.id} 
+                                  event={event}
+                                  onEventDeleted={handleRefresh}
+                                />
                               ))}
                             </div>
                           )}
