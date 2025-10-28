@@ -144,7 +144,14 @@ export const MessagingTab = ({
   };
 
   const removeEmailStep = (index: number) => {
-    setEmailSteps(prev => prev.filter((_, i) => i !== index));
+    setEmailSteps(prev => {
+      const filtered = prev.filter((_, i) => i !== index);
+      // Renumber all steps sequentially after removal
+      return filtered.map((step, i) => ({
+        ...step,
+        step_number: i + 1
+      }));
+    });
   };
 
   const updateEmailStep = (index: number, field: keyof EmailStep, value: string | number) => {
