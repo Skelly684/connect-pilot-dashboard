@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarEvent } from '@/pages/Calendar';
 import { useToast } from '@/hooks/use-toast';
-import { apiFetch } from '@/lib/apiFetch';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EventCardProps {
   event: CalendarEvent;
@@ -49,9 +49,26 @@ export const EventCard = ({ event, onEventDeleted }: EventCardProps) => {
 
     try {
       setIsDeleting(true);
-      await apiFetch(`/api/calendar/events/${event.id}`, {
+      
+      // Call the Supabase edge function instead of external API
+      const supabaseUrl = "https://zcgutkfkohonpqvwfukk.supabase.co";
+      const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZ3V0a2Zrb2hvbnBxdndmdWtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyNjQ1NDQsImV4cCI6MjA2Njg0MDU0NH0.o-TqrNAurwz7JLJlKXsiK-4ELyhhlYb1BhCh-Ix9ZWs";
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/delete-calendar-event/${event.id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'X-User-Id': user?.id || '',
+          'Content-Type': 'application/json',
+        },
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to delete event');
+      }
 
       toast({
         title: "Event Deleted",
@@ -66,7 +83,7 @@ export const EventCard = ({ event, onEventDeleted }: EventCardProps) => {
       console.error('Delete event error:', error);
       toast({
         title: "Error",
-        description: "Failed to delete event. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to delete event. Please try again.",
         variant: "destructive",
       });
     } finally {
