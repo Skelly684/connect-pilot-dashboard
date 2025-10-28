@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { CalendarIcon, Clock, AlertCircle, Loader2, List, Calendar as CalendarViewIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
-import { ApiStatusBanner } from '@/components/calendar/ApiStatusBanner';
+
 import { GoogleCalendarDiagnostics } from '@/components/integrations/GoogleCalendarDiagnostics';
 import { CalendarHeader } from '@/components/calendar/CalendarHeader';
 import { EventCard } from '@/components/calendar/EventCard';
@@ -255,9 +255,6 @@ const Calendar = () => {
           <DashboardHeader />
           <div className="flex-1 p-6">
             <div className="max-w-6xl mx-auto space-y-6">
-              {/* API Status Banner */}
-              <ApiStatusBanner />
-              
               {/* Header with gradient */}
               <CalendarHeader
                 googleConnected={googleConnected}
