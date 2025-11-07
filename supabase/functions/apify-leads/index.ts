@@ -61,12 +61,12 @@ serve(async (req) => {
     const leads = await apifyResponse.json();
     console.log(`Received ${leads.length} leads from Apify`);
 
-    // Convert leads to CSV
+    // Convert leads to CSV with correct field mapping
     const csvHeaders = [
-      'Email', 'First_name', 'Last_name', 'Full_name', 'Company_name',
-      'Company_website', 'Job_title', 'City', 'State', 'Country',
-      'Linkedin', 'Company_phone', 'Headline', 'Industry',
-      'Seniority_level', 'Functional_level', 'Company_size'
+      'email', 'first_name', 'last_name', 'full_name', 'company_name',
+      'company_website', 'job_title', 'city', 'state', 'country',
+      'linkedin', 'company_phone', 'headline', 'industry',
+      'seniority_level', 'functional_level', 'company_size'
     ];
 
     const csvRows = [csvHeaders.join(',')];
