@@ -213,11 +213,18 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
 
   const addArrayValue = (field: string, value: string) => {
     if (!value.trim()) return;
+    
+    // Format location fields to lowercase as required by Apify
+    const locationFields = ['contact_location', 'contact_not_location', 'contact_city', 'contact_not_city'];
+    const processedValue = locationFields.includes(field) 
+      ? value.trim().toLowerCase() 
+      : value.trim();
+    
     const current = filters[field] || [];
-    if (!current.includes(value.trim())) {
+    if (!current.includes(processedValue)) {
       updateFilters({
         ...filters,
-        [field]: [...current, value.trim()],
+        [field]: [...current, processedValue],
       });
     }
     setTempInputs({ ...tempInputs, [field]: "" });
@@ -352,46 +359,66 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
           onToggle={toggleCheckbox}
         />
 
-        <TextArrayInput 
-          field="contact_location" 
-          label="Locations (Include)" 
-          placeholder="e.g., United States, United Kingdom"
-          value={tempInputs.contact_location || ""}
-          values={filters.contact_location || []}
-          onInputChange={handleInputChange}
-          onAdd={addArrayValue}
-          onRemove={removeArrayValue}
-        />
-        <TextArrayInput 
-          field="contact_city" 
-          label="Cities (Include)" 
-          placeholder="e.g., New York, London"
-          value={tempInputs.contact_city || ""}
-          values={filters.contact_city || []}
-          onInputChange={handleInputChange}
-          onAdd={addArrayValue}
-          onRemove={removeArrayValue}
-        />
-        <TextArrayInput 
-          field="contact_not_location" 
-          label="Locations (Exclude)" 
-          placeholder="e.g., India, China"
-          value={tempInputs.contact_not_location || ""}
-          values={filters.contact_not_location || []}
-          onInputChange={handleInputChange}
-          onAdd={addArrayValue}
-          onRemove={removeArrayValue}
-        />
-        <TextArrayInput 
-          field="contact_not_city" 
-          label="Cities (Exclude)" 
-          placeholder="e.g., Mumbai, Beijing"
-          value={tempInputs.contact_not_city || ""}
-          values={filters.contact_not_city || []}
-          onInputChange={handleInputChange}
-          onAdd={addArrayValue}
-          onRemove={removeArrayValue}
-        />
+        <div className="space-y-2">
+          <TextArrayInput 
+            field="contact_location" 
+            label="Locations (Include)" 
+            placeholder="e.g., united states, california, us"
+            value={tempInputs.contact_location || ""}
+            values={filters.contact_location || []}
+            onInputChange={handleInputChange}
+            onAdd={addArrayValue}
+            onRemove={removeArrayValue}
+          />
+          <p className="text-xs text-muted-foreground">
+            Use lowercase. Examples: "united states", "germany", "california, us", "london"
+          </p>
+        </div>
+        <div className="space-y-2">
+          <TextArrayInput 
+            field="contact_city" 
+            label="Cities (Include)" 
+            placeholder="e.g., new york, london, bangalore"
+            value={tempInputs.contact_city || ""}
+            values={filters.contact_city || []}
+            onInputChange={handleInputChange}
+            onAdd={addArrayValue}
+            onRemove={removeArrayValue}
+          />
+          <p className="text-xs text-muted-foreground">
+            Use lowercase city names
+          </p>
+        </div>
+        <div className="space-y-2">
+          <TextArrayInput 
+            field="contact_not_location" 
+            label="Locations (Exclude)" 
+            placeholder="e.g., india, china"
+            value={tempInputs.contact_not_location || ""}
+            values={filters.contact_not_location || []}
+            onInputChange={handleInputChange}
+            onAdd={addArrayValue}
+            onRemove={removeArrayValue}
+          />
+          <p className="text-xs text-muted-foreground">
+            Use lowercase location names
+          </p>
+        </div>
+        <div className="space-y-2">
+          <TextArrayInput 
+            field="contact_not_city" 
+            label="Cities (Exclude)" 
+            placeholder="e.g., mumbai, beijing"
+            value={tempInputs.contact_not_city || ""}
+            values={filters.contact_not_city || []}
+            onInputChange={handleInputChange}
+            onAdd={addArrayValue}
+            onRemove={removeArrayValue}
+          />
+          <p className="text-xs text-muted-foreground">
+            Use lowercase city names
+          </p>
+        </div>
 
         <CheckboxGroup 
           field="email_status" 
