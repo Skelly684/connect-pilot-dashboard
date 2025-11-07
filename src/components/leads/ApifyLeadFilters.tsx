@@ -154,42 +154,59 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
     }
   };
 
-  const TextArrayInput = ({ field, label, placeholder }: { field: string; label: string; placeholder: string }) => (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="flex gap-2">
-        <Input
-          placeholder={placeholder}
-          value={tempInputs[field] || ""}
-          onChange={(e) => setTempInputs({ ...tempInputs, [field]: e.target.value })}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              addArrayValue(field, tempInputs[field] || "");
-            }
-          }}
-        />
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => addArrayValue(field, tempInputs[field] || "")}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+  const TextArrayInput = ({ field, label, placeholder }: { field: string; label: string; placeholder: string }) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      e.stopPropagation();
+      const newValue = e.target.value;
+      setTempInputs(prev => ({ ...prev, [field]: newValue }));
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        addArrayValue(field, tempInputs[field] || "");
+      }
+    };
+
+    const handleAddClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      addArrayValue(field, tempInputs[field] || "");
+    };
+
+    return (
+      <div className="space-y-2">
+        <Label>{label}</Label>
+        <div className="flex gap-2">
+          <Input
+            placeholder={placeholder}
+            value={tempInputs[field] || ""}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+          />
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleAddClick}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {(filters[field] || []).map((value: string) => (
+            <Badge key={value} variant="secondary" className="flex items-center gap-1">
+              {value}
+              <X
+                className="h-3 w-3 cursor-pointer"
+                onClick={() => removeArrayValue(field, value)}
+              />
+            </Badge>
+          ))}
+        </div>
       </div>
-      <div className="flex flex-wrap gap-2 mt-2">
-        {(filters[field] || []).map((value: string) => (
-          <Badge key={value} variant="secondary" className="flex items-center gap-1">
-            {value}
-            <X
-              className="h-3 w-3 cursor-pointer"
-              onClick={() => removeArrayValue(field, value)}
-            />
-          </Badge>
-        ))}
-      </div>
-    </div>
-  );
+    );
+  };
 
   const CheckboxGroup = ({ field, label, options }: { field: string; label: string; options: Array<{label: string, value: string}> }) => (
     <div className="space-y-2">
