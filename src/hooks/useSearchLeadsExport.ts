@@ -43,6 +43,8 @@ export const useSearchLeadsExport = () => {
         description: `Creating lead export...`,
       });
 
+      console.log('Sending cleaned filters to edge function:', cleanedFilters);
+
       const { data, error } = await supabase.functions.invoke('apify-leads', {
         body: { filters: cleanedFilters, fileName }
       });
@@ -50,6 +52,10 @@ export const useSearchLeadsExport = () => {
       if (error) {
         console.error("Edge function error:", error);
         throw new Error(error.message || "Failed to create export");
+      }
+
+      if (!data) {
+        throw new Error("No data returned from edge function");
       }
 
       const { jobId, csvUrl, leadCount } = data;

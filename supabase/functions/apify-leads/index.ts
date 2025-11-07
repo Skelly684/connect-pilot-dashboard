@@ -38,7 +38,7 @@ serve(async (req) => {
 
     const { filters, fileName } = await req.json();
 
-    console.log('Calling Apify API with filters:', filters);
+    console.log('Received filters from client:', JSON.stringify(filters, null, 2));
 
     // Call Apify API
     const apifyResponse = await fetch(
@@ -54,8 +54,9 @@ serve(async (req) => {
 
     if (!apifyResponse.ok) {
       const errorText = await apifyResponse.text();
-      console.error('Apify API error:', errorText);
-      throw new Error(`Apify API error: ${apifyResponse.status}`);
+      console.error('Apify API error response:', errorText);
+      console.error('Filters that caused error:', JSON.stringify(filters, null, 2));
+      throw new Error(`Apify API error ${apifyResponse.status}: ${errorText}`);
     }
 
     const leads = await apifyResponse.json();
