@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,6 +89,28 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
   });
 
   const [tempInputs, setTempInputs] = useState<Record<string, string>>({});
+
+  // Clean up any invalid filter values on mount (from old cached data)
+  useEffect(() => {
+    const validSeniorityValues = SENIORITY_LEVELS.map(s => s.value);
+    const validFunctionalValues = FUNCTIONAL_LEVELS.map(f => f.value);
+    const validSizeValues = COMPANY_SIZES.map(c => c.value);
+    const validFundingValues = FUNDING_ROUNDS.map(f => f.value);
+    
+    const cleanedFilters = {
+      ...filters,
+      seniority_level: (filters.seniority_level || []).filter((v: string) => validSeniorityValues.includes(v)),
+      functional_level: (filters.functional_level || []).filter((v: string) => validFunctionalValues.includes(v)),
+      size: (filters.size || []).filter((v: string) => validSizeValues.includes(v)),
+      funding: (filters.funding || []).filter((v: string) => validFundingValues.includes(v)),
+    };
+    
+    // Only update if something changed
+    if (JSON.stringify(cleanedFilters) !== JSON.stringify(filters)) {
+      setFilters(cleanedFilters);
+      onFiltersChange(cleanedFilters);
+    }
+  }, []); // Run once on mount
 
   const updateFilters = (newFilters: any) => {
     setFilters(newFilters);
@@ -186,11 +208,46 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
     </div>
   );
 
+  const clearAllFilters = () => {
+    const resetFilters = {
+      fetch_count: 50000,
+      file_name: "Prospects",
+      contact_job_title: [],
+      contact_not_job_title: [],
+      seniority_level: [],
+      functional_level: [],
+      contact_location: [],
+      contact_city: [],
+      contact_not_location: [],
+      contact_not_city: [],
+      email_status: [],
+      company_domain: [],
+      size: [],
+      company_industry: [],
+      company_not_industry: [],
+      company_keywords: [],
+      company_not_keywords: [],
+      min_revenue: "",
+      max_revenue: "",
+      funding: [],
+    };
+    setFilters(resetFilters);
+    onFiltersChange(resetFilters);
+    setTempInputs({});
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Lead Filters</CardTitle>
-        <CardDescription>Configure advanced filtering for lead generation</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Lead Filters</CardTitle>
+            <CardDescription>Configure advanced filtering for lead generation</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={clearAllFilters}>
+            Clear All
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
