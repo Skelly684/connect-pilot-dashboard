@@ -40,6 +40,20 @@ serve(async (req) => {
 
     console.log('Received filters from client:', JSON.stringify(filters, null, 2));
 
+    // Normalize location fields to lowercase (Apify requirement)
+    const locationFields = ['contact_location', 'contact_not_location', 'contact_city', 'contact_not_city'];
+    const normalizedFilters = { ...filters };
+    
+    for (const field of locationFields) {
+      if (normalizedFilters[field] && Array.isArray(normalizedFilters[field])) {
+        normalizedFilters[field] = normalizedFilters[field].map((value: string) => 
+          value.toLowerCase()
+        );
+      }
+    }
+
+    console.log('Normalized filters for Apify:', JSON.stringify(normalizedFilters, null, 2));
+
     // Call Apify API
     const apifyResponse = await fetch(
       `https://api.apify.com/v2/acts/code_crafter~leads-finder/run-sync-get-dataset-items?token=${apifyToken}`,
@@ -48,14 +62,14 @@ serve(async (req) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(filters),
+        body: JSON.stringify(normalizedFilters),
       }
     );
 
     if (!apifyResponse.ok) {
       const errorText = await apifyResponse.text();
       console.error('Apify API error response:', errorText);
-      console.error('Filters that caused error:', JSON.stringify(filters, null, 2));
+      console.error('Normalized filters that caused error:', JSON.stringify(normalizedFilters, null, 2));
       throw new Error(`Apify API error ${apifyResponse.status}: ${errorText}`);
     }
 
