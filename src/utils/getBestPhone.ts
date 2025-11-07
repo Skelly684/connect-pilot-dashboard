@@ -7,7 +7,8 @@ export function getBestPhone(lead: any): string | undefined {
     lead.phone, 
     lead.phone_number, 
     lead.mobile, 
-    lead.mobile_number
+    lead.mobile_number,
+    lead.company_phone
   ];
   
   for (const field of directFields) {
