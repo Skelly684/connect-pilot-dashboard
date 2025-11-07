@@ -28,13 +28,23 @@ export const useSearchLeadsExport = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
+      // Clean filters: remove empty arrays and empty strings
+      const cleanedFilters = Object.entries(filters).reduce((acc, [key, value]) => {
+        if (Array.isArray(value)) {
+          if (value.length > 0) acc[key] = value;
+        } else if (value !== "" && value !== null && value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as any);
+
       toast({
         title: "Starting Export",
         description: `Creating lead export...`,
       });
 
       const { data, error } = await supabase.functions.invoke('apify-leads', {
-        body: { filters, fileName }
+        body: { filters: cleanedFilters, fileName }
       });
 
       if (error) {
