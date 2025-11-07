@@ -11,12 +11,58 @@ interface ApifyFiltersProps {
   onFiltersChange: (filters: any) => void;
 }
 
-const SENIORITY_LEVELS = ["Entry", "Senior", "Manager", "Director", "VP", "C-Level", "Partner", "Owner"];
-const FUNCTIONAL_LEVELS = ["Sales", "Marketing", "Engineering", "Operations", "HR", "Finance", "Legal", "IT", "Customer Success"];
-const EMAIL_STATUS = ["validated"];
-const COMPANY_SIZES = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1001-5000", "5001-10000", "10001+"];
+const SENIORITY_LEVELS = [
+  { label: "Founder", value: "founder" },
+  { label: "Owner", value: "owner" },
+  { label: "C-Suite", value: "c_suite" },
+  { label: "Director", value: "director" },
+  { label: "Partner", value: "partner" },
+  { label: "VP", value: "vp" },
+  { label: "Head", value: "head" },
+  { label: "Manager", value: "manager" },
+  { label: "Senior", value: "senior" },
+  { label: "Entry", value: "entry" },
+  { label: "Trainee", value: "trainee" }
+];
+
+const FUNCTIONAL_LEVELS = [
+  { label: "Sales", value: "sales" },
+  { label: "Marketing", value: "marketing" },
+  { label: "Engineering", value: "engineering" },
+  { label: "Operations", value: "operations" },
+  { label: "HR", value: "hr" },
+  { label: "Finance", value: "finance" },
+  { label: "Legal", value: "legal" },
+  { label: "IT", value: "it" },
+  { label: "Customer Success", value: "customer_success" }
+];
+
+const EMAIL_STATUS = [
+  { label: "Validated", value: "validated" }
+];
+
+const COMPANY_SIZES = [
+  { label: "1-10", value: "1-10" },
+  { label: "11-50", value: "11-50" },
+  { label: "51-200", value: "51-200" },
+  { label: "201-500", value: "201-500" },
+  { label: "501-1000", value: "501-1000" },
+  { label: "1001-5000", value: "1001-5000" },
+  { label: "5001-10000", value: "5001-10000" },
+  { label: "10001+", value: "10001+" }
+];
+
 const REVENUE_OPTIONS = ["100K", "500K", "1M", "5M", "10M", "25M", "50M", "100M", "500M", "1B", "5B", "10B"];
-const FUNDING_ROUNDS = ["Seed", "Series A", "Series B", "Series C", "Series D+", "IPO", "Acquired"];
+
+const FUNDING_ROUNDS = [
+  { label: "Seed", value: "seed" },
+  { label: "Series A", value: "series_a" },
+  { label: "Series B", value: "series_b" },
+  { label: "Series C", value: "series_c" },
+  { label: "Series D+", value: "series_d_plus" },
+  { label: "IPO", value: "ipo" },
+  { label: "Acquired", value: "acquired" }
+];
 
 export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
   const [filters, setFilters] = useState<any>({
@@ -120,19 +166,19 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
     </div>
   );
 
-  const CheckboxGroup = ({ field, label, options }: { field: string; label: string; options: string[] }) => (
+  const CheckboxGroup = ({ field, label, options }: { field: string; label: string; options: Array<{label: string, value: string}> }) => (
     <div className="space-y-2">
       <Label>{label}</Label>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         {options.map((option) => (
-          <div key={option} className="flex items-center space-x-2">
+          <div key={option.value} className="flex items-center space-x-2">
             <Checkbox
-              id={`${field}-${option}`}
-              checked={(filters[field] || []).includes(option)}
-              onCheckedChange={() => toggleCheckbox(field, option)}
+              id={`${field}-${option.value}`}
+              checked={(filters[field] || []).includes(option.value)}
+              onCheckedChange={() => toggleCheckbox(field, option.value)}
             />
-            <Label htmlFor={`${field}-${option}`} className="text-sm font-normal cursor-pointer">
-              {option}
+            <Label htmlFor={`${field}-${option.value}`} className="text-sm font-normal cursor-pointer">
+              {option.label}
             </Label>
           </div>
         ))}
