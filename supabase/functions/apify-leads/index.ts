@@ -42,9 +42,10 @@ serve(async (req) => {
 
     // Normalize location fields to lowercase (Apify requirement)
     const locationFields = ['contact_location', 'contact_not_location', 'contact_city', 'contact_not_city'];
+    const industryFields = ['company_industry', 'company_not_industry'];
     const normalizedFilters = { ...filters };
     
-    for (const field of locationFields) {
+    for (const field of [...locationFields, ...industryFields]) {
       if (normalizedFilters[field] && Array.isArray(normalizedFilters[field])) {
         normalizedFilters[field] = normalizedFilters[field].map((value: string) => 
           value.toLowerCase()

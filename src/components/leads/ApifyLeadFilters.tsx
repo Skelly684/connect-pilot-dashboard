@@ -23,6 +23,40 @@ const COMMON_LOCATIONS = [
   'virginia, us', 'colorado, us'
 ];
 
+// Most commonly used industries for Apify leads (must match exact Apify values)
+const COMMON_INDUSTRIES = [
+  'information technology & services',
+  'computer software',
+  'internet',
+  'financial services',
+  'marketing & advertising',
+  'management consulting',
+  'real estate',
+  'health, wellness & fitness',
+  'construction',
+  'retail',
+  'hospital & health care',
+  'consumer services',
+  'education management',
+  'design',
+  'hospitality',
+  'accounting',
+  'restaurants',
+  'food & beverages',
+  'nonprofit organization management',
+  'telecommunications',
+  'insurance',
+  'legal services',
+  'human resources',
+  'staffing & recruiting',
+  'pharmaceuticals',
+  'biotechnology',
+  'medical devices',
+  'banking',
+  'e-learning',
+  'entertainment',
+];
+
 const SENIORITY_LEVELS = [
   { label: "Founder", value: "founder" },
   { label: "Owner", value: "owner" },
@@ -226,9 +260,9 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
   const addArrayValue = (field: string, value: string) => {
     if (!value.trim()) return;
     
-    // Format location fields to lowercase as required by Apify
-    const locationFields = ['contact_location', 'contact_not_location', 'contact_city', 'contact_not_city'];
-    const processedValue = locationFields.includes(field) 
+    // Format location and industry fields to lowercase as required by Apify
+    const lowercaseFields = ['contact_location', 'contact_not_location', 'contact_city', 'contact_not_city', 'company_industry', 'company_not_industry'];
+    const processedValue = lowercaseFields.includes(field) 
       ? value.trim().toLowerCase() 
       : value.trim();
     
@@ -492,16 +526,55 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
           onToggle={toggleCheckbox}
         />
 
-        <TextArrayInput 
-          field="company_industry" 
-          label="Industries (Include)" 
-          placeholder="e.g., Technology, Finance"
-          value={tempInputs.company_industry || ""}
-          values={filters.company_industry || []}
-          onInputChange={handleInputChange}
-          onAdd={addArrayValue}
-          onRemove={removeArrayValue}
-        />
+        <div className="space-y-2">
+          <Label>Industries (Include)</Label>
+          <select
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onChange={(e) => {
+              if (e.target.value && !(filters.company_industry || []).includes(e.target.value)) {
+                addArrayValue('company_industry', e.target.value);
+              }
+              e.target.value = '';
+            }}
+            value=""
+          >
+            <option value="">Select an industry...</option>
+            {COMMON_INDUSTRIES.map((ind) => (
+              <option key={ind} value={ind}>{ind}</option>
+            ))}
+          </select>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {(filters.company_industry || []).map((val: string) => (
+              <Badge key={val} variant="secondary" className="flex items-center gap-1">
+                {val}
+                <X className="h-3 w-3 cursor-pointer" onClick={() => removeArrayValue('company_industry', val)} />
+              </Badge>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Select from dropdown or type custom industry (must match Apify format exactly)
+          </p>
+          <div className="flex gap-2 mt-2">
+            <Input
+              placeholder="Or type custom industry (lowercase)"
+              value={tempInputs.company_industry || ""}
+              onChange={(e) => handleInputChange('company_industry', e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addArrayValue('company_industry', tempInputs.company_industry || "");
+                }
+              }}
+            />
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => addArrayValue('company_industry', tempInputs.company_industry || "")}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
         <TextArrayInput 
           field="company_not_industry" 
           label="Industries (Exclude)" 
