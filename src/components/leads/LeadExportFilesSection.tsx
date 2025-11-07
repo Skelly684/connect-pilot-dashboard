@@ -158,8 +158,15 @@ export const LeadExportFilesSection = () => {
   }, []);
 
   const handleDownload = (url: string, fileName: string) => {
-    // Open in new tab (works for both CSV and Google Sheets)
-    window.open(url, '_blank', 'noopener,noreferrer');
+    // Create a temporary anchor element to trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const parseCSVLine = (line: string): string[] => {
