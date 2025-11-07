@@ -5,7 +5,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ElectricBolts } from "@/components/dashboard/ElectricBolts";
-import AdvancedLeadFilters from "./AdvancedLeadFilters";
+import ApifyLeads from "./ApifyLeads";
 import { AllLeadsSection } from "@/components/leads/AllLeadsSection";
 import { LeadExportFilesSection } from "@/components/leads/LeadExportFilesSection";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
@@ -104,7 +104,7 @@ const Dashboard = () => {
       case "leads":
         return (
           <div className="space-y-6">
-            <AdvancedLeadFilters />
+            <ApifyLeads />
           </div>
         );
       case "all-leads":
