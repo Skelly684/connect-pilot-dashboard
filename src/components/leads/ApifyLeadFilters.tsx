@@ -42,14 +42,17 @@ const EMAIL_STATUS = [
 ];
 
 const COMPANY_SIZES = [
-  { label: "1-10", value: "1-10" },
-  { label: "11-50", value: "11-50" },
-  { label: "51-200", value: "51-200" },
+  { label: "0-1", value: "0-1" },
+  { label: "2-10", value: "2-10" },
+  { label: "11-20", value: "11-20" },
+  { label: "21-50", value: "21-50" },
+  { label: "51-100", value: "51-100" },
+  { label: "101-200", value: "101-200" },
   { label: "201-500", value: "201-500" },
   { label: "501-1000", value: "501-1000" },
-  { label: "1001-5000", value: "1001-5000" },
-  { label: "5001-10000", value: "5001-10000" },
-  { label: "10001+", value: "10001+" }
+  { label: "1001-2000", value: "1001-2000" },
+  { label: "2001-5000", value: "2001-5000" },
+  { label: "10000+", value: "10000+" }
 ];
 
 const REVENUE_OPTIONS = ["100K", "500K", "1M", "5M", "10M", "25M", "50M", "100M", "500M", "1B", "5B", "10B"];
