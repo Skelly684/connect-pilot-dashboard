@@ -69,7 +69,7 @@ const FUNDING_ROUNDS = [
 
 export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
   const [filters, setFilters] = useState<any>({
-    fetch_count: 50000,
+    fetch_count: 100,
     file_name: "Prospects",
     contact_job_title: [],
     contact_not_job_title: [],
@@ -213,7 +213,7 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
 
   const clearAllFilters = () => {
     const resetFilters = {
-      fetch_count: 50000,
+      fetch_count: 100,
       file_name: "Prospects",
       contact_job_title: [],
       contact_not_job_title: [],
@@ -255,13 +255,17 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Number of Leads</Label>
+            <Label>Number of Leads (100-1000)</Label>
             <Input
               type="number"
-              min={1}
-              max={50000}
+              min={100}
+              max={1000}
               value={filters.fetch_count}
-              onChange={(e) => updateFilters({ ...filters, fetch_count: parseInt(e.target.value) || 50000 })}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 100;
+                const clampedValue = Math.min(Math.max(value, 100), 1000);
+                updateFilters({ ...filters, fetch_count: clampedValue });
+              }}
             />
           </div>
 
