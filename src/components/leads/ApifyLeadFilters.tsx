@@ -13,13 +13,15 @@ interface ApifyFiltersProps {
 
 const SENIORITY_LEVELS = ["Entry", "Senior", "Manager", "Director", "VP", "C-Level", "Partner", "Owner"];
 const FUNCTIONAL_LEVELS = ["Sales", "Marketing", "Engineering", "Operations", "HR", "Finance", "Legal", "IT", "Customer Success"];
-const EMAIL_STATUS = ["verified", "unverified", "catch-all", "unknown"];
+const EMAIL_STATUS = ["validated"];
 const COMPANY_SIZES = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1001-5000", "5001-10000", "10001+"];
+const REVENUE_OPTIONS = ["100K", "500K", "1M", "5M", "10M", "25M", "50M", "100M", "500M", "1B", "5B", "10B"];
+const FUNDING_ROUNDS = ["Seed", "Series A", "Series B", "Series C", "Series D+", "IPO", "Acquired"];
 
 export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
   const [filters, setFilters] = useState<any>({
-    fetch_count: 10,
-    file_name: "apify_leads",
+    fetch_count: 50000,
+    file_name: "Prospects",
     contact_job_title: [],
     contact_not_job_title: [],
     seniority_level: [],
@@ -37,6 +39,7 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
     company_not_keywords: [],
     min_revenue: "",
     max_revenue: "",
+    funding: [],
   });
 
   const [tempInputs, setTempInputs] = useState<Record<string, string>>({});
@@ -150,9 +153,9 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
             <Input
               type="number"
               min={1}
-              max={1000}
+              max={50000}
               value={filters.fetch_count}
-              onChange={(e) => updateFilters({ ...filters, fetch_count: parseInt(e.target.value) || 10 })}
+              onChange={(e) => updateFilters({ ...filters, fetch_count: parseInt(e.target.value) || 50000 })}
             />
           </div>
 
@@ -189,23 +192,35 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Min Revenue ($)</Label>
-            <Input
-              placeholder="e.g., 1000000"
+            <Label>Min Revenue</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               value={filters.min_revenue}
               onChange={(e) => updateFilters({ ...filters, min_revenue: e.target.value })}
-            />
+            >
+              <option value="">Select minimum revenue</option>
+              {REVENUE_OPTIONS.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-2">
-            <Label>Max Revenue ($)</Label>
-            <Input
-              placeholder="e.g., 10000000"
+            <Label>Max Revenue</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               value={filters.max_revenue}
               onChange={(e) => updateFilters({ ...filters, max_revenue: e.target.value })}
-            />
+            >
+              <option value="">Select maximum revenue</option>
+              {REVENUE_OPTIONS.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
           </div>
         </div>
+
+        <CheckboxGroup field="funding" label="Funding Round" options={FUNDING_ROUNDS} />
       </CardContent>
     </Card>
   );
