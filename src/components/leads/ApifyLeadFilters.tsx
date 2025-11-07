@@ -67,6 +67,97 @@ const FUNDING_ROUNDS = [
   { label: "Acquired", value: "acquired" }
 ];
 
+const TextArrayInput = ({ 
+  field, 
+  label, 
+  placeholder,
+  value,
+  values,
+  onInputChange,
+  onAdd,
+  onRemove
+}: { 
+  field: string; 
+  label: string; 
+  placeholder: string;
+  value: string;
+  values: string[];
+  onInputChange: (field: string, value: string) => void;
+  onAdd: (field: string, value: string) => void;
+  onRemove: (field: string, value: string) => void;
+}) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onAdd(field, value);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="flex gap-2">
+        <Input
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onInputChange(field, e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => onAdd(field, value)}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="flex flex-wrap gap-2 mt-2">
+        {values.map((val: string) => (
+          <Badge key={val} variant="secondary" className="flex items-center gap-1">
+            {val}
+            <X
+              className="h-3 w-3 cursor-pointer"
+              onClick={() => onRemove(field, val)}
+            />
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const CheckboxGroup = ({ 
+  field, 
+  label, 
+  options,
+  selectedValues,
+  onToggle
+}: { 
+  field: string; 
+  label: string; 
+  options: Array<{label: string, value: string}>;
+  selectedValues: string[];
+  onToggle: (field: string, value: string) => void;
+}) => (
+  <div className="space-y-2">
+    <Label>{label}</Label>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+      {options.map((option) => (
+        <div key={option.value} className="flex items-center space-x-2">
+          <Checkbox
+            id={`${field}-${option.value}`}
+            checked={selectedValues.includes(option.value)}
+            onCheckedChange={() => onToggle(field, option.value)}
+          />
+          <Label htmlFor={`${field}-${option.value}`} className="text-sm font-normal cursor-pointer">
+            {option.label}
+          </Label>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
   const [filters, setFilters] = useState<any>({
     fetch_count: 100,
@@ -154,79 +245,9 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
     }
   };
 
-  const TextArrayInput = ({ field, label, placeholder }: { field: string; label: string; placeholder: string }) => {
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      e.stopPropagation();
-      const newValue = e.target.value;
-      setTempInputs(prev => ({ ...prev, [field]: newValue }));
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        e.stopPropagation();
-        addArrayValue(field, tempInputs[field] || "");
-      }
-    };
-
-    const handleAddClick = (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      addArrayValue(field, tempInputs[field] || "");
-    };
-
-    return (
-      <div className="space-y-2">
-        <Label>{label}</Label>
-        <div className="flex gap-2">
-          <Input
-            placeholder={placeholder}
-            value={tempInputs[field] || ""}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-          />
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleAddClick}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2 mt-2">
-          {(filters[field] || []).map((value: string) => (
-            <Badge key={value} variant="secondary" className="flex items-center gap-1">
-              {value}
-              <X
-                className="h-3 w-3 cursor-pointer"
-                onClick={() => removeArrayValue(field, value)}
-              />
-            </Badge>
-          ))}
-        </div>
-      </div>
-    );
+  const handleInputChange = (field: string, value: string) => {
+    setTempInputs(prev => ({ ...prev, [field]: value }));
   };
-
-  const CheckboxGroup = ({ field, label, options }: { field: string; label: string; options: Array<{label: string, value: string}> }) => (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-        {options.map((option) => (
-          <div key={option.value} className="flex items-center space-x-2">
-            <Checkbox
-              id={`${field}-${option.value}`}
-              checked={(filters[field] || []).includes(option.value)}
-              onCheckedChange={() => toggleCheckbox(field, option.value)}
-            />
-            <Label htmlFor={`${field}-${option.value}`} className="text-sm font-normal cursor-pointer">
-              {option.label}
-            </Label>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
   const clearAllFilters = () => {
     const resetFilters = {
@@ -295,27 +316,150 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
           </div>
         </div>
 
-        <TextArrayInput field="contact_job_title" label="Job Titles (Include)" placeholder="e.g., CEO, CFO, Marketing Director" />
-        <TextArrayInput field="contact_not_job_title" label="Job Titles (Exclude)" placeholder="e.g., Intern, Assistant" />
+        <TextArrayInput 
+          field="contact_job_title" 
+          label="Job Titles (Include)" 
+          placeholder="e.g., CEO, CFO, Marketing Director"
+          value={tempInputs.contact_job_title || ""}
+          values={filters.contact_job_title || []}
+          onInputChange={handleInputChange}
+          onAdd={addArrayValue}
+          onRemove={removeArrayValue}
+        />
+        <TextArrayInput 
+          field="contact_not_job_title" 
+          label="Job Titles (Exclude)" 
+          placeholder="e.g., Intern, Assistant"
+          value={tempInputs.contact_not_job_title || ""}
+          values={filters.contact_not_job_title || []}
+          onInputChange={handleInputChange}
+          onAdd={addArrayValue}
+          onRemove={removeArrayValue}
+        />
 
-        <CheckboxGroup field="seniority_level" label="Seniority Level" options={SENIORITY_LEVELS} />
-        <CheckboxGroup field="functional_level" label="Functional Level" options={FUNCTIONAL_LEVELS} />
+        <CheckboxGroup 
+          field="seniority_level" 
+          label="Seniority Level" 
+          options={SENIORITY_LEVELS}
+          selectedValues={filters.seniority_level || []}
+          onToggle={toggleCheckbox}
+        />
+        <CheckboxGroup 
+          field="functional_level" 
+          label="Functional Level" 
+          options={FUNCTIONAL_LEVELS}
+          selectedValues={filters.functional_level || []}
+          onToggle={toggleCheckbox}
+        />
 
-        <TextArrayInput field="contact_location" label="Locations (Include)" placeholder="e.g., United States, United Kingdom" />
-        <TextArrayInput field="contact_city" label="Cities (Include)" placeholder="e.g., New York, London" />
-        <TextArrayInput field="contact_not_location" label="Locations (Exclude)" placeholder="e.g., India, China" />
-        <TextArrayInput field="contact_not_city" label="Cities (Exclude)" placeholder="e.g., Mumbai, Beijing" />
+        <TextArrayInput 
+          field="contact_location" 
+          label="Locations (Include)" 
+          placeholder="e.g., United States, United Kingdom"
+          value={tempInputs.contact_location || ""}
+          values={filters.contact_location || []}
+          onInputChange={handleInputChange}
+          onAdd={addArrayValue}
+          onRemove={removeArrayValue}
+        />
+        <TextArrayInput 
+          field="contact_city" 
+          label="Cities (Include)" 
+          placeholder="e.g., New York, London"
+          value={tempInputs.contact_city || ""}
+          values={filters.contact_city || []}
+          onInputChange={handleInputChange}
+          onAdd={addArrayValue}
+          onRemove={removeArrayValue}
+        />
+        <TextArrayInput 
+          field="contact_not_location" 
+          label="Locations (Exclude)" 
+          placeholder="e.g., India, China"
+          value={tempInputs.contact_not_location || ""}
+          values={filters.contact_not_location || []}
+          onInputChange={handleInputChange}
+          onAdd={addArrayValue}
+          onRemove={removeArrayValue}
+        />
+        <TextArrayInput 
+          field="contact_not_city" 
+          label="Cities (Exclude)" 
+          placeholder="e.g., Mumbai, Beijing"
+          value={tempInputs.contact_not_city || ""}
+          values={filters.contact_not_city || []}
+          onInputChange={handleInputChange}
+          onAdd={addArrayValue}
+          onRemove={removeArrayValue}
+        />
 
-        <CheckboxGroup field="email_status" label="Email Status" options={EMAIL_STATUS} />
+        <CheckboxGroup 
+          field="email_status" 
+          label="Email Status" 
+          options={EMAIL_STATUS}
+          selectedValues={filters.email_status || []}
+          onToggle={toggleCheckbox}
+        />
 
-        <TextArrayInput field="company_domain" label="Company Domains" placeholder="e.g., microsoft.com, google.com" />
-        <CheckboxGroup field="size" label="Company Size" options={COMPANY_SIZES} />
+        <TextArrayInput 
+          field="company_domain" 
+          label="Company Domains" 
+          placeholder="e.g., microsoft.com, google.com"
+          value={tempInputs.company_domain || ""}
+          values={filters.company_domain || []}
+          onInputChange={handleInputChange}
+          onAdd={addArrayValue}
+          onRemove={removeArrayValue}
+        />
+        <CheckboxGroup 
+          field="size" 
+          label="Company Size" 
+          options={COMPANY_SIZES}
+          selectedValues={filters.size || []}
+          onToggle={toggleCheckbox}
+        />
 
-        <TextArrayInput field="company_industry" label="Industries (Include)" placeholder="e.g., Technology, Finance" />
-        <TextArrayInput field="company_not_industry" label="Industries (Exclude)" placeholder="e.g., Retail, Healthcare" />
+        <TextArrayInput 
+          field="company_industry" 
+          label="Industries (Include)" 
+          placeholder="e.g., Technology, Finance"
+          value={tempInputs.company_industry || ""}
+          values={filters.company_industry || []}
+          onInputChange={handleInputChange}
+          onAdd={addArrayValue}
+          onRemove={removeArrayValue}
+        />
+        <TextArrayInput 
+          field="company_not_industry" 
+          label="Industries (Exclude)" 
+          placeholder="e.g., Retail, Healthcare"
+          value={tempInputs.company_not_industry || ""}
+          values={filters.company_not_industry || []}
+          onInputChange={handleInputChange}
+          onAdd={addArrayValue}
+          onRemove={removeArrayValue}
+        />
 
-        <TextArrayInput field="company_keywords" label="Company Keywords (Include)" placeholder="e.g., SaaS, Cloud, AI" />
-        <TextArrayInput field="company_not_keywords" label="Company Keywords (Exclude)" placeholder="e.g., Consulting, Agency" />
+        <TextArrayInput 
+          field="company_keywords" 
+          label="Company Keywords (Include)" 
+          placeholder="e.g., SaaS, Cloud, AI"
+          value={tempInputs.company_keywords || ""}
+          values={filters.company_keywords || []}
+          onInputChange={handleInputChange}
+          onAdd={addArrayValue}
+          onRemove={removeArrayValue}
+        />
+        <TextArrayInput 
+          field="company_not_keywords" 
+          label="Company Keywords (Exclude)" 
+          placeholder="e.g., Consulting, Agency"
+          value={tempInputs.company_not_keywords || ""}
+          values={filters.company_not_keywords || []}
+          onInputChange={handleInputChange}
+          onAdd={addArrayValue}
+          onRemove={removeArrayValue}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -347,7 +491,13 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
           </div>
         </div>
 
-        <CheckboxGroup field="funding" label="Funding Round" options={FUNDING_ROUNDS} />
+        <CheckboxGroup 
+          field="funding" 
+          label="Funding Round" 
+          options={FUNDING_ROUNDS}
+          selectedValues={filters.funding || []}
+          onToggle={toggleCheckbox}
+        />
       </CardContent>
     </Card>
   );
