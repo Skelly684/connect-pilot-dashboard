@@ -11,6 +11,18 @@ interface ApifyFiltersProps {
   onFiltersChange: (filters: any) => void;
 }
 
+// Most commonly used countries for Apify leads
+const COMMON_LOCATIONS = [
+  'united states', 'united kingdom', 'canada', 'australia', 'germany', 'france',
+  'india', 'singapore', 'netherlands', 'spain', 'italy', 'japan', 'brazil',
+  'mexico', 'ireland', 'sweden', 'switzerland', 'belgium', 'poland', 'denmark',
+  'norway', 'finland', 'austria', 'portugal', 'israel', 'south africa',
+  // US States
+  'california, us', 'texas, us', 'new york, us', 'florida, us', 'illinois, us',
+  'massachusetts, us', 'washington, us', 'pennsylvania, us', 'georgia, us',
+  'virginia, us', 'colorado, us'
+];
+
 const SENIORITY_LEVELS = [
   { label: "Founder", value: "founder" },
   { label: "Owner", value: "owner" },
@@ -360,19 +372,53 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
         />
 
         <div className="space-y-2">
-          <TextArrayInput 
-            field="contact_location" 
-            label="Locations (Include)" 
-            placeholder="e.g., united states, california, us"
-            value={tempInputs.contact_location || ""}
-            values={filters.contact_location || []}
-            onInputChange={handleInputChange}
-            onAdd={addArrayValue}
-            onRemove={removeArrayValue}
-          />
+          <Label>Locations (Include)</Label>
+          <select
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onChange={(e) => {
+              if (e.target.value && !(filters.contact_location || []).includes(e.target.value)) {
+                addArrayValue('contact_location', e.target.value);
+              }
+              e.target.value = '';
+            }}
+            value=""
+          >
+            <option value="">Select a location...</option>
+            {COMMON_LOCATIONS.map((loc) => (
+              <option key={loc} value={loc}>{loc}</option>
+            ))}
+          </select>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {(filters.contact_location || []).map((val: string) => (
+              <Badge key={val} variant="secondary" className="flex items-center gap-1">
+                {val}
+                <X className="h-3 w-3 cursor-pointer" onClick={() => removeArrayValue('contact_location', val)} />
+              </Badge>
+            ))}
+          </div>
           <p className="text-xs text-muted-foreground">
-            Use lowercase. Examples: "united states", "germany", "california, us", "london"
+            Select from dropdown or type custom location in lowercase (e.g., "berlin", "tokyo")
           </p>
+          <div className="flex gap-2 mt-2">
+            <Input
+              placeholder="Or type custom location (lowercase)"
+              value={tempInputs.contact_location || ""}
+              onChange={(e) => handleInputChange('contact_location', e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addArrayValue('contact_location', tempInputs.contact_location || "");
+                }
+              }}
+            />
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => addArrayValue('contact_location', tempInputs.contact_location || "")}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         <div className="space-y-2">
           <TextArrayInput 
