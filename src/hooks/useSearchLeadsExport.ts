@@ -22,61 +22,35 @@ export const useSearchLeadsExport = () => {
   const [isPolling, setIsPolling] = useState(false);
   const { toast } = useToast();
 
-  // Create export directly with SearchLeads API
-  const createExport = async (filter: any, noOfLeads: number, fileName: string) => {
+  // Create export using Apify edge function
+  const createExport = async (filters: any, fileName: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      const response = await fetch(`${SEARCHLEADS_API_BASE}/export`, {
-        method: "POST",
-        headers: {
-          "authorization": `Bearer ${SEARCHLEADS_API_KEY}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          filter,
-          noOfLeads,
-          fileName,
-        }),
+      toast({
+        title: "Starting Export",
+        description: `Creating lead export via Apify...`,
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Export creation failed: ${response.status} - ${errorText}`);
+      const { data, error } = await supabase.functions.invoke('apify-leads', {
+        body: { filters, fileName }
+      });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to create export");
       }
 
-      const data = await response.json();
-      const logId = data.log_id;
-
-      if (!logId) {
-        throw new Error("No log_id returned from SearchLeads API");
-      }
-
-      // Store in Supabase for tracking
-      const { error: dbError } = await supabase
-        .from("searchleads_jobs")
-        .insert({
-          log_id: logId,
-          file_name: fileName,
-          status: "pending",
-          user_id: user.id,
-          summary: filter, // Store the filters for display
-        });
-
-      if (dbError) {
-        console.error("Failed to store job in database:", dbError);
-      }
+      const { jobId, csvUrl, leadCount } = data;
 
       toast({
-        title: "Export Started",
-        description: `Export "${fileName}" queued. Log ID: ${logId}`,
+        title: "Export Complete! ✅",
+        description: `Generated ${leadCount} leads. Check "Lead Export Files" tab to download.`,
+        duration: 7000,
       });
 
-      // Start polling immediately
-      pollExportStatus(logId);
-
-      return logId;
+      return jobId;
     } catch (error) {
       console.error("Create export error:", error);
       toast({

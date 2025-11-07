@@ -62,23 +62,48 @@ export function CsvUpload() {
         return;
       }
 
-      // Map CSV columns to lead fields
+      // Map CSV columns to lead fields (supports both standard and Apify formats)
       const leads = jsonData.map((row: any) => {
-        const email = row['EMAIL']?.trim() || '';
-        const firstName = row['FIRST NAME']?.trim() || row['FIRST_NAME']?.trim() || '';
-        const lastName = row['LAST NAME']?.trim() || row['LAST_NAME']?.trim() || 'N/A';
-        const company = row['COMPANY']?.trim() || 'N/A';
-        const jobTitle = row['JOB TITLE']?.trim() || row['JOB_TITLE']?.trim() || 'N/A';
+        // Standard format
+        const email = row['EMAIL']?.trim() || row['Email']?.trim() || '';
+        let firstName = row['FIRST NAME']?.trim() || row['FIRST_NAME']?.trim() || row['First_name']?.trim() || '';
+        let lastName = row['LAST NAME']?.trim() || row['LAST_NAME']?.trim() || row['Last_name']?.trim() || 'N/A';
+        
+        // Apify format: split Full_name if first/last not provided
+        const fullName = row['Full_name']?.trim() || '';
+        if (!firstName && fullName) {
+          const parts = fullName.split(' ');
+          firstName = parts[0] || '';
+          lastName = parts.slice(1).join(' ') || 'N/A';
+        }
+
+        const company = row['COMPANY']?.trim() || row['Company_name']?.trim() || 'N/A';
+        const jobTitle = row['JOB TITLE']?.trim() || row['JOB_TITLE']?.trim() || row['Job_title']?.trim() || 'N/A';
+        const website = row['Company_website']?.trim() || '';
         const department = row['DEPARTMENT']?.trim() || '';
-        const phoneNumber = row['PHONE NUMBER']?.trim() || row['PHONE_NUMBER']?.trim() || '';
-        const country = row['COUNTRY']?.trim() || '';
-        const region = row['REGION']?.trim() || '';
+        const phoneNumber = row['PHONE NUMBER']?.trim() || row['PHONE_NUMBER']?.trim() || row['Company_phone']?.trim() || '';
+        const country = row['COUNTRY']?.trim() || row['Country']?.trim() || '';
+        const region = row['REGION']?.trim() || row['State']?.trim() || '';
+        const city = row['City']?.trim() || '';
+        const linkedinUrl = row['Linkedin']?.trim() || '';
         const leadSource = row['LEAD SOURCE']?.trim() || row['LEAD_SOURCE']?.trim() || '';
+        
+        // Apify-specific fields
+        const headline = row['Headline']?.trim() || '';
+        const industry = row['Industry']?.trim() || '';
+        const seniorityLevel = row['Seniority_level']?.trim() || '';
+        const functionalLevel = row['Functional_level']?.trim() || '';
+        const companySize = row['Company_size']?.trim() || '';
 
         // Build notes from extra fields
         const noteParts = [];
         if (department) noteParts.push(`Department: ${department}`);
         if (leadSource) noteParts.push(`Lead Source: ${leadSource}`);
+        if (headline) noteParts.push(`Headline: ${headline}`);
+        if (industry) noteParts.push(`Industry: ${industry}`);
+        if (seniorityLevel) noteParts.push(`Seniority: ${seniorityLevel}`);
+        if (functionalLevel) noteParts.push(`Function: ${functionalLevel}`);
+        if (companySize) noteParts.push(`Company Size: ${companySize}`);
         const notes = noteParts.length > 0 ? noteParts.join('\n') : null;
 
         return {
@@ -88,10 +113,12 @@ export function CsvUpload() {
           last_name: lastName,
           job_title: jobTitle,
           company_name: company,
+          company_website: website || null,
+          linkedin_url: linkedinUrl || null,
           email: email,
           email_address: email,
           contact_phone_numbers: JSON.stringify(parsePhoneNumber(phoneNumber)),
-          city_name: null,
+          city_name: city || null,
           state_name: region || null,
           country_name: country || null,
           notes: notes,
@@ -205,7 +232,11 @@ export function CsvUpload() {
         <Alert className="border-primary/30 bg-primary/10">
           <AlertCircle className="h-4 w-4 text-primary" />
           <AlertDescription className="text-foreground">
-            CSV must include these column headers: EMAIL, FIRST NAME, LAST NAME, COMPANY, JOB TITLE, DEPARTMENT, PHONE NUMBER, COUNTRY, REGION, LEAD SOURCE
+            CSV must include EMAIL and either FIRST NAME or Full_name. 
+            <br />
+            <strong>Standard format:</strong> EMAIL, FIRST NAME, LAST NAME, COMPANY, JOB TITLE, DEPARTMENT, PHONE NUMBER, COUNTRY, REGION, LEAD SOURCE
+            <br />
+            <strong>Apify format:</strong> Email, First_name, Last_name, Full_name, Company_name, Company_website, Job_title, City, State, Country, Linkedin, Company_phone, Headline, Industry, Seniority_level, Functional_level, Company_size
           </AlertDescription>
         </Alert>
 
