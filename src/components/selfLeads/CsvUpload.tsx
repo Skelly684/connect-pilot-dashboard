@@ -62,14 +62,14 @@ export function CsvUpload() {
         return;
       }
 
-      // Map CSV columns to lead fields (supports both standard and Apify formats)
+      // Map CSV columns to lead fields (supports multiple formats)
       const leads = jsonData.map((row: any) => {
         // Standard format
         const email = row['EMAIL']?.trim() || row['Email']?.trim() || '';
         let firstName = row['FIRST NAME']?.trim() || row['FIRST_NAME']?.trim() || row['First_name']?.trim() || '';
         let lastName = row['LAST NAME']?.trim() || row['LAST_NAME']?.trim() || row['Last_name']?.trim() || 'N/A';
         
-        // Apify format: split Full_name if first/last not provided
+        // Alternative format: split Full_name if first/last not provided
         const fullName = row['Full_name']?.trim() || '';
         if (!firstName && fullName) {
           const parts = fullName.split(' ');
@@ -88,7 +88,7 @@ export function CsvUpload() {
         const linkedinUrl = row['Linkedin']?.trim() || '';
         const leadSource = row['LEAD SOURCE']?.trim() || row['LEAD_SOURCE']?.trim() || '';
         
-        // Apify-specific fields
+        // Additional enrichment fields
         const headline = row['Headline']?.trim() || '';
         const industry = row['Industry']?.trim() || '';
         const seniorityLevel = row['Seniority_level']?.trim() || '';
@@ -236,7 +236,7 @@ export function CsvUpload() {
             <br />
             <strong>Standard format:</strong> EMAIL, FIRST NAME, LAST NAME, COMPANY, JOB TITLE, DEPARTMENT, PHONE NUMBER, COUNTRY, REGION, LEAD SOURCE
             <br />
-            <strong>Apify format:</strong> Email, First_name, Last_name, Full_name, Company_name, Company_website, Job_title, City, State, Country, Linkedin, Company_phone, Headline, Industry, Seniority_level, Functional_level, Company_size
+            <strong>Enriched format:</strong> Email, First_name, Last_name, Full_name, Company_name, Company_website, Job_title, City, State, Country, Linkedin, Company_phone, Headline, Industry, Seniority_level, Functional_level, Company_size
           </AlertDescription>
         </Alert>
 

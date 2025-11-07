@@ -140,8 +140,8 @@ export function ApifyLeadFilters({ onFiltersChange }: ApifyFiltersProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Apify Lead Filters</CardTitle>
-        <CardDescription>Configure advanced filtering for Apify lead generation</CardDescription>
+        <CardTitle>Lead Filters</CardTitle>
+        <CardDescription>Configure advanced filtering for lead generation</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

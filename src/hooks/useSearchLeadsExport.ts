@@ -30,7 +30,7 @@ export const useSearchLeadsExport = () => {
 
       toast({
         title: "Starting Export",
-        description: `Creating lead export via Apify...`,
+        description: `Creating lead export...`,
       });
 
       const { data, error } = await supabase.functions.invoke('apify-leads', {

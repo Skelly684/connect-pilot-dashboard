@@ -38,10 +38,10 @@ export default function ApifyLeads() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="h-6 w-6 text-primary" />
-            Apify Lead Generation
+            Lead Generation
           </CardTitle>
           <CardDescription>
-            Generate targeted lead lists using Apify's advanced filtering capabilities
+            Generate targeted lead lists using advanced filtering capabilities
           </CardDescription>
         </CardHeader>
         <CardContent>

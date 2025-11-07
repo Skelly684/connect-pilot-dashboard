@@ -144,13 +144,13 @@ export default function AdvancedLeadFilters() {
     setIsLoading(true);
     try {
       const payload = buildPayload(false);
-      // For Apify: include fetch_count in the filters
-      const apifyFilters = {
+      // Include fetch_count in the filters
+      const exportFilters = {
         ...payload.filter,
         fetch_count: noOfLeads,
         file_name: fileName
       };
-      await createExport(apifyFilters, fileName);
+      await createExport(exportFilters, fileName);
       
       toast({
         title: "Export Created ✅",
