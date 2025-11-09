@@ -994,26 +994,35 @@ export const LeadExportFilesSection = () => {
                     <TableCell>
                       {job.summary && typeof job.summary === 'object' ? (
                         <div className="max-w-xs">
-                          <div className="text-sm space-y-1">
-                            {Object.entries(job.summary as Record<string, any>).map(([key, value]) => {
-                              if (Array.isArray(value) && value.length > 0) {
-                                return (
-                                  <div key={key} className="flex gap-2">
-                                    <span className="text-muted-foreground">{key.replace(/_/g, ' ')}:</span>
-                                    <span className="font-medium truncate">{value.join(', ')}</span>
-                                  </div>
+                          <p className="text-sm text-muted-foreground">
+                            {(() => {
+                              const summary = job.summary as Record<string, any>;
+                              const parts: string[] = [];
+                              
+                              // Add locations
+                              if (Array.isArray(summary.contact_location) && summary.contact_location.length > 0) {
+                                const locations = summary.contact_location.slice(0, 2).map((l: string) => 
+                                  l.split(',')[0].trim().replace(/^\w/, (c: string) => c.toUpperCase())
                                 );
-                              } else if (typeof value === 'string' && value) {
-                                return (
-                                  <div key={key} className="flex gap-2">
-                                    <span className="text-muted-foreground">{key.replace(/_/g, ' ')}:</span>
-                                    <span className="font-medium truncate">{value}</span>
-                                  </div>
-                                );
+                                parts.push(locations.join(', '));
                               }
-                              return null;
-                            })}
-                          </div>
+                              
+                              // Add industries
+                              if (Array.isArray(summary.company_industry) && summary.company_industry.length > 0) {
+                                const industries = summary.company_industry.slice(0, 2).map((i: string) => 
+                                  i.split('&')[0].trim().replace(/^\w/, (c: string) => c.toUpperCase())
+                                );
+                                parts.push(industries.join(', '));
+                              }
+                              
+                              // Add job titles
+                              if (Array.isArray(summary.contact_title) && summary.contact_title.length > 0) {
+                                parts.push(summary.contact_title.slice(0, 2).join(', '));
+                              }
+                              
+                              return parts.length > 0 ? parts.join(' • ') : 'Lead search';
+                            })()}
+                          </p>
                         </div>
                       ) : (
                         "—"
