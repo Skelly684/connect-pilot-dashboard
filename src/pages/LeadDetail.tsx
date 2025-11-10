@@ -92,7 +92,7 @@ const LeadDetail = () => {
                       </div>
                       <div>
                         <p className="font-medium">Phone</p>
-                        <p className="text-muted-foreground">{lead.phone || 'N/A'}</p>
+                        <p className="text-muted-foreground">{lead.company_phone || lead.phone || 'N/A'}</p>
                       </div>
                       <div>
                         <p className="font-medium">Location</p>

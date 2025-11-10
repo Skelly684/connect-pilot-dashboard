@@ -76,6 +76,7 @@ interface Lead {
   emailAddress?: string;
   email_address?: string;
   phone?: string;
+  company_phone?: string;
   location?: string;
   rawAddress?: string;
   raw_address?: string;
@@ -229,6 +230,8 @@ const extractEmail = (lead: Lead): string => {
 };
 
 const extractPhone = (lead: Lead): string => {
+  // Prioritize company_phone from Apify
+  if (lead.company_phone) return safeToString(lead.company_phone);
   if (lead.phone) return safeToString(lead.phone);
   
   // Handle contact_phone_numbers from database (stored as JSON string)

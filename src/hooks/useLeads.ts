@@ -23,6 +23,7 @@ interface Lead {
   state_name?: string;
   country_name?: string;
   phone?: string;
+  company_phone?: string;
   linkedin_url?: string;
   seniority?: string;
   functional?: string;

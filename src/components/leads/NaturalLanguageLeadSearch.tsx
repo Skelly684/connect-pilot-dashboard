@@ -22,6 +22,7 @@ interface Lead {
   workEmail?: string;
   personalEmail?: string;
   phone?: string;
+  company_phone?: string;
   workPhone?: string;
   location?: string;
   city?: string;
@@ -115,7 +116,7 @@ export const NaturalLanguageLeadSearch = ({ onSaveLeads }: NaturalLanguageLeadSe
   };
 
   const getLeadPhone = (lead: Lead): string => {
-    return lead.phone || lead.workPhone || "";
+    return lead.company_phone || lead.phone || lead.workPhone || "";
   };
 
   const getLeadLocation = (lead: Lead): string => {

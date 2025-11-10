@@ -675,7 +675,7 @@ export const LeadExportFilesSection = () => {
         company_website: lead.company_website,
         linkedin_url: lead.linkedin_url,
         job_title: lead.job_title,
-        phone: lead.phone,
+        phone: lead.company_phone || lead.phone,
         state_name: lead.state_name,
         country_name: lead.country_name,
         status: 'accepted',
@@ -826,7 +826,7 @@ export const LeadExportFilesSection = () => {
             company_website: lead.company_website,
             linkedin_url: lead.linkedin_url,
             job_title: lead.job_title,
-            phone: lead.phone,
+            phone: lead.company_phone || lead.phone,
             state_name: lead.state_name,
             country_name: lead.country_name,
             status: 'rejected',
@@ -1342,7 +1342,7 @@ export const LeadExportFilesSection = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {lead.phone || '—'}
+                        {lead.company_phone || lead.phone || '—'}
                       </TableCell>
                       <TableCell>
                         {[lead.state_name, lead.country_name].filter(Boolean).join(', ') || '—'}

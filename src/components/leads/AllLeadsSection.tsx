@@ -67,6 +67,7 @@ interface Lead {
   state_name?: string;
   country_name?: string;
   phone?: string;
+  company_phone?: string;
   linkedin_url?: string;
   seniority?: string;
   functional?: string;
@@ -180,7 +181,7 @@ const extractEmail = (lead: Lead): string => {
 };
 
 const extractPhone = (lead: Lead): string => {
-  return safeToString(lead.phone) || '—';
+  return safeToString(lead.company_phone) || safeToString(lead.phone) || '—';
 };
 
 const extractLocation = (lead: Lead): string => {
