@@ -37,6 +37,12 @@ verify_jwt = false
 [functions.retrieve-searchleads-export]
 verify_jwt = true
 
+[functions.schedule-due-emails]
+verify_jwt = false
+
+[functions.email-worker]
+verify_jwt = false
+
 [db]
 enabled = true
 port = 54322
